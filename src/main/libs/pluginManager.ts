@@ -68,6 +68,17 @@ function getExtensionsDir(): string | null {
   return findThirdPartyExtensionsDir();
 }
 
+/** OpenClaw's own extensions directory (CONFIG_DIR/extensions) where its UI/CLI installs plugins. */
+function getOpenClawStateExtensionsDir(): string | null {
+  const dir = path.join(app.getPath('userData'), 'openclaw', 'state', 'extensions');
+  try {
+    if (fs.statSync(dir).isDirectory()) return dir;
+  } catch {
+    // directory doesn't exist
+  }
+  return null;
+}
+
 function readPluginManifest(pluginDir: string): PluginManifest | null {
   const manifestPath = path.join(pluginDir, 'openclaw.plugin.json');
   try {
@@ -544,55 +555,76 @@ export class PluginManager {
   }
 
   /**
-   * Detect plugins present in OpenClaw's extensions directory but missing from
-   * the local SQLite store. Returns a read-only list without writing anything.
+   * Detect plugins present in OpenClaw's extensions directories or registered
+   * in openclaw.json config but missing from the local SQLite store.
+   * Returns a read-only list without writing anything.
    */
   detectPluginsFromOpenClaw(): { plugins: string[]; error?: string } {
-    const extensionsDir = getExtensionsDir();
-    if (!extensionsDir) {
-      return { plugins: [], error: 'Extensions directory not found' };
-    }
-
     const hiddenIds = getHiddenPluginIds();
     const existingPlugins = this.store.listUserPlugins();
     const existingIds = new Set(existingPlugins.map(p => p.pluginId));
+    console.log('[PluginManager.detect] existingIds:', [...existingIds]);
+    console.log('[PluginManager.detect] hiddenIds:', [...hiddenIds]);
 
-    const plugins: string[] = [];
+    const discovered = new Set<string>();
 
-    try {
-      const entries = fs.readdirSync(extensionsDir, { withFileTypes: true })
-        .filter(e => e.isDirectory());
+    // Scan directories on disk
+    const dirsToScan = [
+      getExtensionsDir(),
+      getOpenClawStateExtensionsDir(),
+    ].filter((d): d is string => d !== null);
+    console.log('[PluginManager.detect] dirsToScan:', dirsToScan);
 
-      for (const entry of entries) {
-        const pluginDir = path.join(extensionsDir, entry.name);
-        const manifest = readPluginManifest(pluginDir);
-        const pluginId = manifest?.id || entry.name;
+    for (const dir of dirsToScan) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true })
+          .filter(e => e.isDirectory());
+        console.log(`[PluginManager.detect] directories in ${dir}:`, entries.map(e => e.name));
 
-        if (existingIds.has(pluginId)) continue;
-        if (isHiddenPlugin(pluginId, hiddenIds)) continue;
+        for (const entry of entries) {
+          const pluginDir = path.join(dir, entry.name);
+          const manifest = readPluginManifest(pluginDir);
+          const pluginId = manifest?.id || entry.name;
 
-        plugins.push(pluginId);
+          if (existingIds.has(pluginId)) {
+            console.log(`[PluginManager.detect] skip (already exists): ${pluginId}`);
+            continue;
+          }
+          if (isHiddenPlugin(pluginId, hiddenIds)) {
+            console.log(`[PluginManager.detect] skip (hidden): ${pluginId}`);
+            continue;
+          }
+          console.log(`[PluginManager.detect] discovered from disk: ${pluginId}`);
+          discovered.add(pluginId);
+        }
+      } catch (err) {
+        console.warn(`[PluginManager.detect] readdir error for ${dir}:`, err);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { plugins, error: message };
     }
 
+    // Also check plugins.entries in openclaw.json for config-only plugins
+    // (registered via web UI but maybe installed to a path we don't scan)
+    const configEntries = readOpenClawConfigEntries();
+    for (const pluginId of Object.keys(configEntries)) {
+      if (existingIds.has(pluginId)) continue;
+      if (isHiddenPlugin(pluginId, hiddenIds)) continue;
+      if (discovered.has(pluginId)) continue;
+      console.log(`[PluginManager.detect] discovered from config: ${pluginId}`);
+      discovered.add(pluginId);
+    }
+
+    const plugins = [...discovered];
+    console.log('[PluginManager.detect] final result:', plugins);
     return { plugins };
   }
 
   /**
-   * Sync plugins from OpenClaw's extensions directory into the local SQLite store.
-   * Discovers plugins installed outside of LobsterAI (via AI conversation, CLI, or
-   * OpenClaw Web UI) and adds them to the user_plugins table so they appear in the
-   * plugin management UI.
+   * Sync plugins from OpenClaw's extensions directories and config into the
+   * local SQLite store. Discovers plugins installed outside of LobsterAI
+   * (via AI conversation, CLI, or OpenClaw Web UI) and adds them so they
+   * appear in the plugin management UI.
    */
   async syncPluginsFromOpenClaw(): Promise<{ synced: string[]; error?: string }> {
-    const extensionsDir = getExtensionsDir();
-    if (!extensionsDir) {
-      return { synced: [], error: 'Extensions directory not found' };
-    }
-
     const hiddenIds = getHiddenPluginIds();
     const existingPlugins = this.store.listUserPlugins();
     const existingIds = new Set(existingPlugins.map(p => p.pluginId));
@@ -602,39 +634,69 @@ export class PluginManager {
 
     const synced: string[] = [];
 
-    try {
-      const entries = fs.readdirSync(extensionsDir, { withFileTypes: true })
-        .filter(e => e.isDirectory());
+    // Scan directories on disk
+    const dirsToScan = [
+      getExtensionsDir(),
+      getOpenClawStateExtensionsDir(),
+    ].filter((d): d is string => d !== null);
 
-      for (const entry of entries) {
-        const pluginDir = path.join(extensionsDir, entry.name);
-        const manifest = readPluginManifest(pluginDir);
-        const pluginId = manifest?.id || entry.name;
+    const syncedIds = new Set<string>();
 
-        // Skip if already in SQLite or if it's a hidden/internal plugin
-        if (existingIds.has(pluginId)) continue;
-        if (isHiddenPlugin(pluginId, hiddenIds)) continue;
+    for (const dir of dirsToScan) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true })
+          .filter(e => e.isDirectory());
 
-        // Determine enabled state from openclaw.json
-        const configEntry = configEntries[pluginId] as { enabled?: boolean } | undefined;
-        const enabled = configEntry?.enabled !== false;
+        for (const entry of entries) {
+          const pluginDir = path.join(dir, entry.name);
+          const manifest = readPluginManifest(pluginDir);
+          const pluginId = manifest?.id || entry.name;
 
-        const version = readPluginVersion(pluginDir);
+          if (existingIds.has(pluginId)) continue;
+          if (isHiddenPlugin(pluginId, hiddenIds)) continue;
+          if (syncedIds.has(pluginId)) continue;
 
-        this.store.addUserPlugin({
-          pluginId,
-          source: 'openclaw',
-          spec: pluginId,
-          version,
-          enabled,
-          installedAt: Date.now(),
-        });
+          const configEntry = configEntries[pluginId] as { enabled?: boolean } | undefined;
+          const enabled = configEntry?.enabled !== false;
+          const version = readPluginVersion(pluginDir);
 
-        synced.push(pluginId);
+          this.store.addUserPlugin({
+            pluginId,
+            source: 'openclaw',
+            spec: pluginId,
+            version,
+            enabled,
+            installedAt: Date.now(),
+          });
+
+          synced.push(pluginId);
+          syncedIds.add(pluginId);
+        }
+      } catch (err) {
+        console.warn(`[PluginManager.sync] readdir error for ${dir}:`, err);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { synced, error: message };
+    }
+
+    // Also sync plugins from openclaw.json config that aren't on disk
+    for (const pluginId of Object.keys(configEntries)) {
+      if (existingIds.has(pluginId)) continue;
+      if (isHiddenPlugin(pluginId, hiddenIds)) continue;
+      if (syncedIds.has(pluginId)) continue;
+
+      const configEntry = configEntries[pluginId] as { enabled?: boolean } | undefined;
+      const enabled = configEntry?.enabled !== false;
+
+      this.store.addUserPlugin({
+        pluginId,
+        source: 'openclaw',
+        spec: pluginId,
+        version: undefined,
+        enabled,
+        installedAt: Date.now(),
+      });
+
+      synced.push(pluginId);
+      syncedIds.add(pluginId);
     }
 
     if (synced.length > 0) {
@@ -652,6 +714,13 @@ const INTERNAL_PLUGIN_IDS = [
   'qwen-portal-auth',
   'qqbot',
   'acpx',
+  'minimax',
+  'browser',
+  'qwen',
+  'zai',
+  'qianfan',
+  'volcengine',
+  'deepseek',
 ];
 
 /** Read preinstalled plugin IDs from package.json openclaw.plugins field. */
@@ -693,10 +762,7 @@ function getHiddenPluginIds(): Set<string> {
 
 /** Check if a plugin should be hidden from the user. */
 function isHiddenPlugin(pluginId: string, hiddenIds: Set<string>): boolean {
-  if (hiddenIds.has(pluginId)) return true;
-  // Provider plugins (e.g. @openclaw/anthropic-provider) are internal
-  if (pluginId.startsWith('@openclaw/')) return true;
-  return false;
+  return hiddenIds.has(pluginId);
 }
 
 /** Read plugins.entries from the openclaw.json config file. */

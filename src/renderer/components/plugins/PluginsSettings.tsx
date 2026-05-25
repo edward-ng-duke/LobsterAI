@@ -35,6 +35,7 @@ export default function PluginsSettings() {
   const [configPluginId, setConfigPluginId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [detectedPlugins, setDetectedPlugins] = useState<string[] | null>(null);
+  const [discoverResult, setDiscoverResult] = useState<string[] | null>(null);
   const logRef = useRef<HTMLPreElement>(null);
   const [form, setForm] = useState<InstallForm>({
     source: 'npm',
@@ -55,6 +56,7 @@ export default function PluginsSettings() {
     setSyncing(true);
     try {
       const result = await window.electron?.plugins.sync();
+      console.log('[PluginsSettings] sync result:', result);
       if (result && result.synced.length > 0) {
         await loadPlugins();
       }
@@ -64,11 +66,31 @@ export default function PluginsSettings() {
     }
   }, [loadPlugins]);
 
+  const handleDiscover = useCallback(async () => {
+    setSyncing(true);
+    setDiscoverResult(null);
+    try {
+      const detectResult = await window.electron?.plugins.detect();
+      console.log('[PluginsSettings] discover detect result:', detectResult);
+      if (detectResult && detectResult.plugins.length > 0) {
+        setDiscoverResult(detectResult.plugins);
+      } else {
+        setDiscoverResult([]);
+      }
+    } catch (err) {
+      console.error('[PluginsSettings] discover error:', err);
+      setDiscoverResult([]);
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
+
   useEffect(() => {
     // On mount: load plugins and detect any unsynced ones from OpenClaw
     const init = async () => {
       await loadPlugins();
       const detectResult = await window.electron?.plugins.detect();
+      console.log('[PluginsSettings] auto-detect on mount:', detectResult);
       if (detectResult && detectResult.plugins.length > 0) {
         setDetectedPlugins(detectResult.plugins);
       }
@@ -173,8 +195,8 @@ export default function PluginsSettings() {
         </div>
       )}
 
-      {/* Detect confirmation dialog */}
-      {detectedPlugins && !syncing && (
+      {/* Detect confirmation dialog (auto-detect on page open) */}
+      {detectedPlugins !== null && detectedPlugins.length > 0 && !syncing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-background border border-border rounded-xl shadow-lg w-full max-w-md p-6">
             <h3 className="text-base font-semibold text-foreground mb-2">
@@ -455,16 +477,55 @@ export default function PluginsSettings() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowInstallModal(false);
-                      runSync();
-                    }}
+                    onClick={handleDiscover}
                     disabled={syncing}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ArrowPathIcon className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                     {syncing ? i18nService.t('pluginsSyncing') : i18nService.t('pluginsSyncButton')}
                   </button>
+
+                  {/* Inline discover results */}
+                  {discoverResult !== null && !syncing && (
+                    <div className="mt-4 text-left">
+                      {discoverResult.length > 0 ? (
+                        <>
+                          <p className="text-sm text-foreground mb-2">
+                            {i18nService.t('pluginsSyncFound').replace('{count}', String(discoverResult.length))}
+                          </p>
+                          <div className="mb-3 max-h-32 overflow-y-auto rounded-md border border-border bg-surface-raised p-2">
+                            {discoverResult.map(id => (
+                              <div key={id} className="text-xs text-foreground py-0.5 font-mono">{id}</div>
+                            ))}
+                          </div>
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDiscoverResult(null)}
+                              className="px-3 py-1.5 text-xs rounded-md border border-border text-foreground hover:bg-surface-raised transition-colors"
+                            >
+                              {i18nService.t('pluginsSyncSkip')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowInstallModal(false);
+                                setDiscoverResult(null);
+                                runSync();
+                              }}
+                              className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                              {i18nService.t('pluginsSyncNow')}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {i18nService.t('pluginsSyncNone')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

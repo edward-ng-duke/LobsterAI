@@ -4368,8 +4368,11 @@ if (!gotTheLock) {
     try {
       const { PluginManager } = await import('./libs/pluginManager');
       const manager = new PluginManager(getCoworkStore());
-      return await manager.syncPluginsFromOpenClaw();
+      const result = await manager.syncPluginsFromOpenClaw();
+      console.log('[plugins:sync] result:', JSON.stringify(result));
+      return result;
     } catch (error) {
+      console.error('[plugins:sync] error:', error);
       return { synced: [], error: error instanceof Error ? error.message : 'Failed to sync plugins' };
     }
   });
@@ -4378,8 +4381,11 @@ if (!gotTheLock) {
     try {
       const { PluginManager } = await import('./libs/pluginManager');
       const manager = new PluginManager(getCoworkStore());
-      return manager.detectPluginsFromOpenClaw();
+      const result = manager.detectPluginsFromOpenClaw();
+      console.log('[plugins:detect] result:', JSON.stringify(result));
+      return result;
     } catch (error) {
+      console.error('[plugins:detect] error:', error);
       return { plugins: [], error: error instanceof Error ? error.message : 'Failed to detect plugins' };
     }
   });
