@@ -39,18 +39,16 @@ export const resolveMediaGenerationGate = (input: {
   action: string;
   tool: string;
   selection?: MediaSelectionState;
-  explicitModel?: string;
 }): MediaGenerationGateResult => {
   if (input.action !== MediaGenerationAction.Generate) {
     return { allowed: true };
   }
 
-  const hasExplicitModel = Boolean(input.explicitModel?.trim());
-  if ((!input.selection || input.selection.mode === MediaSelectionMode.None) && !hasExplicitModel) {
+  if (!input.selection || input.selection.mode === MediaSelectionMode.None) {
     return {
       allowed: false,
       reason: MediaGenerationGateReason.MediaNotEnabled,
-      message: 'Media generation is not enabled for this turn. The user has not selected a media model.',
+      message: 'Tool unavailable: This media generation tool is not available in this session. No media generation model has been selected by the user. Do not retry.',
     };
   }
 

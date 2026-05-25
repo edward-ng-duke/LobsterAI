@@ -1085,8 +1085,24 @@ const toToolInputRecord = (value: unknown): Record<string, unknown> => {
   return { value };
 };
 
-const buildMediaGenerationTurnInstruction = (selection?: CoworkMediaSelection): string => {
-  if (!selection || selection.mode === 'none') return '';
+const buildMediaGenerationTurnInstruction = (selection?: CoworkMediaSelection, hasMediaSkillActive?: boolean): string => {
+  if (!selection || selection.mode === 'none') {
+    if (hasMediaSkillActive) {
+      return [
+        '[LobsterAI media generation tools — NOT AVAILABLE]',
+        'The lobsterai_image_generate and lobsterai_video_generate tools are NOT available for this turn.',
+        'Do NOT call lobsterai_image_generate or lobsterai_video_generate.',
+        'However, a media generation skill (e.g. seedream, seedance) is provided in the system prompt. You may use it to fulfill image or video generation requests.',
+      ].join('\n');
+    }
+    return [
+      '[LobsterAI media generation tools — NOT AVAILABLE]',
+      'The lobsterai_image_generate and lobsterai_video_generate tools are NOT available for this turn.',
+      'The user has not selected a media generation model.',
+      'Do NOT call lobsterai_image_generate or lobsterai_video_generate.',
+      'If the user asks to generate images or videos, inform them to select a media model first via the media model picker (the palette icon in the input bar).',
+    ].join('\n');
+  }
 
   const lines = [
     '[LobsterAI media generation turn instruction]',
@@ -2459,9 +2475,11 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       throw error;
     }
 
+    const systemPromptText = options.systemPrompt ?? session.systemPrompt ?? '';
+    const hasMediaSkillActive = /\bseedream\b|\bseedance\b/i.test(systemPromptText);
     const outboundSystemPrompt = [
-      options.systemPrompt ?? session.systemPrompt,
-      buildMediaGenerationTurnInstruction(options.mediaSelection),
+      systemPromptText,
+      buildMediaGenerationTurnInstruction(options.mediaSelection, hasMediaSkillActive),
     ].filter(p => p?.trim()).join('\n\n');
 
     const outboundMessage = await this.buildOutboundPrompt(

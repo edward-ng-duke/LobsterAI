@@ -2841,7 +2841,7 @@ if (!gotTheLock) {
 
     // Tool gating: for generate action, check if media selection allows this tool
     if (action === 'generate') {
-      const gate = resolveMediaGenerationGate({ action, tool, selection, explicitModel });
+      const gate = resolveMediaGenerationGate({ action, tool, selection });
       if (gate.allowed === false) {
         if (gate.reason === MediaGenerationGateReason.MediaNotEnabled) {
           console.warn('[MediaGeneration] blocked generate request because no media model was selected for this turn.');

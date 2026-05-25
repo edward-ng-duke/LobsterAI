@@ -3,9 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
-import mediaGenIconLight from '../icons/MediaGenIcon-light.svg';
-import mediaGenIconDark from '../icons/MediaGenIcon-dark.svg';
 import mediaGenAnimation from '../icons/MediaGenIcon.json';
+import MagicIcon from '../icons/MagicIcon';
 import { getProviderIcon } from '../../providers/uiRegistry';
 import { authService } from '../../services/auth';
 import { i18nService } from '../../services/i18n';
@@ -53,6 +52,9 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
   const mediaModels = useSelector((state: RootState) => state.cowork.mediaModels);
   const selection = useSelector((state: RootState) => state.cowork.mediaSelection[draftKey]);
 
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
   const fetchModels = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -72,7 +74,8 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
       }));
       const imageModels = (imageResult.models || []) as MediaModel[];
       const videoModels = (videoResult.models || []) as MediaModel[];
-      if (!selection || selection.mode === 'none') {
+      const currentSelection = selectionRef.current;
+      if (!currentSelection || currentSelection.mode === 'none') {
         const saved = await localStore.getItem<SavedMediaSelection>(MEDIA_SELECTION_KV_KEY);
         const imageEntry = saved?.image;
         const videoEntry = saved?.video;
@@ -101,10 +104,6 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
             selection: { mode: 'video', modelId: videoEntry!.modelId, modelName: videoEntry!.modelName },
           }));
           setActiveTab('video');
-        } else if (imageModels.length > 0) {
-          const fallback = { modelId: imageModels[0].modelId, modelName: imageModels[0].displayName };
-          dispatch(setMediaSelection({ draftKey, selection: { mode: 'image', ...fallback } }));
-          localStore.setItem(MEDIA_SELECTION_KV_KEY, { ...saved, image: fallback });
         }
       }
     } catch (err) {
@@ -112,7 +111,7 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
     } finally {
       setIsLoading(false);
     }
-  }, [dispatch, draftKey, selection]);
+  }, [dispatch, draftKey]);
 
   useEffect(() => {
     console.log('[MediaModelPicker] useEffect check:', {
@@ -171,7 +170,8 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
       }
     })();
     return () => { cancelled = true; };
-  }, [draftKey, dispatch, selection]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey, dispatch]);
 
   const handleSelect = async (mode: MediaGenerationMode, model?: MediaModel) => {
     const saved = await localStore.getItem<SavedMediaSelection>(MEDIA_SELECTION_KV_KEY) || {};
@@ -232,10 +232,7 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
   const isMediaActive = selection != null && selection.mode !== 'none';
 
   const triggerIcon = (
-    <>
-      <img src={mediaGenIconLight} alt="" className="h-7 w-7 dark:hidden" style={{ opacity: isMediaActive ? 1 : 0.5 }} />
-      <img src={mediaGenIconDark} alt="" className="h-7 w-7 hidden dark:block" style={{ opacity: isMediaActive ? 1 : 0.5 }} />
-    </>
+    <MagicIcon className="h-5 w-5" style={{ opacity: isMediaActive ? 1 : 0.5 }} />
   );
 
   const renderPromptPanel = (title: string, desc: string, btnLabel: string, onBtn: () => void, secondaryLabel?: string, onSecondary?: () => void) => (
@@ -290,35 +287,8 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
       );
     }
 
-  const handleTabSwitch = async (tab: 'image' | 'video') => {
+  const handleTabSwitch = (tab: 'image' | 'video') => {
     setActiveTab(tab);
-    const saved = await localStore.getItem<SavedMediaSelection>(MEDIA_SELECTION_KV_KEY);
-    const hasImage = !!saved?.image;
-    const hasVideo = !!saved?.video;
-
-    if (hasImage && hasVideo) {
-      dispatch(setMediaSelection({
-        draftKey,
-        selection: {
-          mode: 'auto',
-          modelId: saved![tab]?.modelId,
-          modelName: saved![tab]?.modelName,
-          imageModelId: saved!.image!.modelId,
-          videoModelId: saved!.video!.modelId,
-        },
-      }));
-    } else {
-      const entry = saved?.[tab];
-      const models = tab === 'image' ? mediaModels.image : mediaModels.video;
-      if (entry && models.some(m => m.modelId === entry.modelId)) {
-        dispatch(setMediaSelection({
-          draftKey,
-          selection: { mode: tab, modelId: entry.modelId, modelName: entry.modelName },
-        }));
-      } else {
-        dispatch(setMediaSelection({ draftKey, selection: { mode: 'none' } }));
-      }
-    }
   };
 
     return (
@@ -375,21 +345,13 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
                   key={model.modelId}
                   type="button"
                   onClick={() => handleSelect(activeTab, model)}
-                  className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-background/80`}
+                  className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-background/80 ${isSelected ? 'dark:bg-claude-darkSurfaceHover/50 bg-claude-surfaceHover/50' : ''}`}
                 >
                   <span className="shrink-0 h-4 w-4 [&_svg]:h-4 [&_svg]:w-4">{resolveMediaModelIcon(model)}</span>
                   <span className="min-w-0 truncate font-medium">{model.displayName}</span>
-                  <span className="flex items-center gap-1.5 ml-auto shrink-0">
-                    <span className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${
-                      isSelected
-                        ? 'border-primary bg-primary'
-                        : 'border-secondary/40'
-                    }`}>
-                      {isSelected && (
-                        <CheckIcon className="h-2.5 w-2.5 text-white" strokeWidth={3} />
-                      )}
-                    </span>
-                  </span>
+                  {isSelected && (
+                    <CheckIcon className="h-4 w-4 shrink-0 text-emerald-500 ml-auto" />
+                  )}
                 </button>
               );
             })
@@ -406,7 +368,7 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+        className={`flex h-[34px] w-[34px] items-center justify-center rounded-lg transition-colors ${
           selection && selection.mode !== 'none'
             ? 'text-foreground hover:bg-surface-raised'
             : 'text-secondary hover:bg-surface-raised hover:text-foreground'
@@ -418,7 +380,7 @@ const MediaModelPicker: React.FC<MediaModelPickerProps> = ({ draftKey, disabled 
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute bottom-full right-0 z-50 mb-1 w-60 rounded-xl border border-border bg-surface shadow-popover overflow-hidden"
+          className="absolute bottom-full left-0 z-50 mb-1 w-60 rounded-xl border border-border bg-surface shadow-popover overflow-hidden"
         >
           {renderDropdownContent()}
         </div>

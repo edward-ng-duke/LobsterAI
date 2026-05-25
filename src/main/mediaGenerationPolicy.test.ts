@@ -14,15 +14,26 @@ test('media generation gate blocks generate without selection or explicit model'
   })).toEqual({
     allowed: false,
     reason: MediaGenerationGateReason.MediaNotEnabled,
-    message: 'Media generation is not enabled for this turn. The user has not selected a media model.',
+    message: 'Tool unavailable: This media generation tool is not available in this session. No media generation model has been selected by the user. Do not retry.',
   });
 });
 
-test('media generation gate allows explicit model without UI selection', () => {
+test('media generation gate blocks generate with explicit model but no UI selection', () => {
   expect(resolveMediaGenerationGate({
     action: 'generate',
     tool: MediaGenerationTool.Image,
-    explicitModel: 'doubao-seedream-5-0-260128',
+  })).toEqual({
+    allowed: false,
+    reason: MediaGenerationGateReason.MediaNotEnabled,
+    message: 'Tool unavailable: This media generation tool is not available in this session. No media generation model has been selected by the user. Do not retry.',
+  });
+});
+
+test('media generation gate allows generate when UI selection is present', () => {
+  expect(resolveMediaGenerationGate({
+    action: 'generate',
+    tool: MediaGenerationTool.Image,
+    selection: { mode: MediaSelectionMode.Image, modelId: 'doubao-seedream-5-0-260128' },
   })).toEqual({ allowed: true });
 });
 

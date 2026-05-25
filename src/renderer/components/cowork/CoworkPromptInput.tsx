@@ -1347,10 +1347,10 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-1">
                   <div className="flex min-w-0 items-center gap-2">
                     {largeInputActions}
+                    <MediaModelPicker draftKey={draftKey} disabled={disabled} />
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {contextUsageControl}
-                    <MediaModelPicker draftKey={draftKey} disabled={disabled} />
                     {largeModelSelector}
                     {largeSendButton}
                   </div>
@@ -1504,8 +1504,8 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                       )}
                     </>
                   )}
-                  <MediaModelPicker draftKey={draftKey} disabled={disabled} />
                   {largeInputActions}
+                  <MediaModelPicker draftKey={draftKey} disabled={disabled} />
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {contextUsageControl}
