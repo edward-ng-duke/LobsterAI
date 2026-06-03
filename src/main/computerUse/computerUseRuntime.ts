@@ -1,0 +1,272 @@
+import crypto from 'crypto';
+import { app, session } from 'electron';
+import extractZip from 'extract-zip';
+import fs from 'fs';
+import path from 'path';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+
+export const ComputerUseRuntime = {
+  Id: 'computer-use',
+  Version: '26.527.31326',
+  UpstreamRuntimeVersion: '0.4.5-26568471749-e86e78c35d86',
+  Platform: 'win32',
+  Arch: 'x64',
+  ArchiveName: 'lobsterai-computer-use-runtime-win-x64-26.527.31326.zip',
+  DownloadUrl: 'https://ydhardwarebusiness.nosdn.127.net/00dbd5fcee182939139f6630d07e2c8a.zip',
+  Sha256: 'ae31eec1f350f6fa22690c115cf0ed42759c697c16c21013bdde0602ea6d391b',
+  SizeBytes: 804417,
+} as const;
+export type ComputerUseRuntime =
+  typeof ComputerUseRuntime[keyof typeof ComputerUseRuntime];
+
+export const ComputerUseRuntimeStatus = {
+  Unsupported: 'unsupported',
+  NotInstalled: 'not_installed',
+  Installed: 'installed',
+  Invalid: 'invalid',
+} as const;
+export type ComputerUseRuntimeStatus =
+  typeof ComputerUseRuntimeStatus[keyof typeof ComputerUseRuntimeStatus];
+
+export interface ComputerUseRuntimePaths {
+  helperExePath: string;
+  runtimePackageRoot: string;
+  rootDir: string;
+}
+
+export interface ComputerUseRuntimeInspection {
+  missing: string[];
+  paths: ComputerUseRuntimePaths | null;
+  status: ComputerUseRuntimeStatus;
+}
+
+export interface ComputerUseRuntimeDownloadProgress {
+  received: number;
+  total: number | undefined;
+  percent: number | undefined;
+}
+
+const RUNTIME_PLATFORM_DIR = 'win-x64';
+const RUNTIME_STATE_FILE = 'runtime.json';
+const RUNTIME_PACKAGE_RELATIVE_PATH = path.join('node_modules', '@oai', 'sky');
+const HELPER_RELATIVE_PATH = path.join(
+  RUNTIME_PACKAGE_RELATIVE_PATH,
+  'bin',
+  'windows',
+  'lobster-computer-use.exe',
+);
+const WINDOWS_CLIENT_RELATIVE_PATH = path.join(
+  RUNTIME_PACKAGE_RELATIVE_PATH,
+  'dist',
+  'project',
+  'cua',
+  'sky_js',
+  'src',
+  'targets',
+  'windows',
+  'internal',
+  'computer_use_client.js',
+);
+
+function isFile(filePath: string): boolean {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isDirectory(filePath: string): boolean {
+  try {
+    return fs.statSync(filePath).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isSupportedPlatform(): boolean {
+  return process.platform === ComputerUseRuntime.Platform
+    && process.arch === ComputerUseRuntime.Arch;
+}
+
+export function getComputerUseRuntimeBaseDir(): string {
+  return path.join(app.getPath('userData'), 'runtimes', ComputerUseRuntime.Id);
+}
+
+export function getComputerUseRuntimeRoot(): string {
+  return path.join(
+    getComputerUseRuntimeBaseDir(),
+    RUNTIME_PLATFORM_DIR,
+    ComputerUseRuntime.Version,
+  );
+}
+
+function readRuntimeManifest(rootDir: string): Record<string, unknown> | null {
+  const manifestPath = path.join(rootDir, RUNTIME_STATE_FILE);
+  if (!isFile(manifestPath)) {
+    return null;
+  }
+  try {
+    const content = fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, '');
+    return JSON.parse(content) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function manifestMatches(manifest: Record<string, unknown> | null): boolean {
+  return manifest?.id === ComputerUseRuntime.Id
+    && manifest.version === ComputerUseRuntime.Version
+    && manifest.platform === ComputerUseRuntime.Platform
+    && manifest.arch === ComputerUseRuntime.Arch;
+}
+
+export function inspectComputerUseRuntime(
+  rootDir = getComputerUseRuntimeRoot(),
+): ComputerUseRuntimeInspection {
+  if (!isSupportedPlatform()) {
+    return {
+      missing: [],
+      paths: null,
+      status: ComputerUseRuntimeStatus.Unsupported,
+    };
+  }
+
+  if (!isDirectory(rootDir)) {
+    return {
+      missing: [rootDir],
+      paths: null,
+      status: ComputerUseRuntimeStatus.NotInstalled,
+    };
+  }
+
+  const missing: string[] = [];
+  const manifest = readRuntimeManifest(rootDir);
+  if (!manifestMatches(manifest)) {
+    missing.push(RUNTIME_STATE_FILE);
+  }
+
+  const runtimePackageRoot = path.join(rootDir, RUNTIME_PACKAGE_RELATIVE_PATH);
+  const helperExePath = path.join(rootDir, HELPER_RELATIVE_PATH);
+  const windowsClientPath = path.join(rootDir, WINDOWS_CLIENT_RELATIVE_PATH);
+
+  if (!isDirectory(runtimePackageRoot)) {
+    missing.push(RUNTIME_PACKAGE_RELATIVE_PATH);
+  }
+  if (!isFile(helperExePath)) {
+    missing.push(HELPER_RELATIVE_PATH);
+  }
+  if (!isFile(windowsClientPath)) {
+    missing.push(WINDOWS_CLIENT_RELATIVE_PATH);
+  }
+
+  if (missing.length > 0) {
+    return {
+      missing,
+      paths: null,
+      status: ComputerUseRuntimeStatus.Invalid,
+    };
+  }
+
+  return {
+    missing: [],
+    paths: { helperExePath, rootDir, runtimePackageRoot },
+    status: ComputerUseRuntimeStatus.Installed,
+  };
+}
+
+export function resolveInstalledComputerUseRuntimePaths(): ComputerUseRuntimePaths | null {
+  return inspectComputerUseRuntime().paths;
+}
+
+async function sha256File(filePath: string): Promise<string> {
+  const hash = crypto.createHash('sha256');
+  const stream = fs.createReadStream(filePath);
+  for await (const chunk of stream) {
+    hash.update(chunk);
+  }
+  return hash.digest('hex');
+}
+
+async function downloadRuntimeArchive(
+  archivePath: string,
+  onProgress?: (progress: ComputerUseRuntimeDownloadProgress) => void,
+): Promise<void> {
+  const response = await session.defaultSession.fetch(ComputerUseRuntime.DownloadUrl);
+  if (!response.ok) {
+    throw new Error(`Computer Use runtime download failed with HTTP ${response.status}`);
+  }
+  if (!response.body) {
+    throw new Error('Computer Use runtime download returned an empty body');
+  }
+
+  const totalHeader = response.headers.get('content-length');
+  const total = totalHeader ? Number(totalHeader) : undefined;
+  let received = 0;
+  onProgress?.({ received, total, percent: total ? 0 : undefined });
+
+  await fs.promises.mkdir(path.dirname(archivePath), { recursive: true });
+  const nodeStream = Readable.fromWeb(response.body as any);
+  nodeStream.on('data', (chunk: Buffer) => {
+    received += chunk.length;
+    onProgress?.({
+      received,
+      total: total && Number.isFinite(total) ? total : undefined,
+      percent: total && Number.isFinite(total) ? received / total : undefined,
+    });
+  });
+  await pipeline(nodeStream, fs.createWriteStream(archivePath));
+}
+
+export async function installComputerUseRuntime(
+  onProgress?: (progress: ComputerUseRuntimeDownloadProgress) => void,
+): Promise<{ success: boolean; paths?: ComputerUseRuntimePaths; error?: string }> {
+  if (!isSupportedPlatform()) {
+    return { success: false, error: 'Computer Use runtime is only available on Windows x64.' };
+  }
+
+  const current = inspectComputerUseRuntime();
+  if (current.paths) {
+    return { success: true, paths: current.paths };
+  }
+
+  const baseDir = getComputerUseRuntimeBaseDir();
+  const archivePath = path.join(baseDir, 'downloads', ComputerUseRuntime.ArchiveName);
+  const targetRoot = getComputerUseRuntimeRoot();
+  const tempRoot = `${targetRoot}.tmp-${Date.now()}`;
+
+  try {
+    await downloadRuntimeArchive(archivePath, onProgress);
+    const actualSha256 = await sha256File(archivePath);
+    if (actualSha256 !== ComputerUseRuntime.Sha256) {
+      throw new Error('Computer Use runtime checksum verification failed');
+    }
+
+    await fs.promises.rm(tempRoot, { recursive: true, force: true });
+    await fs.promises.mkdir(tempRoot, { recursive: true });
+    await extractZip(archivePath, { dir: tempRoot });
+
+    const extracted = inspectComputerUseRuntime(tempRoot);
+    if (!extracted.paths) {
+      throw new Error(`Computer Use runtime archive is invalid: ${extracted.missing.join(', ')}`);
+    }
+
+    await fs.promises.rm(targetRoot, { recursive: true, force: true });
+    await fs.promises.mkdir(path.dirname(targetRoot), { recursive: true });
+    await fs.promises.rename(tempRoot, targetRoot);
+
+    const installed = inspectComputerUseRuntime(targetRoot);
+    if (!installed.paths) {
+      throw new Error(`Computer Use runtime install is invalid: ${installed.missing.join(', ')}`);
+    }
+
+    console.log('[ComputerUseRuntime] runtime installed successfully');
+    return { success: true, paths: installed.paths };
+  } catch (error) {
+    await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[ComputerUseRuntime] runtime installation failed:', error);
+    return { success: false, error: message };
+  }
+}

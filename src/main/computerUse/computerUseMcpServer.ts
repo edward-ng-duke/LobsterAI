@@ -4,6 +4,10 @@ import path from 'path';
 
 import type { ResolvedMcpServer } from '../libs/openclawConfigSync';
 import { findSystemNodePath } from '../libs/resolveStdioCommand';
+import {
+  type ComputerUseRuntimePaths,
+  inspectComputerUseRuntime,
+} from './computerUseRuntime';
 
 export const ComputerUseMcpServerName = {
   BuiltIn: 'computer-use',
@@ -15,8 +19,8 @@ export const ComputerUseMcpEnv = {
   AskUserUrl: 'LOBSTER_COMPUTER_USE_ASKUSER_URL',
   BridgeSecret: 'LOBSTER_MCP_BRIDGE_SECRET',
   ExePath: 'LOBSTER_COMPUTER_USE_EXE',
+  RuntimePackageRoot: 'LOBSTER_COMPUTER_USE_RUNTIME_PACKAGE_ROOT',
   SdkRoot: 'LOBSTER_COMPUTER_USE_MCP_SDK_ROOT',
-  SkyRoot: 'LOBSTER_COMPUTER_USE_SKY_ROOT',
   ZodRoot: 'LOBSTER_COMPUTER_USE_ZOD_ROOT',
 } as const;
 export type ComputerUseMcpEnv =
@@ -28,20 +32,7 @@ type ResolveComputerUseMcpServerOptions = {
   electronNodePath: string;
 };
 
-type ComputerUseRuntimePaths = {
-  helperExePath: string;
-  skyRoot: string;
-};
-
 const SERVER_SCRIPT_NAME = 'computer-use-mcp-server.mjs';
-
-function isDirectory(filePath: string): boolean {
-  try {
-    return fs.statSync(filePath).isDirectory();
-  } catch {
-    return false;
-  }
-}
 
 function isFile(filePath: string): boolean {
   try {
@@ -77,57 +68,13 @@ export function resolvePackageRoot(packageName: string): string | null {
   }
 }
 
-function listComputerUsePluginRoots(): string[] {
-  const overrideSkyRoot = process.env[ComputerUseMcpEnv.SkyRoot]?.trim();
-  const overrideExePath = process.env[ComputerUseMcpEnv.ExePath]?.trim();
-  if (overrideSkyRoot || overrideExePath) {
-    const root = overrideSkyRoot
-      ? path.resolve(overrideSkyRoot, '..', '..')
-      : path.resolve(overrideExePath!, '..', '..', '..');
-    return [root];
-  }
-
-  const baseDir = path.join(
-    app.getPath('home'),
-    '.codex',
-    'plugins',
-    'cache',
-    'openai-bundled',
-    'computer-use',
-  );
-  if (!isDirectory(baseDir)) {
-    return [];
-  }
-
-  return fs.readdirSync(baseDir)
-    .map((entry) => path.join(baseDir, entry))
-    .filter(isDirectory)
-    .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
-}
-
 export function resolveComputerUseRuntimePaths(): ComputerUseRuntimePaths | null {
   if (process.platform !== 'win32') {
     return null;
   }
 
-  const overrideSkyRoot = process.env[ComputerUseMcpEnv.SkyRoot]?.trim();
-  const overrideExePath = process.env[ComputerUseMcpEnv.ExePath]?.trim();
-  if (overrideSkyRoot && overrideExePath) {
-    if (isDirectory(overrideSkyRoot) && isFile(overrideExePath)) {
-      return { helperExePath: overrideExePath, skyRoot: overrideSkyRoot };
-    }
-    return null;
-  }
-
-  for (const pluginRoot of listComputerUsePluginRoots()) {
-    const skyRoot = overrideSkyRoot || path.join(pluginRoot, 'node_modules', '@oai', 'sky');
-    const helperExePath = overrideExePath || path.join(skyRoot, 'bin', 'windows', 'codex-computer-use.exe');
-    if (isDirectory(skyRoot) && isFile(helperExePath)) {
-      return { helperExePath, skyRoot };
-    }
-  }
-
-  return null;
+  const inspection = inspectComputerUseRuntime();
+  return inspection.paths;
 }
 
 export function ensureComputerUseMcpServerScript(): string {
@@ -154,7 +101,13 @@ export function resolveComputerUseMcpServer(
 
   const runtimePaths = resolveComputerUseRuntimePaths();
   if (!runtimePaths) {
-    console.warn('[ComputerUseMCP] skipped built-in server because codex-computer-use.exe was not found');
+    const inspection = inspectComputerUseRuntime();
+    const missing = inspection.missing.length > 0
+      ? `; missing=${inspection.missing.join(', ')}`
+      : '';
+    console.warn(
+      `[ComputerUseMCP] skipped built-in server because Computer Use runtime is not installed (status=${inspection.status}, userData=${app.getPath('userData')}${missing})`,
+    );
     return null;
   }
 
@@ -171,8 +124,8 @@ export function resolveComputerUseMcpServer(
     [ComputerUseMcpEnv.AskUserUrl]: options.askUserCallbackUrl,
     [ComputerUseMcpEnv.BridgeSecret]: options.bridgeSecret,
     [ComputerUseMcpEnv.ExePath]: runtimePaths.helperExePath,
+    [ComputerUseMcpEnv.RuntimePackageRoot]: runtimePaths.runtimePackageRoot,
     [ComputerUseMcpEnv.SdkRoot]: sdkRoot,
-    [ComputerUseMcpEnv.SkyRoot]: runtimePaths.skyRoot,
     [ComputerUseMcpEnv.ZodRoot]: zodRoot,
   };
   if (!systemNodePath) {
@@ -208,7 +161,7 @@ function moduleUrl(...parts) {
 
 const sdkRoot = requireEnv('LOBSTER_COMPUTER_USE_MCP_SDK_ROOT');
 const zodRoot = requireEnv('LOBSTER_COMPUTER_USE_ZOD_ROOT');
-const skyRoot = requireEnv('LOBSTER_COMPUTER_USE_SKY_ROOT');
+const runtimePackageRoot = requireEnv('LOBSTER_COMPUTER_USE_RUNTIME_PACKAGE_ROOT');
 const helperExePath = requireEnv('LOBSTER_COMPUTER_USE_EXE');
 const askUserUrl = requireEnv('LOBSTER_COMPUTER_USE_ASKUSER_URL');
 const bridgeSecret = requireEnv('LOBSTER_MCP_BRIDGE_SECRET');
@@ -217,7 +170,7 @@ const { McpServer } = await import(moduleUrl(sdkRoot, 'dist', 'esm', 'server', '
 const { StdioServerTransport } = await import(moduleUrl(sdkRoot, 'dist', 'esm', 'server', 'stdio.js'));
 const { z } = await import(moduleUrl(zodRoot, 'index.js'));
 const { WindowsComputerUseClient } = await import(
-  moduleUrl(skyRoot, 'dist', 'project', 'cua', 'sky_js', 'src', 'targets', 'windows', 'internal', 'computer_use_client.js')
+  moduleUrl(runtimePackageRoot, 'dist', 'project', 'cua', 'sky_js', 'src', 'targets', 'windows', 'internal', 'computer_use_client.js')
 );
 
 const APPROVED_APP_META_KEY = 'x-oai-cua-approved-app';
