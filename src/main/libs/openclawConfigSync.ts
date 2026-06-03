@@ -43,6 +43,7 @@ import {
   resolveQualifiedAgentModelRef,
 } from './openclawAgentModels';
 import { parseChannelSessionKey } from './openclawChannelSessionSync';
+import { OpenClawConfigImpact } from './openclawConfigImpact';
 import type { OpenClawEngineManager } from './openclawEngineManager';
 import { getMainAgentWorkspacePath, readBootstrapFile } from './openclawMemoryFile';
 
@@ -1054,6 +1055,8 @@ export type OpenClawConfigSyncResult = {
   error?: string;
   agentsMdWarning?: string;
   bindingsChanged?: boolean;
+  changedTopLevelKeys?: string[];
+  restartImpact?: OpenClawConfigImpact;
 };
 
 const buildStreamingModeConfig = (
@@ -2242,6 +2245,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       }
     })();
 
+    let changedTopLevelKeys: string[] = [];
     if (configChanged) {
       // Diagnostic: diff gateway and plugins sections to identify what triggers OpenClaw restart
       try {
@@ -2269,8 +2273,11 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         }
         // Check which top-level keys actually changed
         const allKeys = new Set([...Object.keys(currentObj), ...Object.keys(nextObj)]);
-        const changedKeys = [...allKeys].filter(k => JSON.stringify(currentObj[k]) !== JSON.stringify(nextObj[k]));
-        console.log(`${gwDiagTs()} top-level changed keys:`, changedKeys.join(',') || '(none)');
+        changedTopLevelKeys = [...allKeys].filter(k => {
+          if (k === 'meta') return false;
+          return JSON.stringify(currentObj[k]) !== JSON.stringify(nextObj[k]);
+        });
+        console.log(`${gwDiagTs()} top-level changed keys:`, changedTopLevelKeys.join(',') || '(none)');
       } catch { /* ignore parse errors in diag */ }
       try {
         ensureDir(path.dirname(configPath));
@@ -2309,6 +2316,8 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       changed: configChanged || sessionStoreChanged,
       configPath,
       ...(bindingsChanged ? { bindingsChanged } : {}),
+      ...(changedTopLevelKeys.length > 0 ? { changedTopLevelKeys } : {}),
+      ...(changedTopLevelKeys.includes('mcp') ? { restartImpact: OpenClawConfigImpact.Restart } : {}),
       ...(agentsMdWarning ? { agentsMdWarning } : {}),
     };
   }
