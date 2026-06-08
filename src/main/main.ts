@@ -82,6 +82,7 @@ import {
   LocalWebServicesIpc,
 } from '../shared/localWebServices/constants';
 import { canonicalizeMediaModelId, mediaModelDisplayName } from '../shared/mediaModelAliases';
+import { normalizeNotificationSettings, type NotificationSettings } from '../shared/notifications/constants';
 import {
   OpenClawEngineIpc,
   OpenClawGatewayRepairErrorCode,
@@ -250,6 +251,7 @@ import {
   restoreOriginalProxyEnv,
   setSystemProxyEnabled,
 } from './libs/systemProxy';
+import { TaskCompletionNotifier } from './libs/taskCompletionNotifier';
 import { getLogFilePath, getRecentMainLogEntries, initLogger } from './logger';
 import { type AskUserResponse, McpRuntime } from './mcp/mcpRuntime';
 import {
@@ -277,7 +279,7 @@ import { SqliteStore } from './sqliteStore';
 import { StartupProfiler } from './startupProfiler';
 import { SubagentMessageStore } from './subagentMessageStore';
 import { SubagentRunStore } from './subagentRunStore';
-import { createTray, destroyTray, updateTrayMenu } from './trayManager';
+import { createTray, destroyTray, updateTrayMenu, updateTrayReminder } from './trayManager';
 import {
   AppWindowStoreKey,
   MIN_APP_WINDOW_HEIGHT,
@@ -2175,6 +2177,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   runtime.on('complete', (sessionId: string, claudeSessionId: string | null) => {
     mediaSelectionBySession.delete(sessionId);
     mediaReferencesBySession.delete(sessionId);
+    getTaskCompletionNotifier().handleComplete(sessionId);
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2249,6 +2252,27 @@ const getCoworkEngineRouter = () => {
     });
   }
   return coworkEngineRouter;
+};
+
+const getTaskCompletionNotifier = (): TaskCompletionNotifier => {
+  if (!taskCompletionNotifier) {
+    taskCompletionNotifier = new TaskCompletionNotifier({
+      getWindow: () => mainWindow,
+      getNotificationSettings: () =>
+        getStore().get<AppConfigSettings>('app_config')?.notificationSettings,
+      getSessionTitle: (sessionId: string) =>
+        getCoworkStore().getSession(sessionId, 0)?.title?.trim() || null,
+      focusMainWindow: focusMainWindowForReason,
+      openSession: (sessionId: string) => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        mainWindow.webContents.send(CoworkIpcChannel.OpenSessionFromNotification, { sessionId });
+      },
+      updateTrayReminder: (count: number, onClick?: () => void) => {
+        updateTrayReminder(() => mainWindow, { count, onClick });
+      },
+    });
+  }
+  return taskCompletionNotifier;
 };
 
 const getSkillManager = () => {
@@ -2586,6 +2610,22 @@ const getAppIconPath = (): string | undefined => {
 
 // 保存对主窗口的引用
 let mainWindow: BrowserWindow | null = null;
+let taskCompletionNotifier: TaskCompletionNotifier | null = null;
+
+const focusMainWindowForReason = (reason: string): void => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    if (!mainWindow.isFocused()) mainWindow.focus();
+    if (process.platform === 'darwin') {
+      app.focus({ steal: true });
+    }
+    console.log(`[Main] focused main window after ${reason}`);
+  } catch (error) {
+    console.warn(`[Main] failed to focus main window after ${reason}:`, error);
+  }
+};
 
 let isQuitting = false;
 
@@ -2674,6 +2714,7 @@ type AppConfigSettings = {
   language?: string;
   useSystemProxy?: boolean;
   sqliteAutoBackupEnabled?: boolean;
+  notificationSettings?: Partial<NotificationSettings>;
   browserWebAccess?: Partial<BrowserWebAccessConfig>;
 };
 
@@ -2917,6 +2958,15 @@ if (!gotTheLock) {
     getStore().set(key, value);
     if (key === 'app_config') {
       const nextAppConfig = value as AppConfigSettings | undefined;
+      const previousNotificationsEnabled = normalizeNotificationSettings(
+        previousAppConfig?.notificationSettings,
+      ).taskCompletionNotificationsEnabled;
+      const nextNotificationsEnabled = normalizeNotificationSettings(
+        nextAppConfig?.notificationSettings,
+      ).taskCompletionNotificationsEnabled;
+      if (previousNotificationsEnabled && !nextNotificationsEnabled) {
+        getTaskCompletionNotifier().clearAll('task completion notifications disabled');
+      }
       const browserWebAccessChanged = hasBrowserWebAccessConfigChanged(previousAppConfig, nextAppConfig);
       const systemProxyChanged = getUseSystemProxyFromConfig(previousAppConfig) !==
         getUseSystemProxyFromConfig(nextAppConfig);
@@ -5329,6 +5379,19 @@ if (!gotTheLock) {
     }
   });
 
+  ipcMain.handle(CoworkIpcChannel.MarkSessionViewed, async (_event, sessionId: string) => {
+    try {
+      getTaskCompletionNotifier().markSessionViewed(sessionId);
+      return { success: true };
+    } catch (error) {
+      console.warn(`[TaskCompletionNotifier] failed to mark session ${sessionId} viewed:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to mark session viewed',
+      };
+    }
+  });
+
   ipcMain.handle('cowork:session:delete', async (_event, sessionId: string) => {
     try {
       getCoworkEngineRouter().stopSession(sessionId);
@@ -5336,6 +5399,7 @@ if (!gotTheLock) {
       coworkStoreInstance.deleteSession(sessionId);
       mediaSelectionBySession.delete(sessionId);
       mediaReferencesBySession.delete(sessionId);
+      getTaskCompletionNotifier().handleSessionDeleted(sessionId);
       // Remove any pending media tasks for this session
       for (const [taskId, tracker] of pendingMediaTasks) {
         if (tracker.sessionId === sessionId) pendingMediaTasks.delete(taskId);
@@ -5377,6 +5441,7 @@ if (!gotTheLock) {
       coworkStoreInstance.deleteSessions(sessionIds);
       const router = getCoworkEngineRouter();
       for (const sessionId of sessionIds) {
+        getTaskCompletionNotifier().handleSessionDeleted(sessionId);
         try {
           getIMGatewayManager()?.getIMStore()?.deleteSessionMappingByCoworkSessionId(sessionId);
         } catch {

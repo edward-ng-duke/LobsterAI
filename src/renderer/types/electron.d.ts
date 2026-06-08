@@ -646,6 +646,9 @@ interface IElectronAPI {
     getSession: (
       sessionId: string,
     ) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
+    markSessionViewed: (
+      sessionId: string,
+    ) => Promise<{ success: boolean; error?: string }>;
     remoteManaged: (
       sessionId: string,
     ) => Promise<{ success: boolean; remoteManaged: boolean; error?: string }>;
@@ -752,6 +755,9 @@ interface IElectronAPI {
     }) => Promise<{ success: boolean; error?: string }>;
     getConfig: () => Promise<{ success: boolean; config?: CoworkConfig; error?: string }>;
     setConfig: (config: CoworkConfigUpdate) => Promise<{ success: boolean; error?: string }>;
+    onOpenSessionFromNotification: (
+      callback: (data: { sessionId: string }) => void,
+    ) => () => void;
     listMemoryEntries: (input: {
       query?: string;
       limit?: number;
