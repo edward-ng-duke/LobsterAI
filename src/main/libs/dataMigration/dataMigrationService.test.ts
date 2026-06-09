@@ -8,6 +8,7 @@ import { afterEach, expect, test } from 'vitest';
 import { DataMigrationRestoreStatus } from '../../../shared/dataMigration/constants';
 import { DB_FILENAME } from '../../appConstants';
 import {
+  assertDataMigrationSqliteSnapshotMatchesLiveSync,
   createMigrationArchiveSync,
   inspectMigrationArchiveSync,
   performDataMigrationRestoreSync,
@@ -73,6 +74,67 @@ const writeSqliteFixture = (dbPath: string, label: string): void => {
     db.prepare('INSERT INTO subagent_messages (id) VALUES (?)').run(`${label}-subagent-message`);
     db.prepare('INSERT INTO im_config (key) VALUES (?)').run(`${label}-im`);
     db.prepare('INSERT INTO im_session_mappings (im_conversation_id, platform) VALUES (?, ?)').run(`${label}-conversation`, 'telegram');
+  } finally {
+    db.close();
+  }
+};
+
+const writeMultiAgentSqliteFixture = (dbPath: string, label: string): void => {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  fs.rmSync(dbPath, { force: true });
+
+  const db = new Database(dbPath);
+  try {
+    db.exec(`
+      CREATE TABLE kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL);
+      CREATE TABLE cowork_sessions (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'idle',
+        agent_id TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE cowork_messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL);
+      CREATE TABLE cowork_config (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL);
+      CREATE TABLE agents (id TEXT PRIMARY KEY);
+      CREATE TABLE mcp_servers (id TEXT PRIMARY KEY);
+      CREATE TABLE mcp_launch_resolutions (server_id TEXT PRIMARY KEY);
+      CREATE TABLE user_plugins (plugin_id TEXT PRIMARY KEY);
+      CREATE TABLE user_memories (id TEXT PRIMARY KEY);
+      CREATE TABLE user_memory_sources (id TEXT PRIMARY KEY);
+      CREATE TABLE subagent_runs (id TEXT PRIMARY KEY);
+      CREATE TABLE subagent_messages (id TEXT PRIMARY KEY);
+      CREATE TABLE im_config (key TEXT PRIMARY KEY);
+      CREATE TABLE im_session_mappings (im_conversation_id TEXT NOT NULL, platform TEXT NOT NULL, PRIMARY KEY (im_conversation_id, platform));
+    `);
+
+    const now = Date.now();
+    const appConfig = {
+      providers: {
+        custom_0: {
+          enabled: true,
+          apiKey: `sk-${label}-custom`,
+          baseUrl: 'https://api.example.com/v1',
+          models: [{ id: `${label}-model`, name: `${label} Model` }],
+        },
+      },
+      api: {
+        key: `sk-${label}-custom`,
+        baseUrl: 'https://api.example.com/v1',
+      },
+    };
+    const insertKv = db.prepare('INSERT INTO kv (key, value, updated_at) VALUES (?, ?, ?)');
+    insertKv.run('app_config', JSON.stringify(appConfig), now);
+
+    const insertAgent = db.prepare('INSERT INTO agents (id) VALUES (?)');
+    const insertSession = db.prepare(
+      'INSERT INTO cowork_sessions (id, title, status, agent_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+    );
+    for (const agentId of ['main', 'writer', 'reviewer']) {
+      insertAgent.run(agentId);
+      insertSession.run(`${label}-${agentId}-session`, `${agentId} session`, 'completed', agentId, now, now);
+    }
   } finally {
     db.close();
   }
@@ -192,6 +254,18 @@ test('createMigrationArchive replaces the live sqlite database with the snapshot
   expect(readSqliteString(path.join(extractRoot, 'LobsterAI', DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
     .toContain('snapshot-refresh');
   expect(fs.existsSync(path.join(extractRoot, 'LobsterAI', `${DB_FILENAME}-wal`))).toBe(false);
+});
+
+test('assertDataMigrationSqliteSnapshotMatchesLiveSync rejects stale snapshots that lost agents and provider keys', () => {
+  const root = makeTempDir();
+  const liveDbPath = path.join(root, 'live.sqlite');
+  const staleSnapshotPath = path.join(root, 'snapshot.sqlite');
+
+  writeMultiAgentSqliteFixture(liveDbPath, 'live');
+  writeSqliteFixture(staleSnapshotPath, 'stale');
+
+  expect(() => assertDataMigrationSqliteSnapshotMatchesLiveSync(liveDbPath, staleSnapshotPath))
+    .toThrow(/Backup snapshot .*mismatch/);
 });
 
 test('createMigrationArchive rejects a source without a sqlite database', () => {
@@ -314,6 +388,40 @@ test('performDataMigrationRestoreSync restores backup data without a pending mar
     .toContain('source-model');
   expect(readSqliteCount(path.join(targetUserData, DB_FILENAME), 'subagent_runs')).toBe(1);
   expect(readSqliteCount(path.join(targetUserData, DB_FILENAME), 'user_memory_sources')).toBe(1);
+});
+
+test('performDataMigrationRestoreSync preserves multiple agents, their sessions, and custom provider api keys', () => {
+  const root = makeTempDir();
+  const sourceUserData = path.join(root, 'source', 'LobsterAI');
+  const targetUserData = path.join(root, 'target', 'LobsterAI');
+  const rollbackRoot = path.join(root, 'rollbacks');
+  const archivePath = path.join(root, 'source-backup.tar.gz');
+
+  writeMultiAgentSqliteFixture(path.join(sourceUserData, DB_FILENAME), 'source');
+  writeSqliteFixture(path.join(targetUserData, DB_FILENAME), 'target');
+
+  createMigrationArchiveSync({ userDataPath: sourceUserData, outputPath: archivePath });
+
+  const result = performDataMigrationRestoreSync({
+    userDataPath: targetUserData,
+    rollbackRootPath: rollbackRoot,
+    archivePath,
+    now: new Date('2026-06-08T01:02:03Z'),
+  });
+
+  const targetDbPath = path.join(targetUserData, DB_FILENAME);
+  const appConfig = JSON.parse(readSqliteString(targetDbPath, 'SELECT value FROM kv WHERE key = ?', ['app_config'])) as {
+    providers?: Record<string, { apiKey?: string }>;
+  };
+
+  expect(result?.status).toBe(DataMigrationRestoreStatus.Success);
+  expect(readSqliteCount(targetDbPath, 'agents')).toBe(3);
+  expect(readSqliteCount(targetDbPath, 'cowork_sessions')).toBe(3);
+  expect(readSqliteValue(
+    targetDbPath,
+    "SELECT COUNT(*) FROM cowork_sessions WHERE agent_id IN ('main', 'writer', 'reviewer')",
+  )).toBe(3);
+  expect(appConfig.providers?.custom_0?.apiKey).toBe('sk-source-custom');
 });
 
 test('performDataMigrationRestoreSync checkpoints archived WAL data into the restored sqlite database', () => {

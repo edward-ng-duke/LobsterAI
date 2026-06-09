@@ -168,6 +168,12 @@ interface SqliteMigrationSummary {
   quickCheck?: string;
   rowCounts?: Record<string, number>;
   kvKeys?: string[];
+  agentIds?: string[];
+  sessionCountsByAgentId?: Record<string, number>;
+  providerKeys?: string[];
+  enabledProviderKeys?: string[];
+  providerKeysWithApiKey?: string[];
+  customProviderKeys?: string[];
   error?: string;
 }
 
@@ -406,6 +412,93 @@ const tableExists = (db: Database.Database, tableName: string): boolean => {
   return Boolean(row);
 };
 
+const getTableColumns = (db: Database.Database, tableName: string): string[] => (
+  (db.pragma(`table_info(${JSON.stringify(tableName)})`) as Array<{ name: string }>)
+    .map(column => column.name)
+);
+
+const readAgentIds = (db: Database.Database): string[] => {
+  if (!tableExists(db, 'agents')) return [];
+  return (db.prepare('SELECT id FROM agents ORDER BY id').all() as Array<{ id: string }>)
+    .map(row => row.id)
+    .filter(id => id.trim().length > 0);
+};
+
+const readSessionCountsByAgentId = (db: Database.Database): Record<string, number> => {
+  if (!tableExists(db, 'cowork_sessions')) return {};
+  const columns = new Set(getTableColumns(db, 'cowork_sessions'));
+  const sql = columns.has('agent_id')
+    ? `
+      SELECT COALESCE(NULLIF(TRIM(agent_id), ''), 'main') as agent_id, COUNT(*) as count
+      FROM cowork_sessions
+      GROUP BY COALESCE(NULLIF(TRIM(agent_id), ''), 'main')
+      ORDER BY agent_id
+    `
+    : `
+      SELECT 'main' as agent_id, COUNT(*) as count
+      FROM cowork_sessions
+    `;
+  const rows = db.prepare(sql).all() as Array<{ agent_id: string; count: number }>;
+  return Object.fromEntries(rows.map(row => [row.agent_id, Number(row.count) || 0]));
+};
+
+const readAppConfigProviderSummary = (
+  db: Database.Database,
+): Pick<
+  SqliteMigrationSummary,
+  'providerKeys' | 'enabledProviderKeys' | 'providerKeysWithApiKey' | 'customProviderKeys'
+> => {
+  if (!tableExists(db, 'kv')) {
+    return {
+      providerKeys: [],
+      enabledProviderKeys: [],
+      providerKeysWithApiKey: [],
+      customProviderKeys: [],
+    };
+  }
+
+  const row = db.prepare('SELECT value FROM kv WHERE key = ?').get('app_config') as
+    | { value: string }
+    | undefined;
+  if (!row?.value) {
+    return {
+      providerKeys: [],
+      enabledProviderKeys: [],
+      providerKeysWithApiKey: [],
+      customProviderKeys: [],
+    };
+  }
+
+  try {
+    const config = JSON.parse(row.value) as {
+      providers?: Record<string, { enabled?: boolean; apiKey?: string }>;
+    };
+    const providers = config.providers && typeof config.providers === 'object'
+      ? config.providers
+      : {};
+    const providerKeys = Object.keys(providers).sort();
+    return {
+      providerKeys,
+      enabledProviderKeys: providerKeys
+        .filter(key => providers[key]?.enabled === true)
+        .sort(),
+      providerKeysWithApiKey: providerKeys
+        .filter(key => typeof providers[key]?.apiKey === 'string' && providers[key]!.apiKey!.trim().length > 0)
+        .sort(),
+      customProviderKeys: providerKeys
+        .filter(key => key.startsWith('custom_') || key === 'custom')
+        .sort(),
+    };
+  } catch {
+    return {
+      providerKeys: [],
+      enabledProviderKeys: [],
+      providerKeysWithApiKey: [],
+      customProviderKeys: [],
+    };
+  }
+};
+
 const readSqliteMigrationSummarySync = (dbPath: string): SqliteMigrationSummary => {
   if (!fs.existsSync(dbPath)) return { exists: false };
   const stat = fs.statSync(dbPath);
@@ -426,6 +519,7 @@ const readSqliteMigrationSummarySync = (dbPath: string): SqliteMigrationSummary 
         return Boolean(row);
       })
       : [];
+    const providerSummary = readAppConfigProviderSummary(db);
 
     return {
       exists: true,
@@ -434,6 +528,9 @@ const readSqliteMigrationSummarySync = (dbPath: string): SqliteMigrationSummary 
       quickCheck,
       rowCounts,
       kvKeys,
+      agentIds: readAgentIds(db),
+      sessionCountsByAgentId: readSessionCountsByAgentId(db),
+      ...providerSummary,
     };
   } catch (error) {
     return {
@@ -458,6 +555,80 @@ const assertMigrationSqliteReadySync = (dbPath: string, label: string): SqliteMi
     throw new Error(`${label} ${DB_FILENAME} failed quick_check: ${summary.quickCheck || 'empty result'}`);
   }
   return summary;
+};
+
+const arraysEqual = (left: readonly string[] = [], right: readonly string[] = []): boolean => (
+  left.length === right.length && left.every((value, index) => value === right[index])
+);
+
+const recordsEqual = (
+  left: Record<string, number> = {},
+  right: Record<string, number> = {},
+): boolean => {
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  return arraysEqual(leftKeys, rightKeys)
+    && leftKeys.every(key => left[key] === right[key]);
+};
+
+const assertStringArraySummaryFieldMatches = (
+  sourceSummary: SqliteMigrationSummary,
+  targetSummary: SqliteMigrationSummary,
+  fieldName: keyof Pick<
+    SqliteMigrationSummary,
+    'agentIds' | 'providerKeys' | 'enabledProviderKeys' | 'providerKeysWithApiKey' | 'customProviderKeys'
+  >,
+  label: string,
+): void => {
+  const sourceValues = sourceSummary[fieldName] ?? [];
+  const targetValues = targetSummary[fieldName] ?? [];
+  if (!arraysEqual(sourceValues, targetValues)) {
+    throw new Error(
+      `${label} ${fieldName} mismatch: expected [${sourceValues.join(', ')}], got [${targetValues.join(', ')}].`,
+    );
+  }
+};
+
+const assertSqliteCriticalSummaryMatches = (
+  sourceSummary: SqliteMigrationSummary,
+  targetSummary: SqliteMigrationSummary,
+  label: string,
+): void => {
+  for (const fieldName of [
+    'agentIds',
+    'providerKeys',
+    'enabledProviderKeys',
+    'providerKeysWithApiKey',
+    'customProviderKeys',
+  ] as const) {
+    assertStringArraySummaryFieldMatches(sourceSummary, targetSummary, fieldName, label);
+  }
+
+  if (!recordsEqual(sourceSummary.sessionCountsByAgentId, targetSummary.sessionCountsByAgentId)) {
+    throw new Error(
+      `${label} sessionCountsByAgentId mismatch: expected ${JSON.stringify(sourceSummary.sessionCountsByAgentId ?? {})}, got ${JSON.stringify(targetSummary.sessionCountsByAgentId ?? {})}.`,
+    );
+  }
+};
+
+export const assertDataMigrationSqliteSnapshotMatchesLiveSync = (
+  liveDbPath: string,
+  snapshotDbPath: string,
+): void => {
+  const liveSummary = assertMigrationSqliteReadySync(liveDbPath, 'Live data');
+  const snapshotSummary = assertMigrationSqliteReadySync(snapshotDbPath, 'Backup snapshot');
+
+  for (const tableName of SQLITE_MIGRATION_TABLES) {
+    const liveCount = liveSummary.rowCounts?.[tableName] ?? 0;
+    const snapshotCount = snapshotSummary.rowCounts?.[tableName] ?? 0;
+    if (liveCount !== snapshotCount) {
+      throw new Error(
+        `Backup snapshot row count mismatch for ${tableName}: expected ${liveCount}, got ${snapshotCount}.`,
+      );
+    }
+  }
+
+  assertSqliteCriticalSummaryMatches(liveSummary, snapshotSummary, 'Backup snapshot');
 };
 
 const checkpointSqliteDatabaseSync = (dbPath: string, label: string): void => {
@@ -885,6 +1056,8 @@ const assertSqliteRestoredSync = (
       throw new Error(`Restored ${DB_FILENAME} is missing required kv key ${key}.`);
     }
   }
+
+  assertSqliteCriticalSummaryMatches(sourceSummary, targetSummary, `Restored ${DB_FILENAME}`);
 };
 
 const restoreRollbackArchiveSync = (rollbackPath: string, userDataPath: string): void => {

@@ -80,6 +80,37 @@ const waitForNextPaint = (): Promise<void> => new Promise(resolve => {
   });
 });
 
+const normalizeProvidersForSettingsSave = (providers: ProvidersConfig): ProvidersConfig => (
+  Object.fromEntries(
+    Object.entries(providers).map(([providerKey, providerConfig]) => {
+      const apiFormat = getEffectiveApiFormat(providerKey, providerConfig.apiFormat);
+      const hasValidAuth = hasProviderAuthConfigured(providerKey as ProviderType, providerConfig);
+      return [
+        providerKey,
+        {
+          ...providerConfig,
+          enabled: providerConfig.enabled && hasValidAuth,
+          apiFormat,
+          ...(providerKey === ProviderName.Copilot ? { apiKey: '' } : {}),
+          baseUrl: resolveBaseUrl(providerKey as ProviderType, providerConfig.baseUrl, apiFormat),
+        },
+      ];
+    })
+  ) as ProvidersConfig
+);
+
+const resolvePrimaryProviderForSettingsSave = (
+  providers: ProvidersConfig,
+  activeProvider: ProviderType,
+): ProviderConfig => {
+  const firstEnabledProvider = Object.entries(providers).find(
+    ([_, config]) => config.enabled
+  );
+  return firstEnabledProvider
+    ? firstEnabledProvider[1]
+    : providers[activeProvider];
+};
+
 type ShortcutCommandDefinition = {
   key: ShortcutAction;
   labelKey: string;
@@ -1947,6 +1978,18 @@ const Settings: React.FC<SettingsProps> = ({
     }
   }, [openClawRepairResult?.backupPath]);
 
+  const persistModelSettingsBeforeDataBackup = useCallback(async () => {
+    const normalizedProviders = normalizeProvidersForSettingsSave(providers);
+    const primaryProvider = resolvePrimaryProviderForSettingsSave(normalizedProviders, activeProvider);
+    await configService.updateConfig({
+      api: {
+        key: primaryProvider.apiKey,
+        baseUrl: primaryProvider.baseUrl,
+      },
+      providers: normalizedProviders,
+    });
+  }, [activeProvider, providers]);
+
   const handleOpenClawDataBackup = useCallback(async () => {
     if (isBackingUpOpenClawData) return;
     setError(null);
@@ -1954,6 +1997,7 @@ const Settings: React.FC<SettingsProps> = ({
     setIsBackingUpOpenClawData(true);
     try {
       await waitForNextPaint();
+      await persistModelSettingsBeforeDataBackup();
       const result = await window.electron.openclaw.dataMigration.backup();
       if (!result.success) {
         setError(result.error || i18nService.t('openClawDataBackupFailed'));
@@ -1974,7 +2018,7 @@ const Settings: React.FC<SettingsProps> = ({
     } finally {
       setIsBackingUpOpenClawData(false);
     }
-  }, [isBackingUpOpenClawData]);
+  }, [isBackingUpOpenClawData, persistModelSettingsBeforeDataBackup]);
 
   const handleConfirmOpenClawDataRestore = useCallback(async () => {
     if (isRestoringOpenClawData) return;
@@ -2219,31 +2263,8 @@ const Settings: React.FC<SettingsProps> = ({
     setError(null);
 
     try {
-      const normalizedProviders = Object.fromEntries(
-        Object.entries(providers).map(([providerKey, providerConfig]) => {
-          const apiFormat = getEffectiveApiFormat(providerKey, providerConfig.apiFormat);
-          const hasValidAuth = hasProviderAuthConfigured(providerKey as ProviderType, providerConfig);
-          return [
-            providerKey,
-            {
-              ...providerConfig,
-              enabled: providerConfig.enabled && hasValidAuth,
-              apiFormat,
-              ...(providerKey === ProviderName.Copilot ? { apiKey: '' } : {}),
-              baseUrl: resolveBaseUrl(providerKey as ProviderType, providerConfig.baseUrl, apiFormat),
-            },
-          ];
-        })
-      ) as ProvidersConfig;
-
-      // Find the first enabled provider to use as the primary API
-      const firstEnabledProvider = Object.entries(normalizedProviders).find(
-        ([_, config]) => config.enabled
-      );
-
-      const primaryProvider = firstEnabledProvider
-        ? firstEnabledProvider[1]
-        : normalizedProviders[activeProvider];
+      const normalizedProviders = normalizeProvidersForSettingsSave(providers);
+      const primaryProvider = resolvePrimaryProviderForSettingsSave(normalizedProviders, activeProvider);
       const normalizedBrowserWebAccess = normalizeBrowserWebAccessConfig({
         ...browserWebAccess,
         browserEnabled: true,

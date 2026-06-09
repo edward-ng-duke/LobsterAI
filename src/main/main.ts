@@ -96,7 +96,7 @@ import { ProviderName } from '../shared/providers';
 import type { ShellOpenFailureReason as ShellOpenFailureReasonType } from '../shared/shell/constants';
 import { ShellOpenFailureReason } from '../shared/shell/constants';
 import { AgentManager } from './agentManager';
-import { APP_NAME } from './appConstants';
+import { APP_NAME, DB_FILENAME } from './appConstants';
 import { authQuotaGateStateFromQuota, AuthSubscriptionStatus, createDefaultAuthQuotaGateState, normalizeAuthQuota } from './authQuota';
 import { getAutoLaunchEnabled, isAutoLaunched, setAutoLaunchEnabled } from './autoLaunchManager';
 import { type CoworkForkContextMessage, type CoworkMessage, CoworkStore } from './coworkStore';
@@ -177,6 +177,7 @@ import {
   probeCoworkModelReadiness,
 } from './libs/coworkUtil';
 import {
+  assertDataMigrationSqliteSnapshotMatchesLiveSync,
   buildDataMigrationBackupFileName,
   consumeLastRestoreResultSync,
   createMigrationArchive,
@@ -4864,6 +4865,10 @@ if (!gotTheLock) {
       const sqliteSnapshotPath = path.join(
         backupManager.getPaths().snapshotsDir,
         sqliteRecord.fileName,
+      );
+      assertDataMigrationSqliteSnapshotMatchesLiveSync(
+        path.join(app.getPath('userData'), DB_FILENAME),
+        sqliteSnapshotPath,
       );
 
       const archive = await createMigrationArchive({
