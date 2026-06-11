@@ -94,7 +94,7 @@ import {
   OpenClawGatewayRepairErrorCode,
 } from '../shared/openclawEngine/constants';
 import { PlatformRegistry } from '../shared/platform';
-import { ProviderName } from '../shared/providers';
+import { OpenClawProviderId, ProviderName } from '../shared/providers';
 import type { ShellOpenFailureReason as ShellOpenFailureReasonType } from '../shared/shell/constants';
 import { ShellOpenFailureReason } from '../shared/shell/constants';
 import { AgentManager } from './agentManager';
@@ -841,6 +841,32 @@ const buildAvailableOpenClawProviders = (): Record<string, { models: Array<{ id:
   }
 
   return providerMap;
+};
+
+const openClawConfigHasServerModels = (modelIds: string[]): boolean => {
+  const normalizedModelIds = modelIds.map(modelId => modelId.trim()).filter(Boolean);
+  if (normalizedModelIds.length === 0) return true;
+
+  try {
+    const configPath = getOpenClawEngineManager().getConfigPath();
+    const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
+      models?: {
+        providers?: Record<string, { models?: Array<{ id?: string }> }>;
+      };
+    };
+    const serverProviderModels = parsed.models?.providers?.[OpenClawProviderId.LobsteraiServer]?.models;
+    if (!Array.isArray(serverProviderModels)) return false;
+
+    const configuredModelIds = new Set(
+      serverProviderModels
+        .map(model => (typeof model.id === 'string' ? model.id.trim() : ''))
+        .filter(Boolean),
+    );
+    return normalizedModelIds.every(modelId => configuredModelIds.has(modelId));
+  } catch (error) {
+    console.debug('[Auth:getModels] OpenClaw config inspection failed; scheduling model sync.', error);
+    return false;
+  }
 };
 
 const normalizeOpenClawModelRef = (modelRef: string): string => {
@@ -4311,8 +4337,12 @@ if (!gotTheLock) {
 
   const syncOpenClawConfigIfAuthQuotaGateChanged = (previous: ReturnType<typeof getAuthQuotaGateState>) => {
     if (hasAuthQuotaGateStateChanged(previous)) {
-      syncOpenClawConfig({ reason: MEDIA_ENTITLEMENT_SYNC_REASON, restartGatewayIfRunning: true }).catch(() => {});
+      syncOpenClawConfig({ reason: MEDIA_ENTITLEMENT_SYNC_REASON, restartGatewayIfRunning: true }).catch((error) => {
+        console.warn('[Auth] failed to sync OpenClaw config after quota gate changed:', error);
+      });
+      return true;
     }
+    return false;
   };
 
   const resetAuthQuotaGateState = () => {
@@ -4514,15 +4544,33 @@ if (!gotTheLock) {
       clearServerModelMetadata();
       const previousQuotaGateState = getAuthQuotaGateState();
       resetAuthQuotaGateState();
-      syncOpenClawConfigIfAuthQuotaGateChanged(previousQuotaGateState);
+      const quotaGateSyncScheduled = syncOpenClawConfigIfAuthQuotaGateChanged(previousQuotaGateState);
+      if (!quotaGateSyncScheduled) {
+        syncOpenClawConfig({
+          reason: 'auth-logout-server-models-cleared',
+          restartGatewayIfRunning: false,
+        }).catch((error) => {
+          console.warn('[Auth] failed to sync OpenClaw config after logout:', error);
+        });
+      }
+      console.log('[Auth] cleared login state and scheduled server model config refresh');
       return { success: true };
-    } catch {
+    } catch (error) {
+      console.warn('[Auth] logout cleanup encountered an error; clearing local state anyway:', error);
       const previousQuotaGateState = getAuthQuotaGateState();
       clearAuthTokens();
       clearAuthUser();
       clearServerModelMetadata();
       resetAuthQuotaGateState();
-      syncOpenClawConfigIfAuthQuotaGateChanged(previousQuotaGateState);
+      const quotaGateSyncScheduled = syncOpenClawConfigIfAuthQuotaGateChanged(previousQuotaGateState);
+      if (!quotaGateSyncScheduled) {
+        syncOpenClawConfig({
+          reason: 'auth-logout-server-models-cleared',
+          restartGatewayIfRunning: false,
+        }).catch((syncError) => {
+          console.warn('[Auth] failed to sync OpenClaw config after logout cleanup:', syncError);
+        });
+      }
       return { success: true };
     }
   });
@@ -4616,14 +4664,21 @@ if (!gotTheLock) {
       if (data.code !== 0) return { success: false };
       // Cache server model metadata for use in OpenClaw config sync (supportsImage, etc.)
       const serverModelsChanged = updateServerModelMetadata(data.data);
+      const serverModelIds = data.data.map(model => model.modelId);
+      const serverModelsMissingFromConfig = !openClawConfigHasServerModels(serverModelIds);
       // Re-sync so the gateway picks up the correct supportsImage values for server models.
       // This IPC can run after normal chat completion when the renderer refreshes quota/model
       // state, so server model updates must not force a hard gateway restart.
-      if (serverModelsChanged) {
+      if (serverModelsChanged || serverModelsMissingFromConfig) {
+        console.log(
+          `[Auth:getModels] scheduling OpenClaw config sync for ${serverModelIds.length} server model(s); metadataChanged=${serverModelsChanged} missingFromConfig=${serverModelsMissingFromConfig}`,
+        );
         syncOpenClawConfig({
-          reason: 'server-models-updated',
+          reason: serverModelsChanged ? 'server-models-updated' : 'server-models-restored',
           restartGatewayIfRunning: false,
-        }).catch(() => {});
+        }).catch((error) => {
+          console.warn('[Auth:getModels] failed to sync OpenClaw config after loading server models:', error);
+        });
       } else {
         console.debug('[Auth:getModels] server model metadata unchanged, skipping config sync');
       }
