@@ -8,6 +8,7 @@ import {
   type AppUpdateInfo,
   type AppUpdateRuntimeState,
   AppUpdateStatus,
+  isManualDownloadUrl,
 } from '../shared/appUpdate/constants';
 import { OpenClawProviderId, ProviderName, ProviderRegistry } from '../shared/providers';
 import { CoworkView } from './components/cowork';
@@ -405,6 +406,11 @@ const App: React.FC = () => {
         if (mounted) {
           setAppUpdateState(state);
           previousUpdateStatusRef.current = state.status;
+          // A previous install attempt quit the app without completing
+          // (e.g. the installer never launched) — re-prompt the user.
+          if (state.status === AppUpdateStatus.Ready && state.installIncomplete) {
+            setShowUpdateModal(true);
+          }
         }
       } catch (error) {
         console.error('[App] failed to load initial app update state:', error);
@@ -476,8 +482,7 @@ const App: React.FC = () => {
     }
 
     if (appUpdateState.status === AppUpdateStatus.Error || appUpdateState.status === AppUpdateStatus.Available) {
-      const isManualUrl = updateInfo.url.includes('#') || updateInfo.url.endsWith('/download-list');
-      if (!isManualUrl) {
+      if (!isManualDownloadUrl(updateInfo.url)) {
         shouldInstallReadyUpdateRef.current = appUpdateState.status === AppUpdateStatus.Available;
         const retryResult = await window.electron.appUpdate.retryDownload();
         if (!retryResult.success) {
@@ -488,7 +493,7 @@ const App: React.FC = () => {
       }
     }
 
-    if (updateInfo.url.includes('#') || updateInfo.url.endsWith('/download-list')) {
+    if (isManualDownloadUrl(updateInfo.url)) {
       shouldInstallReadyUpdateRef.current = false;
       setShowUpdateModal(false);
       try {
@@ -511,7 +516,7 @@ const App: React.FC = () => {
 
   const handleRetryUpdate = useCallback(async () => {
     if (!updateInfo) return;
-    if (updateInfo.url.includes('#') || updateInfo.url.endsWith('/download-list')) {
+    if (isManualDownloadUrl(updateInfo.url)) {
       shouldInstallReadyUpdateRef.current = false;
       setShowUpdateModal(false);
       await window.electron.shell.openExternal(updateInfo.url);
@@ -825,6 +830,7 @@ const App: React.FC = () => {
       setMainView('cowork');
       void coworkService.loadSession(sessionId);
     });
+    void window.electron.cowork.notifyOpenSessionFromNotificationReady?.();
     return unsubscribe;
   }, []);
 

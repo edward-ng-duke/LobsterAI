@@ -1,6 +1,8 @@
 import { ArtifactBrowserPartition } from '@shared/artifactPreview/constants';
 import type { CoworkSelectedTextSnippet } from '@shared/cowork/selectedText';
 import {
+  HtmlShareAccessMode,
+  type HtmlShareAccessMode as HtmlShareAccessModeValue,
   type HtmlShareConfigurableStatus,
   HtmlShareErrorCode,
   HtmlShareSourceType,
@@ -79,6 +81,7 @@ const HtmlSharePhase = {
 type HtmlSharePhase = (typeof HtmlSharePhase)[keyof typeof HtmlSharePhase];
 
 const HtmlShareDialogKind = {
+  Create: 'create',
   Subscription: 'subscription',
   Existing: 'existing',
   Result: 'result',
@@ -119,6 +122,7 @@ interface HtmlSharePendingRequest {
   artifactId: string;
   lookupKey: string;
   title: string;
+  accessMode: HtmlShareAccessModeValue;
   fileName?: string;
   filePath?: string;
   content?: string;
@@ -133,6 +137,8 @@ interface HtmlShareDialogState {
   url?: string;
   shareCode?: string;
   shareCodeUnavailable?: boolean;
+  accessMode?: HtmlShareAccessModeValue;
+  selectedAccessMode?: HtmlShareAccessModeValue;
   status?: HtmlShareStatusValue;
   targetStatus?: HtmlShareConfigurableStatus;
   statusError?: string;
@@ -142,6 +148,7 @@ interface HtmlShareDialogState {
 interface ExistingHtmlShareInfo {
   shareId: string;
   url: string;
+  accessMode?: HtmlShareAccessModeValue;
   shareCode?: string;
   shareCodeUnavailable?: boolean;
   status?: HtmlShareStatusValue;
@@ -157,6 +164,7 @@ function getExistingHtmlShareInfo(
   share: {
     shareId?: string;
     url?: string;
+    accessMode?: HtmlShareAccessModeValue;
     shareCode?: string;
     shareCodeUnavailable?: boolean;
     status?: HtmlShareStatusValue;
@@ -166,6 +174,7 @@ function getExistingHtmlShareInfo(
   return {
     shareId: share.shareId,
     url: share.url,
+    accessMode: share.accessMode,
     shareCode: share.shareCode,
     shareCodeUnavailable: share.shareCodeUnavailable,
     status: share.status,
@@ -177,6 +186,20 @@ function getConfigurableHtmlShareStatus(
 ): HtmlShareConfigurableStatus | undefined {
   if (status === HtmlShareStatus.Failed) return undefined;
   return status === HtmlShareStatus.Disabled ? HtmlShareStatus.Disabled : HtmlShareStatus.Live;
+}
+
+function normalizeHtmlShareAccessMode(
+  accessMode?: HtmlShareAccessModeValue,
+): HtmlShareAccessModeValue {
+  return accessMode === HtmlShareAccessMode.Public
+    ? HtmlShareAccessMode.Public
+    : HtmlShareAccessMode.Code;
+}
+
+function shouldUseHtmlShareCode(
+  accessMode?: HtmlShareAccessModeValue,
+): boolean {
+  return normalizeHtmlShareAccessMode(accessMode) === HtmlShareAccessMode.Code;
 }
 
 function getHtmlShareFailureMessage(
@@ -252,6 +275,7 @@ function buildHtmlSharePendingRequest(
       lookupKey: buildHtmlShareLookupKey(artifact, sourceType, fallbackSessionId),
       filePath: artifact.filePath,
       title,
+      accessMode: HtmlShareAccessMode.Code,
     };
   }
   return {
@@ -261,6 +285,7 @@ function buildHtmlSharePendingRequest(
     artifactId: artifact.id,
     lookupKey: buildHtmlShareLookupKey(artifact, sourceType, fallbackSessionId),
     title,
+    accessMode: HtmlShareAccessMode.Code,
     fileName: artifact.fileName || artifact.title,
     filePath: artifact.filePath,
     content: artifact.content,
@@ -1125,14 +1150,19 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       request: HtmlSharePendingRequest,
       share: ExistingHtmlShareInfo,
     ) => {
+      const accessMode = normalizeHtmlShareAccessMode(share.accessMode);
       setHtmlSharePendingRequest(request);
       setHtmlSharePhase(HtmlSharePhase.Live);
       setHtmlShareDialog({
         kind: HtmlShareDialogKind.Existing,
         title: t('htmlShareManageDialogTitle'),
-        message: t('htmlShareViewHint'),
+        message: shouldUseHtmlShareCode(accessMode)
+          ? t('htmlShareCodeViewHint')
+          : t('htmlSharePublicViewHint'),
         shareId: share.shareId,
         url: share.url,
+        accessMode,
+        selectedAccessMode: accessMode,
         shareCode: share.shareCode,
         shareCodeUnavailable: share.shareCodeUnavailable,
         status: share.status,
@@ -1142,11 +1172,24 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     [],
   );
 
+  const openCreateHtmlShareDialog = useCallback((request: HtmlSharePendingRequest) => {
+    const accessMode = normalizeHtmlShareAccessMode(request.accessMode);
+    setHtmlSharePendingRequest({ ...request, accessMode });
+    setHtmlSharePhase(HtmlSharePhase.Idle);
+    setHtmlShareDialog({
+      kind: HtmlShareDialogKind.Create,
+      title: t('htmlShareCreateDialogTitle'),
+      message: t('htmlShareCodeViewHint'),
+      selectedAccessMode: accessMode,
+    });
+  }, []);
+
   const rememberHtmlShare = useCallback((sourceKey: string, share: unknown) => {
     const existingShare = getExistingHtmlShareInfo(
       share as {
         shareId?: string;
         url?: string;
+        accessMode?: HtmlShareAccessModeValue;
         shareCode?: string;
         shareCodeUnavailable?: boolean;
         status?: HtmlShareStatusValue;
@@ -1179,6 +1222,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
         }
         throw new Error(getHtmlShareFailureMessage(result));
       }
+      const accessMode = normalizeHtmlShareAccessMode(result.accessMode);
       setHtmlSharePhase(HtmlSharePhase.Live);
       setHtmlShareDialog({
         kind: HtmlShareDialogKind.Result,
@@ -1194,9 +1238,13 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
             ? result.status === HtmlShareStatus.Disabled
               ? t('htmlShareUpdatedClosedMessage')
               : t('htmlShareUpdateComplete')
-            : t('htmlShareViewHint'),
+            : shouldUseHtmlShareCode(accessMode)
+              ? t('htmlShareCodeViewHint')
+              : t('htmlSharePublicViewHint'),
         url: result.url,
-        shareCode: result.shareCode,
+        accessMode,
+        selectedAccessMode: accessMode,
+        shareCode: shouldUseHtmlShareCode(accessMode) ? result.shareCode : undefined,
         shareCodeUnavailable: result.shareCodeUnavailable,
         status: result.status,
       });
@@ -1218,12 +1266,14 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
               artifactId: request.artifactId,
               filePath: request.filePath || '',
               title: request.title,
+              accessMode: request.accessMode,
             })
           : await window.electron?.htmlShare?.createFromArtifactFile({
               sourceType: request.sourceType,
               sessionId: request.sessionId,
               artifactId: request.artifactId,
               title: request.title,
+              accessMode: request.accessMode,
               fileName: request.fileName,
               filePath: request.filePath,
               content: request.content,
@@ -1241,6 +1291,27 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     }
   }, [handleHtmlShareResult, isHtmlSharing, rememberHtmlShare]);
 
+  const selectHtmlShareAccessMode = useCallback((accessMode: HtmlShareAccessModeValue) => {
+    setHtmlSharePendingRequest(previous => previous ? { ...previous, accessMode } : previous);
+    setHtmlShareDialog(previous => {
+      if (
+        !previous ||
+        (previous.kind !== HtmlShareDialogKind.Create &&
+          previous.kind !== HtmlShareDialogKind.Existing)
+      ) {
+        return previous;
+      }
+      return {
+        ...previous,
+        selectedAccessMode: accessMode,
+        message: shouldUseHtmlShareCode(accessMode)
+          ? t('htmlShareCodeViewHint')
+          : t('htmlSharePublicViewHint'),
+        statusError: undefined,
+      };
+    });
+  }, []);
+
   const updateHtmlShare = useCallback(async () => {
     if (
       !htmlSharePendingRequest ||
@@ -1252,6 +1323,9 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     const request = htmlSharePendingRequest;
     const shareId = htmlShareDialog.shareId;
     const currentStatus = htmlShareDialog.status;
+    const accessMode = normalizeHtmlShareAccessMode(
+      htmlShareDialog.selectedAccessMode ?? request.accessMode,
+    );
     setHtmlShareDialog(previous => {
       if (
         !previous ||
@@ -1278,6 +1352,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
               filePath: request.filePath || '',
               title: request.title,
               currentStatus,
+              accessMode,
             })
           : await window.electron?.htmlShare?.updateFromArtifactFile({
               sourceType: request.sourceType,
@@ -1285,6 +1360,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
               sessionId: request.sessionId,
               artifactId: request.artifactId,
               title: request.title,
+              accessMode,
               fileName: request.fileName,
               filePath: request.filePath,
               content: request.content,
@@ -1307,9 +1383,15 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
         }
         return {
           ...previous,
-          message: t('htmlShareViewHint'),
+          message: shouldUseHtmlShareCode(result.accessMode ?? accessMode)
+            ? t('htmlShareCodeViewHint')
+            : t('htmlSharePublicViewHint'),
           url: result.url,
-          shareCode: result.shareCode,
+          accessMode: result.accessMode ?? accessMode,
+          selectedAccessMode: result.accessMode ?? accessMode,
+          shareCode: shouldUseHtmlShareCode(result.accessMode ?? accessMode)
+            ? result.shareCode
+            : undefined,
           shareCodeUnavailable: result.shareCodeUnavailable,
           status: resultStatus,
           targetStatus: resultStatus,
@@ -1342,9 +1424,85 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   }, [
     htmlShareDialog?.shareId,
     htmlShareDialog?.status,
+    htmlShareDialog?.selectedAccessMode,
     htmlSharePendingRequest,
     isHtmlShareContentUpdateDisabled,
     isHtmlSharing,
+    rememberHtmlShare,
+  ]);
+
+  const updateHtmlShareAccessMode = useCallback(async () => {
+    if (
+      !htmlSharePendingRequest ||
+      !htmlShareDialog ||
+      htmlShareDialog.kind !== HtmlShareDialogKind.Existing ||
+      !htmlShareDialog.shareId ||
+      isHtmlShareStatusUpdating
+    ) {
+      return;
+    }
+    const accessMode = normalizeHtmlShareAccessMode(
+      htmlShareDialog.selectedAccessMode ?? htmlShareDialog.accessMode,
+    );
+    if (accessMode === normalizeHtmlShareAccessMode(htmlShareDialog.accessMode)) return;
+    const shareId = htmlShareDialog.shareId;
+    const request = htmlSharePendingRequest;
+    setIsHtmlShareStatusUpdating(true);
+    setHtmlShareDialog(previous => previous && previous.shareId === shareId
+      ? { ...previous, statusError: undefined }
+      : previous);
+    try {
+      const result = await window.electron?.htmlShare?.updateAccessMode({
+        shareId,
+        accessMode,
+      });
+      if (!result?.success || !result.url) {
+        throw new Error(getHtmlShareFailureMessage(result));
+      }
+      const resultAccessMode = normalizeHtmlShareAccessMode(result.accessMode ?? accessMode);
+      const refreshedShare = {
+        shareId: result.shareId ?? shareId,
+        url: result.url,
+        accessMode: resultAccessMode,
+        shareCode: shouldUseHtmlShareCode(resultAccessMode) ? result.shareCode : undefined,
+        shareCodeUnavailable: result.shareCodeUnavailable,
+        status: result.status ?? htmlShareDialog.status,
+      };
+      rememberHtmlShare(request.lookupKey, refreshedShare);
+      setHtmlShareDialog(previous => {
+        if (
+          !previous ||
+          previous.kind !== HtmlShareDialogKind.Existing ||
+          previous.shareId !== shareId
+        ) {
+          return previous;
+        }
+        return {
+          ...previous,
+          message: t('htmlShareAccessModeUpdateComplete'),
+          url: refreshedShare.url,
+          accessMode: resultAccessMode,
+          selectedAccessMode: resultAccessMode,
+          shareCode: refreshedShare.shareCode,
+          shareCodeUnavailable: refreshedShare.shareCodeUnavailable,
+          status: refreshedShare.status,
+          targetStatus: getConfigurableHtmlShareStatus(refreshedShare.status),
+          statusError: undefined,
+        };
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('htmlShareAccessModeUpdateFailed');
+      setHtmlShareDialog(previous => previous && previous.shareId === shareId
+        ? { ...previous, statusError: message }
+        : previous);
+    } finally {
+      setIsHtmlShareStatusUpdating(false);
+    }
+  }, [
+    htmlShareDialog,
+    htmlSharePendingRequest,
+    isHtmlShareStatusUpdating,
     rememberHtmlShare,
   ]);
 
@@ -1414,6 +1572,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       const refreshedResult = {
         shareId: refreshedShare?.shareId ?? result.shareId ?? shareId,
         url: refreshedShare?.url ?? result.url,
+        accessMode: refreshedShare?.accessMode ?? result.accessMode ?? htmlShareDialog.accessMode,
         shareCode: refreshedShare?.shareCode ?? result.shareCode,
         shareCodeUnavailable:
           refreshedShare?.shareCodeUnavailable ?? result.shareCodeUnavailable,
@@ -1433,7 +1592,11 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
         return {
           ...previous,
           url: refreshedResult.url ?? previous.url,
-          shareCode: refreshedResult.shareCode ?? previous.shareCode,
+          accessMode: refreshedResult.accessMode ?? previous.accessMode,
+          selectedAccessMode: refreshedResult.accessMode ?? previous.selectedAccessMode,
+          shareCode: shouldUseHtmlShareCode(refreshedResult.accessMode ?? previous.accessMode)
+            ? refreshedResult.shareCode ?? previous.shareCode
+            : undefined,
           shareCodeUnavailable:
             refreshedResult.shareCodeUnavailable ?? previous.shareCodeUnavailable,
           status: resultStatus,
@@ -1515,7 +1678,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
         openExistingHtmlShareDialog(request, existingShare);
         return;
       }
-      await createHtmlShare(request);
+      openCreateHtmlShareDialog(request);
     } catch (error) {
       setHtmlSharePhase(HtmlSharePhase.Failed);
       setHtmlShareDialog({
@@ -1525,9 +1688,9 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       });
     }
   }, [
-    createHtmlShare,
     ensureHtmlShareAllowed,
     isHtmlSharing,
+    openCreateHtmlShareDialog,
     openExistingHtmlShareDialog,
     rememberHtmlShare,
     htmlShareArtifact,
@@ -1623,15 +1786,30 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
 
   const isHtmlShareLinkDialog = Boolean(
     htmlShareDialog &&
-      (htmlShareDialog.kind === HtmlShareDialogKind.Existing ||
+      (htmlShareDialog.kind === HtmlShareDialogKind.Create ||
+        htmlShareDialog.kind === HtmlShareDialogKind.Existing ||
         (htmlShareDialog.kind === HtmlShareDialogKind.Result && htmlShareDialog.url)),
   );
+  const isHtmlShareCreateDialog =
+    htmlShareDialog?.kind === HtmlShareDialogKind.Create;
   const isHtmlShareExistingDialog =
     htmlShareDialog?.kind === HtmlShareDialogKind.Existing;
   const isHtmlShareStoppedDialog =
     isHtmlShareExistingDialog &&
     htmlShareDialog.targetStatus === HtmlShareStatus.Disabled;
   const isHtmlShareFileUpdateDisabled = isHtmlSharing || isHtmlShareContentUpdateDisabled;
+  const htmlShareSelectedAccessMode = normalizeHtmlShareAccessMode(
+    htmlShareDialog?.selectedAccessMode ?? htmlShareDialog?.accessMode,
+  );
+  const isHtmlShareAccessModeChanged =
+    isHtmlShareExistingDialog &&
+    htmlShareSelectedAccessMode !== normalizeHtmlShareAccessMode(htmlShareDialog?.accessMode);
+  const isHtmlShareAccessModeActionDisabled = Boolean(
+    !isHtmlShareAccessModeChanged || isHtmlShareStatusUpdating || isHtmlSharing,
+  );
+  const canShowHtmlShareDialogCopyAction = Boolean(
+    canUseHtmlShareDialogLink && !isHtmlShareAccessModeChanged,
+  );
   const isHtmlShareAvailabilityActionDisabled = Boolean(
     !htmlShareDialog?.shareId ||
       isHtmlShareStatusUpdating ||
@@ -1642,14 +1820,16 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       ? t('htmlShareStartSharing')
       : t('htmlShareStopSharing');
   const htmlShareAvailabilityActionClassName = isHtmlShareStoppedDialog
-    ? 'rounded-lg bg-primary px-5 py-2 text-base text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60'
-    : 'rounded-lg border border-border bg-background px-5 py-2 text-base text-secondary transition-colors hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60';
+    ? 'inline-flex h-10 min-w-[96px] items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-base text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60'
+    : 'inline-flex h-10 min-w-[96px] items-center justify-center whitespace-nowrap rounded-lg border border-border bg-background px-4 text-base text-secondary transition-colors hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60';
   const htmlShareCopyButtonLabel =
     htmlShareCopyStatus === HtmlShareCopyStatus.Failed
       ? t('copyFailed')
       : htmlShareCopyStatus === HtmlShareCopyStatus.Copied
         ? t('copied')
-        : t('htmlShareCopyLink');
+        : shouldUseHtmlShareCode(htmlShareDialog?.accessMode) && htmlShareDialog?.shareCode
+          ? t('htmlShareCopyLinkAndCode')
+          : t('htmlShareCopyLink');
 
   return (
     <>
@@ -1931,12 +2111,56 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                   </div>
                 )}
 
+                {(isHtmlShareCreateDialog || isHtmlShareExistingDialog) && (
+                  <div className="mt-5">
+                    <div className="mb-2 text-sm font-medium text-foreground">
+                      {t('htmlShareAccessMode')}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {
+                          mode: HtmlShareAccessMode.Code,
+                          label: t('htmlShareAccessModeCode'),
+                          hint: t('htmlShareAccessModeCodeHint'),
+                        },
+                        {
+                          mode: HtmlShareAccessMode.Public,
+                          label: t('htmlShareAccessModePublic'),
+                          hint: t('htmlShareAccessModePublicHint'),
+                        },
+                      ].map(option => {
+                        const isSelected = htmlShareSelectedAccessMode === option.mode;
+                        return (
+                          <button
+                            key={option.mode}
+                            type="button"
+                            onClick={() => selectHtmlShareAccessMode(option.mode)}
+                            disabled={isHtmlSharing || isHtmlShareStatusUpdating}
+                            className={`min-h-[82px] rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 text-foreground'
+                                : 'border-border bg-surface text-secondary hover:border-primary/40 hover:text-foreground'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium leading-5">
+                              {option.label}
+                            </span>
+                            <span className="mt-1 block text-xs leading-4 text-muted">
+                              {option.hint}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {htmlShareDialog.url && (
                   <div className="mt-5 rounded-sm border border-[#edf0f4] bg-[#f5f6f8] px-4 py-4 dark:border-white/10 dark:bg-white/5">
                     <div className="min-w-0 break-words text-base leading-6 text-foreground">
                       {htmlShareDialog.url}
                     </div>
-                    {htmlShareDialog.shareCode && (
+                    {shouldUseHtmlShareCode(htmlShareDialog.accessMode) && htmlShareDialog.shareCode && (
                       <div className="mt-4 text-base leading-6 text-foreground">
                         <span className="text-muted">{t('htmlShareCode')}</span>
                         <span className="ml-2 font-medium">{htmlShareDialog.shareCode}</span>
@@ -1945,7 +2169,8 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                   </div>
                 )}
 
-                {htmlShareDialog.shareCodeUnavailable && (
+                {shouldUseHtmlShareCode(htmlShareDialog.accessMode) &&
+                  htmlShareDialog.shareCodeUnavailable && (
                   <div className="mt-3 text-xs leading-5 text-muted">
                     {t('htmlShareCodeUnavailable')}
                   </div>
@@ -1988,7 +2213,24 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                   </div>
                 )}
 
-                <div className="mt-12 flex items-center justify-end gap-4">
+                <div className="mt-12 flex flex-wrap items-center justify-end gap-3">
+                  {isHtmlShareCreateDialog && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (htmlSharePendingRequest) {
+                          void createHtmlShare({
+                            ...htmlSharePendingRequest,
+                            accessMode: htmlShareSelectedAccessMode,
+                          });
+                        }
+                      }}
+                      disabled={isHtmlSharing || !htmlSharePendingRequest}
+                      className="inline-flex h-10 min-w-[104px] items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-base text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isHtmlSharing ? t('htmlShareUploading') : t('htmlShareCreateAction')}
+                    </button>
+                  )}
                   {isHtmlShareExistingDialog && (
                     <button
                       type="button"
@@ -2001,13 +2243,30 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                         : htmlShareAvailabilityActionLabel}
                     </button>
                   )}
-                  {canUseHtmlShareDialogLink && (
+                  {isHtmlShareExistingDialog && isHtmlShareAccessModeChanged && (
+                    <button
+                      type="button"
+                      onClick={updateHtmlShareAccessMode}
+                      disabled={isHtmlShareAccessModeActionDisabled}
+                      className="inline-flex h-10 min-w-[128px] items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-base text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isHtmlShareStatusUpdating
+                        ? t('htmlShareAccessModeUpdating')
+                        : t('htmlShareAccessModeUpdateAction')}
+                    </button>
+                  )}
+                  {canShowHtmlShareDialogCopyAction && (
                     <button
                       type="button"
                       onClick={() =>
-                        handleCopyShareLink(htmlShareDialog.url, htmlShareDialog.shareCode)
+                        handleCopyShareLink(
+                          htmlShareDialog.url,
+                          shouldUseHtmlShareCode(htmlShareDialog.accessMode)
+                            ? htmlShareDialog.shareCode
+                            : undefined,
+                        )
                       }
-                      className={`w-28 rounded-lg px-5 py-2 text-base transition-colors ${
+                      className={`inline-flex h-10 min-w-[104px] items-center justify-center whitespace-nowrap rounded-lg px-4 text-base transition-colors ${
                         htmlShareCopyStatus === HtmlShareCopyStatus.Failed
                           ? 'bg-red-500 text-white hover:bg-red-500/90'
                           : 'bg-primary text-primary-foreground hover:bg-primary/90'

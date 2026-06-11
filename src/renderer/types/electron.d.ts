@@ -766,6 +766,7 @@ interface IElectronAPI {
     }) => Promise<{ success: boolean; error?: string }>;
     getConfig: () => Promise<{ success: boolean; config?: CoworkConfig; error?: string }>;
     setConfig: (config: CoworkConfigUpdate) => Promise<{ success: boolean; error?: string }>;
+    notifyOpenSessionFromNotificationReady: () => Promise<{ success: boolean; error?: string }>;
     onOpenSessionFromNotification: (
       callback: (data: { sessionId: string }) => void,
     ) => () => void;
@@ -892,6 +893,7 @@ interface IElectronAPI {
       artifactId: string;
       filePath: string;
       title: string;
+      accessMode?: HtmlShareAccessMode;
     }) => Promise<HtmlShareResult>;
     updateFromHtmlFile: (options: {
       shareId: string;
@@ -900,6 +902,7 @@ interface IElectronAPI {
       filePath: string;
       title: string;
       currentStatus?: HtmlShareStatus;
+      accessMode?: HtmlShareAccessMode;
     }) => Promise<HtmlShareResult>;
     getByHtmlFile: (options: {
       filePath: string;
@@ -909,6 +912,7 @@ interface IElectronAPI {
       sessionId: string;
       artifactId: string;
       title: string;
+      accessMode?: HtmlShareAccessMode;
       fileName?: string;
       filePath?: string;
       content?: string;
@@ -920,6 +924,7 @@ interface IElectronAPI {
       sessionId: string;
       artifactId: string;
       title: string;
+      accessMode?: HtmlShareAccessMode;
       fileName?: string;
       filePath?: string;
       content?: string;
@@ -935,6 +940,10 @@ interface IElectronAPI {
     updateStatus: (options: {
       shareId: string;
       status: HtmlShareConfigurableStatus;
+    }) => Promise<HtmlShareResult>;
+    updateAccessMode: (options: {
+      shareId: string;
+      accessMode: HtmlShareAccessMode;
     }) => Promise<HtmlShareResult>;
     disable: (shareId: string) => Promise<HtmlShareResult>;
     get: (shareId: string) => Promise<{ success: boolean; share?: unknown; error?: string }>;

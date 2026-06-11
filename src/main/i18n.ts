@@ -56,7 +56,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     // Cowork error messages (shared with renderer via classifyErrorKey)
     coworkErrorAuthInvalid: 'API 密钥无效或已过期，请检查配置。',
     coworkErrorFreeQuotaExhausted:
-      '当前模型的免费额度已用完，升级套餐后可继续使用。\n\n[立即升级](https://c.youdao.com/dict/hardware/octopus/lobsterai-portal.html)',
+      '当前模型的免费额度已用完，升级套餐后可继续使用。\n\n[立即升级](https://lobsterai.youdao.com/portal)',
     coworkErrorInsufficientBalance: 'API 余额不足，请充值后重试。',
     coworkErrorInputTooLong: '输入内容过长，超出模型上下文限制。',
     coworkErrorMessageTooLarge:
@@ -99,6 +99,11 @@ const translations: Record<LanguageType, Record<string, string>> = {
     dataMigrationRestoreDialogTitle: '导入 LobsterAI 数据备份',
     dataMigrationBackupArchiveFilter: 'LobsterAI 备份包',
     dataMigrationAllFilesFilter: '所有文件',
+    dataMigrationBackupBlockedByActiveWorkloads:
+      '当前有正在运行的 Agent 或定时任务，请停止或等待任务完成后再备份。',
+    dataMigrationRestoreProgressTitle: '正在导入 LobsterAI 数据',
+    dataMigrationRestoreProgressDesc: '正在恢复备份并校验数据，完成后应用会自动重启。',
+    dataMigrationRestoreProgressWarning: '请不要关闭应用或重启电脑，否则可能中断本次数据迁移。',
 
     // ── IM connectivity test messages ───────────────────────────────────
     // Common
@@ -332,7 +337,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     // Cowork error messages
     coworkErrorAuthInvalid: 'Invalid or expired API key. Please check your configuration.',
     coworkErrorFreeQuotaExhausted:
-      'The current model\'s free quota has been used up. Upgrade your plan to continue.\n\n[Upgrade now](https://c.youdao.com/dict/hardware/octopus/lobsterai-portal.html)',
+      'The current model\'s free quota has been used up. Upgrade your plan to continue.\n\n[Upgrade now](https://lobsterai.youdao.com/portal)',
     coworkErrorInsufficientBalance: 'Insufficient API balance. Please top up and try again.',
     coworkErrorInputTooLong: 'Input too long, exceeding model context limit.',
     coworkErrorMessageTooLarge:
@@ -378,6 +383,13 @@ const translations: Record<LanguageType, Record<string, string>> = {
     dataMigrationRestoreDialogTitle: 'Import LobsterAI Data Backup',
     dataMigrationBackupArchiveFilter: 'LobsterAI Backup',
     dataMigrationAllFilesFilter: 'All Files',
+    dataMigrationBackupBlockedByActiveWorkloads:
+      'An agent or scheduled task is still running. Stop it or wait for it to finish before backing up.',
+    dataMigrationRestoreProgressTitle: 'Importing LobsterAI data',
+    dataMigrationRestoreProgressDesc:
+      'Restoring the backup and validating data. LobsterAI will restart automatically when finished.',
+    dataMigrationRestoreProgressWarning:
+      'Do not close the app or restart the computer, or the migration may be interrupted.',
 
     // ── IM connectivity test messages ───────────────────────────────────
     // Common
