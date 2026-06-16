@@ -50,6 +50,7 @@ openclaw-cron-skip-missed-jobs.patch
 openclaw-chat-send-cwd-decoupling.patch
 openclaw-im-bound-agent-run-cwd.patch
 openclaw-browser-blocked-hostnames.patch
+openclaw-empty-sse-data.patch
 ```
 
 这些 patch 解决了本轮升级中暴露的业务字段兼容问题：
@@ -60,6 +61,7 @@ openclaw-browser-blocked-hostnames.patch
 | `chat.send.cwd` | `openclaw-chat-send-cwd-decoupling.patch` | 允许 LobsterAI 在 `chat.send` 请求中携带业务工作目录，并继续传递给 agent run |
 | `agents.defaults.cwd` / `agents.list[].cwd` | `openclaw-im-bound-agent-run-cwd.patch` | 让 agent run 使用 LobsterAI 配置的业务工作目录，而不是只使用 OpenClaw workspace |
 | `browser.ssrfPolicy.blockedHostnames` | `openclaw-browser-blocked-hostnames.patch` | 让浏览器访问控制支持 LobsterAI 配置的 hostname blocklist，并在 DNS 查询前阻断命中目标 |
+| OpenAI-compatible 空 SSE `data:` frame | `openclaw-empty-sse-data.patch` | 在 OpenAI-compatible completions fetch 层过滤空 SSE data frame，避免 OpenAI SDK stream parser 因 provider 空事件报错或空转 |
 
 ### 2.3 已补充的 LobsterAI 侧测试
 
@@ -78,7 +80,7 @@ openclaw-browser-blocked-hostnames.patch
 | 待处理 | 仍需判断是否需要迁移；如需要，还需适配 6.1 源码并验证 |
 | 不再需要迁移 | 经确认，OpenClaw 6.1 已内置等价能力，或 LobsterAI 不再依赖该 patch |
 
-> 截至 2026-06-16，本轮已确认 `openclaw-browser-duplicate-launch.patch` 与 `openclaw-web-fetch-env-proxy.patch` 不再需要迁移：前者已由 OpenClaw 6.1 上游实现覆盖，后者已由 OpenClaw 6.1 的新配置 `tools.web.fetch.useTrustedEnvProxy` 覆盖，且 LobsterAI 当前不再写出旧字段。
+> 截至 2026-06-16，本轮已确认 `openclaw-browser-duplicate-launch.patch`、`openclaw-web-fetch-env-proxy.patch`、`openclaw-extra-body-passthrough.patch`、`openclaw-codex-use-native-transport.patch` 不再需要迁移：前两者分别已由 OpenClaw 6.1 browser ensure 串行化与 `tools.web.fetch.useTrustedEnvProxy` 覆盖；后两者已由 OpenClaw 6.1 的 `embedded-agent-runner` extra params 与 native Codex responses stream resolution 覆盖。
 
 | v2026.4.14 patch | 当前状态 | 处理方式 / 说明 |
 |------------------|----------|-----------------|
@@ -87,13 +89,13 @@ openclaw-browser-blocked-hostnames.patch
 | `openclaw-browser-duplicate-launch.patch` | 不再需要迁移 | OpenClaw 6.1 已在 `server-context.availability.ts` 中通过 `profileState.ensureBrowserAvailable` 串行化同 profile 的并发 ensure，并已有 `server-context.ensure-browser-available.waits-for-cdp-ready.test.ts` 覆盖并发复用场景 |
 | `openclaw-chat-send-cwd-decoupling.patch` | 已迁移 | 已迁移到 `v2026.6.1`；6.1 将协议 schema 移至 `packages/gateway-protocol`，本次适配让 `ChatSendParamsSchema` 接受 `cwd`，并由 `chat.send` handler 传入 `replyOptions.cwd` |
 | `openclaw-chat-send-image-attachment-30mb.patch` | 待处理 | 尚未评估；需确认 6.1 对 chat.send 图片附件大小限制是否仍需放宽 |
-| `openclaw-codex-use-native-transport.patch` | 待处理 | 尚未评估；需确认 6.1 Codex transport 实现是否仍需 LobsterAI 定制 |
+| `openclaw-codex-use-native-transport.patch` | 不再需要迁移 | OpenClaw 6.1 已在 `src/agents/embedded-agent-runner/stream-resolution.ts` 中将 `provider=openai` 且 `api=openai-chatgpt-responses` 的模型路由到 `openclaw-native-codex-responses`，并已有 `stream-resolution.test.ts` 覆盖 OAuth key 透传与 system prompt 清理 |
 | `openclaw-cron-skip-missed-jobs.patch` | 已迁移 | 已迁移到 `v2026.6.1`；让 schema 和 cron runtime 支持 `cron.skipMissedJobs` |
 | `openclaw-deepseek-mimo-reasoning-replay.patch` | 待处理 | 尚未评估；需确认 6.1 reasoning replay 行为是否仍需修补 |
 | `openclaw-deepseek-v4-thinking-mode.patch` | 待处理 | 尚未评估；需确认 DeepSeek V4 thinking mode 支持是否已由上游覆盖 |
 | `openclaw-disable-model-pricing-bootstrap.patch` | 待处理 | 尚未评估；需确认 6.1 是否仍有启动阶段 pricing bootstrap 延迟问题 |
-| `openclaw-empty-sse-data.patch` | 待处理 | 尚未评估；需确认 6.1 SSE 空 data 处理是否已修复 |
-| `openclaw-extra-body-passthrough.patch` | 待处理 | 尚未评估；需确认 OpenAI-compatible extra_body 透传是否仍需 patch |
+| `openclaw-empty-sse-data.patch` | 已迁移 | 已迁移到 `v2026.6.1`；补充 OpenAI-compatible completions fetch 包装，过滤空 SSE `data:` frame，并对连续空 frame 设置上限，避免 provider 异常流导致 parser 报错或空转 |
+| `openclaw-extra-body-passthrough.patch` | 不再需要迁移 | OpenClaw 6.1 已在 `src/agents/embedded-agent-runner/extra-params.ts` 支持 `extra_body` / `extraBody`，并已有 `embedded-agent-runner-extraparams.test.ts` 覆盖 payload 合并与非法值跳过 |
 | `openclaw-facade-runtime-static-import.patch` | 待处理 | 尚未评估；需确认 6.1 bundle/运行时是否仍需 static import 规避问题 |
 | `openclaw-gateway-startup-profiler.patch` | 待处理 | 尚未评估；偏诊断能力，需判断是否仍要保留 |
 | `openclaw-im-bound-agent-run-cwd.patch` | 已迁移 | 已迁移到 `v2026.6.1`；让 schema 和 reply runtime 支持 agent run cwd |
@@ -123,6 +125,8 @@ openclaw-browser-blocked-hostnames.patch
 8. 重新构建 host runtime，确认 `node_modules`、`gateway.asar`、`dist/control-ui/index.html` 都存在。
 9. 迁移 `openclaw-browser-blocked-hostnames.patch`，补齐浏览器 SSRF blocklist 配置链路。
 10. 确认 `openclaw-browser-duplicate-launch.patch`、`openclaw-web-fetch-env-proxy.patch` 不再需要迁移，并补充 LobsterAI 侧决策测试。
+11. 迁移 `openclaw-empty-sse-data.patch`，补齐 OpenAI-compatible completions 空 SSE frame 过滤。
+12. 确认 `openclaw-extra-body-passthrough.patch`、`openclaw-codex-use-native-transport.patch` 不再需要迁移，并补充 LobsterAI 侧决策测试。
 
 ### 4.2 待处理
 
@@ -178,6 +182,23 @@ npx vitest run src/main/libs/openclawPatches src/main/libs/openclawConfigSync.ru
 | `npm run openclaw:patch` | 通过 | 从干净 OpenClaw 6.1 源码重置后，4 个 `v2026.6.1` patch 均成功应用 |
 | `npx vitest run src/main/libs/openclawPatches src/main/libs/openclawConfigSync.runtime.test.ts` | 通过 | 6 个测试文件、30 个用例通过 |
 | `node_modules/.bin/vitest.cmd run src/infra/net/ssrf.pinning.test.ts --reporter verbose --testTimeout=10000 --pool forks`（OpenClaw 侧） | 未完成 | 在当前 Windows 会话中 90 秒无输出超时；本次先以 `openclaw:patch` 与 LobsterAI 侧测试作为有效验证，后续如需可在 OpenClaw 独立环境继续跑目标测试 |
+
+本轮 Provider / OpenAI-compatible 传输兼容性补丁迁移额外验证：
+
+```bash
+npm run openclaw:patch
+npx vitest run src/main/libs/openclawPatches src/main/libs/openclawConfigSync.runtime.test.ts
+npm run build
+```
+
+结果：
+
+| 命令 | 结果 | 说明 |
+|------|------|------|
+| `npm run openclaw:patch` | 通过 | 从干净 OpenClaw 6.1 源码重置后，5 个 `v2026.6.1` patch 均成功应用 |
+| `npx vitest run src/main/libs/openclawPatches src/main/libs/openclawConfigSync.runtime.test.ts` | 通过 | 8 个测试文件、34 个用例通过 |
+| `npm run build` | 通过 | LobsterAI TypeScript / Vite / Electron 构建通过；仅有既有 Vite warning |
+| `node_modules/.bin/vitest.cmd run src/agents/openai-transport-stream.test.ts --reporter verbose --testNamePattern "empty SSE\|non-event-stream" --testTimeout=10000 --pool forks`（OpenClaw 侧） | 未完成 | 在当前 Windows 会话中 90 秒无输出超时；本次先以 `openclaw:patch`、LobsterAI 侧测试和构建作为有效验证，后续如需可在 OpenClaw 独立环境继续跑目标测试 |
 
 后续每迁移一个 patch，应至少完成：
 
