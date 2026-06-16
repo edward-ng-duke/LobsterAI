@@ -381,6 +381,7 @@ interface ArtifactPanelProps {
   browserHtmlArtifactId?: string | null;
   onBrowserAddressChange?: (value: string) => void;
   onBrowserUrlChange?: (value: string) => void;
+  onBrowserTitleChange?: (value: string) => void;
   onOpenFileListTab?: () => void;
   onOpenBrowserTab?: () => void;
   onOpenHtmlFileInBrowser?: (artifact: Artifact) => void;
@@ -452,6 +453,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   browserHtmlArtifactId,
   onBrowserAddressChange,
   onBrowserUrlChange,
+  onBrowserTitleChange,
   onOpenFileListTab,
   onOpenBrowserTab,
   onOpenHtmlFileInBrowser,
@@ -2096,6 +2098,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
             localHtmlPreviewUrl={browserHtmlPreviewUrl}
             onAddressChange={handleBrowserAddressChange}
             onCurrentUrlChange={handleBrowserUrlChange}
+            onTitleChange={onBrowserTitleChange}
             onAnnotationCaptured={onBrowserAnnotationCaptured}
           />
         ) : (
@@ -2359,6 +2362,7 @@ type BrowserWebviewElement = HTMLElement & {
   reload?: () => void;
   stop?: () => void;
   getURL?: () => string;
+  getTitle?: () => string;
   getZoomFactor?: () => number;
   setZoomFactor?: (factor: number) => void;
 };
@@ -2402,6 +2406,48 @@ const BrowserPageUrl = {
 const LocalServiceDisplay = {
   Limit: 10,
 } as const;
+
+function getBrowserTitleBaseName(value: string | undefined): string {
+  if (!value) return '';
+  let source = value.trim();
+  if (!source) return '';
+  try {
+    const url = new URL(source);
+    source = decodeURIComponent(url.pathname || source);
+  } catch {
+    source = source.split(/[?#]/, 1)[0] ?? source;
+  }
+  if (source.startsWith('file:///')) {
+    source = source.slice(7);
+  } else if (source.startsWith('file://')) {
+    source = source.slice(7);
+  }
+  const lastSlash = Math.max(source.lastIndexOf('/'), source.lastIndexOf('\\'));
+  return lastSlash >= 0 ? source.slice(lastSlash + 1) : source;
+}
+
+function normalizeBrowserPageTitle(
+  title: string | undefined,
+  pageUrl: string | undefined,
+  address: string | undefined,
+): string {
+  const normalizedTitle = title?.trim() ?? '';
+  if (!normalizedTitle) return '';
+  const lowerTitle = normalizedTitle.toLowerCase();
+  const fallbackSources = [pageUrl, address].map(value => value?.trim().toLowerCase() ?? '').filter(Boolean);
+  if (fallbackSources.includes(lowerTitle)) return '';
+  const fallbackFileNames = [getBrowserTitleBaseName(pageUrl), getBrowserTitleBaseName(address)]
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean);
+  if (fallbackFileNames.includes(lowerTitle)) return '';
+  if (
+    /[/\\]/.test(normalizedTitle) &&
+    fallbackFileNames.includes(getBrowserTitleBaseName(normalizedTitle).trim().toLowerCase())
+  ) {
+    return '';
+  }
+  return normalizedTitle;
+}
 
 const BrowserDevicePresetId = {
   Responsive: 'responsive',
@@ -2875,6 +2921,7 @@ interface BrowserTabContentProps {
   localHtmlPreviewUrl?: string;
   onAddressChange: (value: string) => void;
   onCurrentUrlChange: (value: string) => void;
+  onTitleChange?: (value: string) => void;
   onAnnotationCaptured?: (payload: BrowserAnnotationPayload) => void;
 }
 
@@ -2891,6 +2938,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
   localHtmlPreviewUrl,
   onAddressChange,
   onCurrentUrlChange,
+  onTitleChange,
   onAnnotationCaptured,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -2913,6 +2961,8 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
   const [isBrowserMenuOpen, setIsBrowserMenuOpen] = useState(false);
   const [browserZoomFactor, setBrowserZoomFactor] = useState<number>(BrowserZoom.Default);
   const [isDeviceToolbarVisible, setIsDeviceToolbarVisible] = useState(false);
+  const [isAddressBarFocused, setIsAddressBarFocused] = useState(false);
+  const [isAddressOpenExternalHovered, setIsAddressOpenExternalHovered] = useState(false);
   const [devicePresetId, setDevicePresetId] = useState<BrowserDevicePresetId>(
     BrowserDevicePresetId.Responsive,
   );
@@ -2922,6 +2972,8 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
   const annotateButtonRef = useRef<HTMLDivElement>(null);
   const shareButtonRef = useRef<HTMLDivElement>(null);
   const openExternalButtonRef = useRef<HTMLDivElement>(null);
+  const addressBarRef = useRef<HTMLDivElement>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const browserMenuButtonRef = useRef<HTMLButtonElement>(null);
   const browserMenuRef = useRef<HTMLDivElement>(null);
   const screenshotStatusTimeoutRef = useRef<number | undefined>(undefined);
@@ -2934,6 +2986,14 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     [sessionArtifacts],
   );
 
+  const hideAddressOpenExternal = useCallback(() => {
+    setIsAddressBarFocused(false);
+    setIsAddressOpenExternalHovered(false);
+    setHoveredToolbarAction(action =>
+      action === BrowserToolbarAction.OpenExternal ? null : action,
+    );
+  }, []);
+
   useEffect(
     () => () => {
       if (screenshotStatusTimeoutRef.current !== undefined) {
@@ -2945,6 +3005,32 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     },
     [],
   );
+
+  useEffect(() => {
+    if (!isAddressBarFocused && !isAddressOpenExternalHovered) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && addressBarRef.current?.contains(target)) return;
+      hideAddressOpenExternal();
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as Node | null;
+      if (target && addressBarRef.current?.contains(target)) return;
+      hideAddressOpenExternal();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('focusin', handleFocusIn, true);
+    window.addEventListener('blur', hideAddressOpenExternal);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('focusin', handleFocusIn, true);
+      window.removeEventListener('blur', hideAddressOpenExternal);
+    };
+  }, [hideAddressOpenExternal, isAddressBarFocused, isAddressOpenExternalHovered]);
 
   const handleWebviewRef = useCallback((node: BrowserWebviewElement | null) => {
     if (webviewNodeRef.current === node) return;
@@ -3017,18 +3103,46 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     [autoRefreshFilePath, localHtmlPreviewUrl],
   );
 
+  const syncBrowserTitle = useCallback(
+    (node: BrowserWebviewElement | null) => {
+      if (!onTitleChange || !node) return;
+      const pageUrl = node.getURL?.() || currentUrl;
+      const addressSnapshot = address;
+      const emitTitle = (value: string | undefined) => {
+        onTitleChange(normalizeBrowserPageTitle(value, pageUrl, addressSnapshot));
+      };
+
+      if (!node.executeJavaScript) {
+        emitTitle(node.getTitle?.());
+        return;
+      }
+
+      void node
+        .executeJavaScript('document.title || ""')
+        .then(result => {
+          if (pageUrl && node.getURL?.() && node.getURL?.() !== pageUrl) return;
+          emitTitle(typeof result === 'string' ? result : '');
+        })
+        .catch(() => {
+          emitTitle(node.getTitle?.());
+        });
+    },
+    [address, currentUrl, onTitleChange],
+  );
+
   const syncNavigationState = useCallback(
     (node: BrowserWebviewElement | null) => {
       if (!node) return;
       setCanGoBack(node.canGoBack?.() ?? false);
       setCanGoForward(node.canGoForward?.() ?? false);
+      syncBrowserTitle(node);
       const nextUrl = node.getURL?.();
       if (nextUrl && nextUrl !== BrowserPageUrl.Blank) {
         onCurrentUrlChange(nextUrl);
         onAddressChange(getBrowserAddressForUrl(nextUrl));
       }
     },
-    [getBrowserAddressForUrl, onAddressChange, onCurrentUrlChange],
+    [getBrowserAddressForUrl, onAddressChange, onCurrentUrlChange, syncBrowserTitle],
   );
 
   const getToolbarActionElement = useCallback(
@@ -3088,6 +3202,9 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
       }
       syncNavigationState(webviewNode);
     };
+    const handleTitleUpdated = () => {
+      syncBrowserTitle(webviewNode);
+    };
     const handleFailLoad = (event: Event) => {
       const detail = event as Event & { errorCode?: number };
       setIsLoading(false);
@@ -3105,6 +3222,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     webviewNode.addEventListener('did-fail-load', handleFailLoad);
     webviewNode.addEventListener('did-navigate', handleNavigate);
     webviewNode.addEventListener('did-navigate-in-page', handleNavigate);
+    webviewNode.addEventListener('page-title-updated', handleTitleUpdated);
     webviewNode.addEventListener('dom-ready', handleDomReady);
     return () => {
       webviewNode.removeEventListener('did-start-loading', handleStartLoading);
@@ -3112,6 +3230,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
       webviewNode.removeEventListener('did-fail-load', handleFailLoad);
       webviewNode.removeEventListener('did-navigate', handleNavigate);
       webviewNode.removeEventListener('did-navigate-in-page', handleNavigate);
+      webviewNode.removeEventListener('page-title-updated', handleTitleUpdated);
       webviewNode.removeEventListener('dom-ready', handleDomReady);
     };
   }, [
@@ -3119,6 +3238,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     getBrowserAddressForUrl,
     onAddressChange,
     onCurrentUrlChange,
+    syncBrowserTitle,
     syncNavigationState,
     webviewNode,
   ]);
@@ -3196,6 +3316,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
       localHtmlPreviewUrl &&
       trimmedAddress === autoRefreshFilePath
     ) {
+      onTitleChange?.('');
       onCurrentUrlChange(localHtmlPreviewUrl);
       onAddressChange(autoRefreshFilePath);
       webviewNodeRef.current?.reload?.();
@@ -3204,6 +3325,7 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
 
     const nextUrl = normalizeBrowserUrl(address);
     if (!nextUrl) return;
+    onTitleChange?.('');
     onCurrentUrlChange(nextUrl);
     onAddressChange(nextUrl);
   }, [
@@ -3212,14 +3334,16 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     localHtmlPreviewUrl,
     onAddressChange,
     onCurrentUrlChange,
+    onTitleChange,
   ]);
 
   const handleOpenLocalService = useCallback(
     (service: LocalWebService) => {
+      onTitleChange?.('');
       onCurrentUrlChange(service.url);
       onAddressChange(service.url);
     },
-    [onAddressChange, onCurrentUrlChange],
+    [onAddressChange, onCurrentUrlChange, onTitleChange],
   );
 
   const handleAddressKeyDown = useCallback(
@@ -3230,6 +3354,41 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     },
     [handleNavigate],
   );
+
+  const handleAddressFocus = useCallback((event: React.FocusEvent<HTMLInputElement>) => {
+    setIsAddressBarFocused(true);
+    event.currentTarget.select();
+  }, []);
+
+  const handleAddressBarFocusCapture = useCallback(() => {
+    setIsAddressBarFocused(true);
+  }, []);
+
+  const handleAddressBarBlurCapture = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      if (activeElement && addressBarRef.current?.contains(activeElement)) return;
+      hideAddressOpenExternal();
+    });
+  }, [hideAddressOpenExternal]);
+
+  const handleAddressBarMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
+    addressInputRef.current?.focus();
+    addressInputRef.current?.select();
+  }, []);
+
+  const handleAddressOpenExternalMouseEnter = useCallback(() => {
+    if (!currentUrl) return;
+    setIsAddressOpenExternalHovered(true);
+    setHoveredToolbarAction(BrowserToolbarAction.OpenExternal);
+  }, [currentUrl]);
+
+  const handleAddressOpenExternalMouseLeave = useCallback(() => {
+    setIsAddressOpenExternalHovered(false);
+    setHoveredToolbarAction(null);
+  }, []);
 
   const handleOpenExternal = useCallback(() => {
     if (!currentUrl) return;
@@ -3296,7 +3455,8 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
     lastRequestedWebviewRef.current = null;
     onAddressChange('');
     onCurrentUrlChange('');
-  }, [onAddressChange, onCurrentUrlChange]);
+    onTitleChange?.('');
+  }, [onAddressChange, onCurrentUrlChange, onTitleChange]);
 
   const handleClearBrowserCookies = useCallback(async () => {
     setIsBrowserMenuOpen(false);
@@ -3457,6 +3617,8 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
         : hoveredToolbarAction === BrowserToolbarAction.OpenExternal
           ? t('artifactBrowserOpenExternal')
           : '';
+  const showAddressOpenExternal =
+    Boolean(currentUrl) && (isAddressBarFocused || isAddressOpenExternalHovered);
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background">
       <div className="flex h-12 shrink-0 items-center gap-1.5 border-b border-border px-3">
@@ -3487,16 +3649,46 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
         >
           {isLoading ? <StopIcon /> : <RefreshIcon />}
         </button>
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-surface px-2 focus-within:border-primary">
-          <BrowserIcon />
+        <div
+          ref={addressBarRef}
+          className="relative flex min-w-0 flex-1 items-center rounded-md border border-border bg-surface px-2 pr-10 transition-colors focus-within:border-primary"
+          onFocusCapture={handleAddressBarFocusCapture}
+          onBlurCapture={handleAddressBarBlurCapture}
+          onMouseDown={handleAddressBarMouseDown}
+        >
           <input
+            ref={addressInputRef}
             type="text"
             value={address}
             onChange={event => onAddressChange(event.target.value)}
             onKeyDown={handleAddressKeyDown}
+            onFocus={handleAddressFocus}
             placeholder={t('artifactBrowserUrlPlaceholder')}
             className="h-7 min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted"
           />
+          <div
+            ref={openExternalButtonRef}
+            className={`absolute inset-y-0 right-0 flex w-8 items-center justify-center overflow-hidden rounded-r-[5px] transition-opacity duration-150 ${
+              showAddressOpenExternal
+                ? 'opacity-100'
+                : 'opacity-0'
+            }`}
+            onMouseEnter={handleAddressOpenExternalMouseEnter}
+            onMouseLeave={handleAddressOpenExternalMouseLeave}
+          >
+            <button
+              type="button"
+              onMouseDown={event => event.preventDefault()}
+              onClick={handleOpenExternal}
+              disabled={!currentUrl}
+              tabIndex={showAddressOpenExternal ? 0 : -1}
+              className="inline-flex h-full w-full items-center justify-center rounded-l-none rounded-r-[5px] border-l border-border bg-black/[0.035] text-secondary transition-colors hover:bg-black/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35 dark:bg-white/[0.045] dark:hover:bg-white/[0.075]"
+              aria-label={t('artifactBrowserOpenExternal')}
+              title={t('artifactBrowserOpenExternal')}
+            >
+              <BrowserAddressOpenExternalIcon />
+            </button>
+          </div>
         </div>
         <div
           ref={annotateButtonRef}
@@ -3550,23 +3742,6 @@ const BrowserTabContent: React.FC<BrowserTabContentProps> = ({
             title={shareButtonTitle}
           >
             <ShareIcon />
-          </button>
-        </div>
-        <div
-          ref={openExternalButtonRef}
-          className="flex h-7 w-7 shrink-0 items-center justify-center"
-          onMouseEnter={() => setHoveredToolbarAction(BrowserToolbarAction.OpenExternal)}
-          onMouseLeave={() => setHoveredToolbarAction(null)}
-        >
-          <button
-            type="button"
-            onClick={handleOpenExternal}
-            disabled={!currentUrl}
-            className="inline-flex h-7 w-7 items-center justify-center rounded text-secondary transition-colors hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
-            aria-label={t('artifactBrowserOpenExternal')}
-            title={t('artifactBrowserOpenExternal')}
-          >
-            <BrowserIcon />
           </button>
         </div>
         <button
@@ -3963,6 +4138,22 @@ const OpenExternalIcon = () => (
     <path d="M12 9v3.5a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 012 12.5v-7A1.5 1.5 0 013.5 4H7" />
     <path d="M10 2h4v4" />
     <path d="M7 9l7-7" />
+  </svg>
+);
+
+const BrowserAddressOpenExternalIcon = () => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.35"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4.75 11.25l6.5-6.5" />
+    <path d="M7.75 4.75h3.5v3.5" />
   </svg>
 );
 
