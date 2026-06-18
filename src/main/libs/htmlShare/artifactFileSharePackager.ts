@@ -5,8 +5,8 @@ import net from 'net';
 import os from 'os';
 import path from 'path';
 import { pipeline } from 'stream/promises';
-import { TextDecoder } from 'util';
 import { fileURLToPath } from 'url';
+import { TextDecoder } from 'util';
 import yazl from 'yazl';
 
 import { HtmlShareSourceType } from '../../../shared/htmlShare/constants';
