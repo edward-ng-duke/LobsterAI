@@ -753,6 +753,9 @@ type ByteRange = {
 function getLocalFileProtocolPath(requestUrl: string): string {
   const url = new URL(requestUrl);
   let filePath = decodeURIComponent(url.pathname);
+  if (process.platform === 'win32' && /^[A-Za-z]$/.test(url.host) && filePath.startsWith('/')) {
+    return `${url.host}:${filePath}`;
+  }
   if (url.host && process.platform !== 'win32') {
     filePath = `/${decodeURIComponent(url.host)}${filePath}`;
   }

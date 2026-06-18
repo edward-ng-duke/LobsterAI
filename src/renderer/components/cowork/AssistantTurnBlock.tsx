@@ -35,6 +35,31 @@ import {
 import ThinkingBlock from './ThinkingBlock';
 import ToolCallGroup from './ToolCallGroup';
 
+const encodeLocalPathForUrl = (filePath: string): string => {
+  return filePath
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((segment, index) => {
+      if (index === 0 && segment === '') return '';
+      if (/^[A-Za-z]:$/.test(segment)) return segment;
+      return encodeURIComponent(segment);
+    })
+    .join('/');
+};
+
+const toLocalFileSrc = (filePath: string): string => {
+  const normalized = filePath.trim().replace(/^file:\/\//i, '').replace(/^localfile:\/\//i, '');
+  const withoutLeadingDriveSlash = /^\/[A-Za-z]:/.test(normalized) ? normalized.slice(1) : normalized;
+  const encoded = encodeLocalPathForUrl(withoutLeadingDriveSlash);
+  if (/^[A-Za-z]:/.test(withoutLeadingDriveSlash)) {
+    return `localfile:///${encoded}`;
+  }
+  if (encoded.startsWith('/')) {
+    return `localfile://${encoded}`;
+  }
+  return `localfile:///${encoded}`;
+};
+
 // ── ContextCompressionIcon ───────────────────────────────────────────────────
 
 const ContextCompressionIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -146,7 +171,7 @@ const MediaImageInline: React.FC<{ artifacts: Artifact[] }> = ({ artifacts }) =>
     <div className="flex flex-wrap gap-2">
       {artifacts.map(artifact => {
         const src = artifact.filePath
-          ? `localfile://${artifact.filePath}`
+          ? toLocalFileSrc(artifact.filePath)
           : artifact.content;
         if (!src) return null;
         return (
