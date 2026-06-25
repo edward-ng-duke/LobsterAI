@@ -4814,6 +4814,7 @@ if (!gotTheLock) {
           apiFormat: string;
           supportsImage?: boolean;
           supportsThinking?: boolean;
+          explicitContextCache?: boolean;
           contextWindow?: number;
           costMultiplier?: number;
           description?: string;

@@ -1362,7 +1362,20 @@ interface IElectronAPI {
     getAccessToken: () => Promise<string | null>;
     getModels: () => Promise<{
       success: boolean;
-      models?: Array<{ modelId: string; modelName: string; provider: string; apiFormat: string }>;
+      models?: Array<{
+        modelId: string;
+        modelName: string;
+        provider: string;
+        apiFormat: string;
+        supportsImage?: boolean;
+        supportsThinking?: boolean;
+        contextWindow?: number;
+        explicitContextCache?: boolean;
+        costMultiplier?: number;
+        description?: string;
+        accessible?: boolean;
+        restrictionHint?: string;
+      }>;
     }>;
     getPricingCatalog: () => Promise<{
       success: boolean;
