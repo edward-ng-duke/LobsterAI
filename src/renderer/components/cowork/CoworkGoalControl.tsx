@@ -1,7 +1,6 @@
 import {
   CheckCircleIcon,
   EllipsisHorizontalIcon,
-  FlagIcon,
   PauseCircleIcon,
   PlayCircleIcon,
   TrashIcon,
@@ -17,6 +16,7 @@ import {
 } from '../../../shared/cowork/goal';
 import { i18nService } from '../../services/i18n';
 import Modal from '../common/Modal';
+import GoalIcon from '../icons/GoalIcon';
 
 type GoalAction = 'start' | 'pause' | 'resume' | 'complete' | 'block' | 'clear';
 
@@ -107,7 +107,11 @@ const getActionIcon = (action: GoalAction): React.ReactNode => {
   }
 };
 
-export default function CoworkGoalControl({ goal, disabled = false, onCommand }: CoworkGoalControlProps) {
+export default function CoworkGoalControl({
+  goal,
+  disabled = false,
+  onCommand,
+}: CoworkGoalControlProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [modalAction, setModalAction] = useState<GoalAction | null>(null);
   const [modalText, setModalText] = useState('');
@@ -181,7 +185,7 @@ export default function CoworkGoalControl({ goal, disabled = false, onCommand }:
         title={chipTitle}
         aria-label={chipTitle}
       >
-        <FlagIcon className="h-4 w-4 shrink-0" />
+        <GoalIcon className="h-4 w-4 shrink-0" />
         {goal ? (
           <>
             <span className="shrink-0 font-medium">{getGoalStatusLabel(goal)}</span>

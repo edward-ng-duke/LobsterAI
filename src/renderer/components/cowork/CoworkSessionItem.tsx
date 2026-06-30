@@ -1,4 +1,4 @@
-import { ExclamationTriangleIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type CoworkGoal, CoworkGoalStatus } from '../../../shared/cowork/goal';
@@ -6,6 +6,7 @@ import { i18nService } from '../../services/i18n';
 import type { CoworkSessionStatus, CoworkSessionSummary } from '../../types/cowork';
 import Modal from '../common/Modal';
 import EllipsisHorizontalIcon from '../icons/EllipsisHorizontalIcon';
+import GoalIcon from '../icons/GoalIcon';
 import ListChecksIcon from '../icons/ListChecksIcon';
 import PencilSquareIcon from '../icons/PencilSquareIcon';
 import PushPinIcon from '../icons/PushPinIcon';
@@ -360,7 +361,7 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
                 className="inline-flex min-w-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
                 title={goalTitle}
               >
-                <FlagIcon className="h-3 w-3 shrink-0" />
+                <GoalIcon className="h-3 w-3 shrink-0" />
                 <span className="shrink-0">{goalStatusLabel}</span>
                 <span className="min-w-0 truncate text-primary/75">{session.goal.objective}</span>
               </span>

@@ -448,6 +448,11 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     }
   };
 
+  const handleStartGoalSession = (command: string) => {
+    console.debug('[CoworkGoal] dispatching new goal session from home prompt.');
+    void handleStartSession(command);
+  };
+
   const handleContinueSession = async (
     prompt: string,
     skillPrompt?: string,
@@ -824,6 +829,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
               showAgentSelector={true}
               onManageSkills={() => onShowSkills?.()}
               onManageKits={() => onShowKits?.()}
+              onGoalCommand={handleStartGoalSession}
             />
           </div>
 

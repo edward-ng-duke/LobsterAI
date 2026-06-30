@@ -4463,6 +4463,8 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
             workingDirectory={currentSession?.cwd ?? ''}
             contextAgentId={currentSession?.agentId}
             sessionId={currentSession?.id}
+            goal={!remoteManaged ? currentSession?.goal : null}
+            onGoalCommand={!remoteManaged && currentSession?.id ? handleGoalCommand : undefined}
             contextUsageControl={(
               <div className="flex min-w-0 items-center gap-2">
                 {!remoteManaged && currentSession?.id && (
