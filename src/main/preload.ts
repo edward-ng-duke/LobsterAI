@@ -37,6 +37,14 @@ import { McpIpcChannel } from '../shared/mcp/constants';
 import { OpenClawEngineIpc } from '../shared/openclawEngine/constants';
 import { PermissionIpcChannel } from '../shared/permissions/constants';
 import type { Platform } from '../shared/platform';
+import {
+  type ShareDeploymentAnalyzeProjectInput,
+  type ShareDeploymentCreateNodeInput,
+  type ShareDeploymentDetectCandidatesInput,
+  type ShareDeploymentGetByLocalServiceInput,
+  ShareDeploymentIpc,
+} from '../shared/shareDeployment/constants';
+import { type ShellGetBrowserAppsInput, ShellIpc } from '../shared/shell/constants';
 import { NimQrLoginIpc } from './ipcHandlers/nimQrLogin';
 import { OpenClawSessionIpc } from './openclawSession/constants';
 import { OpenClawSessionPolicyIpc } from './openclawSessionPolicy/constants';
@@ -573,14 +581,18 @@ contextBridge.exposeInMainWorld('electron', {
     }) => ipcRenderer.invoke('dialog:showMessageBox', options),
   },
   shell: {
-    openPath: (filePath: string) => ipcRenderer.invoke('shell:openPath', filePath),
-    showItemInFolder: (filePath: string) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
-    openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+    openPath: (filePath: string) => ipcRenderer.invoke(ShellIpc.OpenPath, filePath),
+    showItemInFolder: (filePath: string) => ipcRenderer.invoke(ShellIpc.ShowItemInFolder, filePath),
+    openExternal: (url: string) => ipcRenderer.invoke(ShellIpc.OpenExternal, url),
     openHtmlInBrowser: (htmlContent: string) =>
-      ipcRenderer.invoke('shell:openHtmlInBrowser', htmlContent),
-    getAppsForFile: (filePath: string) => ipcRenderer.invoke('shell:getAppsForFile', filePath),
+      ipcRenderer.invoke(ShellIpc.OpenHtmlInBrowser, htmlContent),
+    getAppsForFile: (filePath: string) => ipcRenderer.invoke(ShellIpc.GetAppsForFile, filePath),
+    getBrowserApps: (options?: ShellGetBrowserAppsInput) =>
+      ipcRenderer.invoke(ShellIpc.GetBrowserApps, options),
     openPathWithApp: (filePath: string, appPath: string) =>
-      ipcRenderer.invoke('shell:openPathWithApp', filePath, appPath),
+      ipcRenderer.invoke(ShellIpc.OpenPathWithApp, filePath, appPath),
+    openUrlWithApp: (url: string, appPath: string) =>
+      ipcRenderer.invoke(ShellIpc.OpenUrlWithApp, url, appPath),
   },
   clipboard: {
     writeText: (text: string) =>
@@ -645,6 +657,17 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke(HtmlShareIpc.UpdateAccessMode, options),
     disable: (shareId: string) => ipcRenderer.invoke(HtmlShareIpc.Disable, shareId),
     get: (shareId: string) => ipcRenderer.invoke(HtmlShareIpc.Get, shareId),
+  },
+  shareDeployment: {
+    detectProjectCandidates: (options: ShareDeploymentDetectCandidatesInput) =>
+      ipcRenderer.invoke(ShareDeploymentIpc.DetectProjectCandidates, options),
+    analyzeProjectDirectory: (options: ShareDeploymentAnalyzeProjectInput) =>
+      ipcRenderer.invoke(ShareDeploymentIpc.AnalyzeProjectDirectory, options),
+    createNodeDeployment: (options: ShareDeploymentCreateNodeInput) =>
+      ipcRenderer.invoke(ShareDeploymentIpc.CreateNodeDeployment, options),
+    get: (deploymentId: string) => ipcRenderer.invoke(ShareDeploymentIpc.Get, deploymentId),
+    getByLocalService: (options: ShareDeploymentGetByLocalServiceInput) =>
+      ipcRenderer.invoke(ShareDeploymentIpc.GetByLocalService, options),
   },
   asr: {
     createRealtimeSession: (options: AsrRealtimeSessionRequest) =>

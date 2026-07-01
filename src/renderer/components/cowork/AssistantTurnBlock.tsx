@@ -195,6 +195,7 @@ const AssistantTurnBlock: React.FC<{
   artifacts?: Artifact[];
   resolveLocalFilePath?: (href: string, text: string) => string | null;
   mapDisplayText?: (value: string) => string;
+  localServiceDirectory?: string;
   onOpenLocalService?: (artifact: Artifact) => void;
   onOpenHtmlFile?: (artifact: Artifact) => void;
   onForkMessage?: (messageId: string) => void;
@@ -208,6 +209,7 @@ const AssistantTurnBlock: React.FC<{
   artifacts,
   resolveLocalFilePath,
   mapDisplayText,
+  localServiceDirectory,
   onOpenLocalService,
   onOpenHtmlFile,
   onForkMessage,
@@ -228,8 +230,13 @@ const AssistantTurnBlock: React.FC<{
     [artifacts],
   );
   const artifactCards = useMemo(
-    () => artifacts ? dedupeArtifactsForDisplay(artifacts) : [],
-    [artifacts],
+    () => artifacts
+      ? dedupeArtifactsForDisplay(
+          artifacts,
+          { defaultProjectDirectory: localServiceDirectory },
+        )
+      : [],
+    [artifacts, localServiceDirectory],
   );
   const visibleArtifactCards = useMemo(() => {
     return artifactCardsExpanded ? artifactCards : artifactCards.slice(0, 3);
@@ -462,6 +469,7 @@ const AssistantTurnBlock: React.FC<{
                       <ArtifactPreviewCard
                         key={artifact.id}
                         artifact={artifact}
+                        localServiceDirectory={localServiceDirectory}
                         onOpenLocalService={onOpenLocalService}
                         onOpenHtmlFile={onOpenHtmlFile}
                       />

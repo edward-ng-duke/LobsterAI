@@ -39,7 +39,19 @@ import type {
   OpenClawEnginePhase as SharedOpenClawEnginePhase,
   OpenClawGatewayRepairErrorCode,
 } from '../../shared/openclawEngine/constants';
-import type { ShellOpenFailureReason } from '../../shared/shell/constants';
+import type {
+  ShareDeploymentAnalyzeProjectInput,
+  ShareDeploymentCreateNodeInput,
+  ShareDeploymentDetectCandidatesInput,
+  ShareDeploymentDetectCandidatesResult,
+  ShareDeploymentGetByLocalServiceInput,
+  ShareDeploymentProjectAnalysis,
+  ShareDeploymentResult,
+} from '../../shared/shareDeployment/constants';
+import type {
+  ShellGetBrowserAppsInput,
+  ShellOpenFailureReason,
+} from '../../shared/shell/constants';
 interface ApiResponse {
   ok: boolean;
   status: number;
@@ -910,8 +922,17 @@ interface IElectronAPI {
       apps: Array<{ name: string; path: string; isDefault: boolean; icon?: string }>;
       error?: string;
     }>;
+    getBrowserApps: (options?: ShellGetBrowserAppsInput) => Promise<{
+      success: boolean;
+      apps: Array<{ name: string; path: string; isDefault: boolean; icon?: string }>;
+      error?: string;
+    }>;
     openPathWithApp: (
       filePath: string,
+      appPath: string,
+    ) => Promise<ShellActionResponse>;
+    openUrlWithApp: (
+      url: string,
       appPath: string,
     ) => Promise<ShellActionResponse>;
   };
@@ -980,6 +1001,19 @@ interface IElectronAPI {
     }) => Promise<HtmlShareResult>;
     disable: (shareId: string) => Promise<HtmlShareResult>;
     get: (shareId: string) => Promise<{ success: boolean; share?: unknown; error?: string }>;
+  };
+  shareDeployment: {
+    detectProjectCandidates: (
+      options: ShareDeploymentDetectCandidatesInput,
+    ) => Promise<ShareDeploymentDetectCandidatesResult>;
+    analyzeProjectDirectory: (
+      options: ShareDeploymentAnalyzeProjectInput,
+    ) => Promise<ShareDeploymentProjectAnalysis>;
+    createNodeDeployment: (
+      options: ShareDeploymentCreateNodeInput,
+    ) => Promise<ShareDeploymentResult>;
+    get: (deploymentId: string) => Promise<ShareDeploymentResult>;
+    getByLocalService: (options: ShareDeploymentGetByLocalServiceInput) => Promise<ShareDeploymentResult>;
   };
   asr: {
     createRealtimeSession: (options: AsrRealtimeSessionRequest) => Promise<AsrRealtimeSessionResult>;
