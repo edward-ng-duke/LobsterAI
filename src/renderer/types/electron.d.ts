@@ -797,6 +797,9 @@ interface IElectronAPI {
       defaultFileName?: string;
       fileExtension?: string;
     }) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>;
+    exportSessionDiagnostics: (options: {
+      sessionId: string;
+    }) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>;
     cancelMediaTask: (taskId: string) => Promise<{ success: boolean; message?: string }>;
     getSubTaskHistory: (options: {
       parentSessionId: string;
@@ -904,6 +907,9 @@ interface IElectronAPI {
     ) => () => void;
     onStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void;
     onSessionsChanged: (callback: () => void) => () => void;
+    onSessionModelOverrideChanged?: (
+      callback: (data: { sessionId: string; modelOverride: string }) => void,
+    ) => () => void;
   };
   dialog: {
     selectDirectory: () => Promise<{ success: boolean; path: string | null }>;

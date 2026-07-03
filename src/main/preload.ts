@@ -411,6 +411,8 @@ contextBridge.exposeInMainWorld('electron', {
       defaultFileName?: string;
       fileExtension?: string;
     }) => ipcRenderer.invoke('cowork:session:exportText', options),
+    exportSessionDiagnostics: (options: { sessionId: string }) =>
+      ipcRenderer.invoke(CoworkIpcChannel.ExportSessionDiagnostics, options),
 
     // Subagent tracking
     getSubTaskHistory: (options: {
@@ -555,6 +557,13 @@ contextBridge.exposeInMainWorld('electron', {
       const handler = () => callback();
       ipcRenderer.on('cowork:sessions:changed', handler);
       return () => ipcRenderer.removeListener('cowork:sessions:changed', handler);
+    },
+    onSessionModelOverrideChanged: (
+      callback: (data: { sessionId: string; modelOverride: string }) => void,
+    ) => {
+      const handler = (_event: any, data: { sessionId: string; modelOverride: string }) => callback(data);
+      ipcRenderer.on(CoworkIpcChannel.SessionModelOverrideChanged, handler);
+      return () => ipcRenderer.removeListener(CoworkIpcChannel.SessionModelOverrideChanged, handler);
     },
     onOpenSessionFromNotification: (callback: (data: { sessionId: string }) => void) => {
       const handler = (_event: any, data: { sessionId: string }) => callback(data);

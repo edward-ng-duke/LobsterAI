@@ -39,6 +39,7 @@ import {
   setRemoteManaged,
   setSessions,
   setStreaming,
+  updateCurrentSessionModelOverride,
   updateMessageContent,
   updateSessionGoal,
   updateSessionPinned,
@@ -330,6 +331,13 @@ class CoworkService {
       }
     });
     this.streamListenerCleanups.push(errorCleanup);
+
+    const sessionModelOverrideCleanup = cowork.onSessionModelOverrideChanged?.((data) => {
+      store.dispatch(updateCurrentSessionModelOverride(data));
+    });
+    if (sessionModelOverrideCleanup) {
+      this.streamListenerCleanups.push(sessionModelOverrideCleanup);
+    }
 
     // Sessions changed listener (new channel sessions discovered by polling,
     // or reconcileWithHistory replaced messages for a channel session)
@@ -1066,6 +1074,25 @@ class CoworkService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to save session image',
+      };
+    }
+  }
+
+  async exportSessionDiagnostics(options: {
+    sessionId: string;
+  }): Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }> {
+    const cowork = window.electron?.cowork;
+    if (!cowork?.exportSessionDiagnostics) {
+      return { success: false, error: 'Cowork diagnostics export API not available' };
+    }
+
+    try {
+      const result = await cowork.exportSessionDiagnostics(options);
+      return result ?? { success: false, error: 'Failed to export session diagnostics' };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to export session diagnostics',
       };
     }
   }

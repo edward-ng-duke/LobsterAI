@@ -149,6 +149,7 @@ import {
   initScheduledTaskHelpers,
   registerScheduledTaskHandlers,
 } from './ipcHandlers/scheduledTask';
+import { registerSessionDiagnosticsHandlers } from './ipcHandlers/sessionDiagnostics';
 import { registerSkillHandlers } from './ipcHandlers/skills';
 import {
   type CoworkAgentEngine,
@@ -7249,6 +7250,14 @@ if (!gotTheLock) {
     },
   );
 
+  // ── Session diagnostics IPC ────────────────────────────────────────────
+
+  registerSessionDiagnosticsHandlers({
+    getDatabase: () => getStore().getDatabase(),
+    getAppVersion: () => app.getVersion(),
+    getDownloadsPath: () => app.getPath('downloads'),
+  });
+
   // ── Subagent tracking IPC ──────────────────────────────────────────────
 
   registerCoworkSubagentHandlers({
@@ -7379,13 +7388,17 @@ if (!gotTheLock) {
         patch.model = normalizeOpenClawModelRef(patch.model);
       }
       const runtime = getCoworkEngineRouter();
-      await runtime.patchSession(sessionId, patch);
+      const patchResult = await runtime.patchSession(sessionId, patch);
 
       if (patch.model !== undefined) {
+        const modelOverride =
+          patchResult && typeof patchResult.modelOverride === 'string'
+            ? patchResult.modelOverride
+            : patch.model ?? '';
         getCoworkStore().updateSession(
           sessionId,
           {
-            modelOverride: patch.model ?? '',
+            modelOverride,
           },
           { touchUpdatedAt: false },
         );

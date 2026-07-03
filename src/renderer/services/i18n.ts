@@ -712,6 +712,8 @@ const translations: Record<LanguageType, Record<string, string>> = {
     networkError: '网络错误',
     apiKeyRequired: '需要设置API密钥',
     configureApiKey: '请在设置中配置您的API密钥',
+    enableRequiresApiKey: '开启前请先输入 API Key',
+    enableRequiresLogin: '开启前请先完成登录',
 
     // 初始化
     initializationError: '初始化应用程序失败。请检查您的配置。',
@@ -1332,6 +1334,10 @@ const translations: Record<LanguageType, Record<string, string>> = {
     coworkExportImageInProgress: '正在导出图片...',
     coworkExportImageSuccess: '图片导出成功',
     coworkExportImageFailed: '导出图片失败',
+    coworkExportDiagnostics: '诊断包',
+    coworkExportDiagnosticsDesc: '包含原始会话数据，用于问题排查',
+    coworkExportDiagnosticsSuccess: '诊断包导出成功',
+    coworkExportDiagnosticsFailed: '导出诊断包失败',
     coworkExportAs: '导出为',
     coworkExportImage: '图片',
     coworkExportImageDesc: '保存为 PNG 截图',
@@ -3377,6 +3383,8 @@ const translations: Record<LanguageType, Record<string, string>> = {
     networkError: 'Network error',
     apiKeyRequired: 'API Key Required',
     configureApiKey: 'Please configure your API key in settings',
+    enableRequiresApiKey: 'Enter an API key before enabling this provider',
+    enableRequiresLogin: 'Sign in before enabling this provider',
 
     // Initialization
     initializationError: 'Failed to initialize application. Please check your configuration.',
@@ -4031,6 +4039,10 @@ const translations: Record<LanguageType, Record<string, string>> = {
     coworkExportImageInProgress: 'Exporting image...',
     coworkExportImageSuccess: 'Image exported successfully',
     coworkExportImageFailed: 'Failed to export image',
+    coworkExportDiagnostics: 'Diagnostics package',
+    coworkExportDiagnosticsDesc: 'Raw session data for troubleshooting',
+    coworkExportDiagnosticsSuccess: 'Diagnostics package exported',
+    coworkExportDiagnosticsFailed: 'Failed to export diagnostics package',
     coworkExportAs: 'Export as',
     coworkExportImage: 'Image',
     coworkExportImageDesc: 'Save as PNG screenshot',
