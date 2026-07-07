@@ -358,25 +358,36 @@ const App: React.FC = () => {
     setMainView('kits');
   }, []);
 
-  const handleKitTryAsking = useCallback((text: string, kitId: string) => {
+  const openHomeWithKit = useCallback((kitId: string, text?: string) => {
     dispatch(setActiveKitIds([kitId]));
     coworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
-    dispatch(setDraftCollaborationMode({
-      draftKey: '__home__',
-      mode: CoworkCollaborationMode.Default,
-    }));
-    // Set the draft prompt and kit selection in store BEFORE switching view, so that when
-    // CoworkPromptInput mounts/updates with draftKey='__home__', it picks up both.
-    dispatch(setDraftPrompt({ sessionId: '__home__', draft: text }));
+    if (text !== undefined) {
+      dispatch(setDraftCollaborationMode({
+        draftKey: '__home__',
+        mode: CoworkCollaborationMode.Default,
+      }));
+      // Set the draft prompt before switching view, so that when CoworkPromptInput
+      // mounts/updates with draftKey='__home__', it picks up the text.
+      dispatch(setDraftPrompt({ sessionId: '__home__', draft: text }));
+    }
     dispatch(setDraftKitIds({ draftKey: '__home__', kitIds: [kitId] }));
     setMainView('cowork');
     window.setTimeout(() => {
       window.dispatchEvent(new CustomEvent(CoworkUiEvent.FocusInput, {
-        detail: { resetCollaborationMode: true, text },
+        // Without text, keep any existing home draft and just focus with the kit selected
+        detail: text !== undefined ? { resetCollaborationMode: true, text } : { clear: false },
       }));
     }, 0);
   }, [dispatch]);
+
+  const handleKitTryAsking = useCallback((text: string, kitId: string) => {
+    openHomeWithKit(kitId, text);
+  }, [openHomeWithKit]);
+
+  const handleKitUse = useCallback((kitId: string) => {
+    openHomeWithKit(kitId);
+  }, [openHomeWithKit]);
 
   const handleToggleSidebar = useCallback(() => {
     void reportYdAnalyzer({
@@ -568,7 +579,6 @@ const App: React.FC = () => {
     window.electron.window.close();
   }, []);
 
-  const handleWelcomeClose = useCallback(() => setShowWelcome(false), []);
   const handleWelcomeLogin = useCallback(async () => {
     setShowWelcome(false);
     await authService.login();
@@ -1053,6 +1063,7 @@ const App: React.FC = () => {
                 onNewChat={handleNewChat}
                 updateBadge={isSidebarCollapsed ? updateBadge : null}
                 onTryAsking={handleKitTryAsking}
+                onUseKit={handleKitUse}
               />
             ) : mainView === 'mcp' ? (
               <McpView
@@ -1116,7 +1127,6 @@ const App: React.FC = () => {
         <WelcomeDialog
           onLogin={handleWelcomeLogin}
           onCustomModel={handleWelcomeCustomModel}
-          onClose={handleWelcomeClose}
         />
       )}
     </div>
