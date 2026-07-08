@@ -100,14 +100,14 @@ flowchart LR
 将"本地 HTTP 预览服务器 + Electron iframe"替换为一套服务端 **预览网关**，核心三要素：
 
 1. **独立沙箱域名**：预览内容全部从与主应用不同源的域名提供，例如 `usercontent-lobsterai.com`（下称"沙箱域名"）；主应用在 `app.lobsterai.com`。跨源天然隔离 cookie / localStorage / 主应用 DOM。
-2. **签名 URL + 会话级签名前缀**：**顶层入口资源**（HTML 入口、图片、视频、PPTX 源文件等）通过短时效 HMAC 签名 URL 提供，绑定 `tenantId` + `sessionId` + `artifactId` + 过期时间，杜绝越权访问其他租户产物。但**文件型 HTML 内的相对子资源**（`./style.css`、`img/a.png`）**不做 per-file 签名**——浏览器对相对子请求不会逐个带 `sig`/`exp`，无法逐个验签——改用**会话级签名 Cookie / 令牌前缀**（作用域限该沙箱预览路径）鉴权，详见 §4.1 与 附录 C D16。
+2. **签名 URL + 预览会话级签名前缀**：**顶层入口资源**（HTML 入口、图片、视频、PPTX 源文件等）通过短时效 HMAC 签名 URL 提供，按 `14` §5.4 绑定 `method + tenantId + previewSessionId + artifactId + path + exp + kid`，杜绝越权访问其他租户产物。`previewSessionId` 是预览网关短期授权 ID，不是 Cowork `sessionId`，也不得进入对象存储前缀。但**文件型 HTML 内的相对子资源**（`./style.css`、`img/a.png`）**不做 per-file 签名**——浏览器对相对子请求不会逐个带 `sig`/`exp`，无法逐个验签——改用**预览会话级签名 Cookie / 令牌前缀**（作用域限该沙箱预览路径）鉴权，详见 §4.1 与 附录 C D16。
 3. **iframe 隔离 + 严格 CSP**：主应用用严格 `sandbox` 属性的 iframe 嵌入沙箱域名 URL，网关响应带强 CSP 头。
 
 ```mermaid
 flowchart TB
   subgraph 主应用[app.lobsterai.com]
     R[React ArtifactRenderer]
-    R -->|POST /artifacts/:id/preview| API[后端 REST]
+    R -->|POST /api/v1/artifacts/{artifactId}/preview| API[后端 REST]
     API -->|返回签名 URL| R
     R -->|iframe src = 沙箱域名签名URL| IF[iframe sandbox+CSP]
   end
@@ -125,7 +125,7 @@ flowchart TB
 |---|---|---|
 | AI 生成 HTML 含恶意 `<script>` | 读取主应用 cookie / localStorage / 调用 `window.electron`/API | 跨源隔离，脚本拿不到主应用 origin 的存储与 API 凭证 |
 | 产物内 `fetch('/api/...')` 携带 cookie | CSRF、越权调用后端 | 沙箱域名不设主应用 cookie；后端不接受该 origin 无 token 请求 |
-| 产物间互相引用绕过 | 租户 A 页面读租户 B 资源 | 签名 URL 绑定租户，网关校验路径前缀 `tenant/{tenantId}/...` |
+| 产物间互相引用绕过 | 租户 A 页面读租户 B 资源，或复用其它预览会话/Artifact 授权 | 签名 URL 绑定 `tenantId + previewSessionId + artifactId + path`，网关校验路径前缀 `tenants/{tenantId}/...` |
 
 沙箱域名与主域名不能是子域关系下会共享 cookie 的写法（避免 `.lobsterai.com` 通配 cookie 泄漏）；推荐**完全不同的注册域名**，与 `14-安全合规与多租户隔离.md` 的隔离原则一致。
 
@@ -144,12 +144,12 @@ flowchart TB
 ```
 POST /api/v1/artifacts/{artifactId}/preview
   body: { entryFile?: string }
-  → 200 { sessionId, url, expiresAt }
-     url = https://usercontent-lobsterai.com/p/{sessionId}/{entryRelPath}?sig=...&exp=...
+  → 200 { previewSessionId, url, expiresAt }
+     url = https://usercontent-lobsterai.com/p/{previewSessionId}/{entryRelPath}?sig=...&exp=...
 ```
 
-2. 后端预览网关校验**入口签名**后，从对象存储 `tenant/{tenantId}/sessions/{sessionId}/artifacts/{artifactId}/` 前缀流式返回文件（HTML 及其相对引用的 css/js/图片）。
-3. **相对子资源鉴权 = 会话级签名 Cookie / 令牌前缀，不做 per-file 签名**（附录 C D16）：iframe 加载入口 HTML 时，网关在入口响应上下发一个**作用域限于 `/p/{sessionId}/` 路径的短时签名 Cookie**（或把签名令牌编入 URL 前缀段），浏览器随后对 `./style.css`、`img/a.png` 等相对子请求自动携带该 Cookie / 前缀即可通过校验。逐文件 HMAC 签名在此不可行——浏览器发起的相对子请求不会带 `sig`/`exp`；同时须确保「沙箱域不设主应用 Cookie」的策略与该预览 Cookie 不冲突（Cookie 仅限沙箱域自身、`SameSite`/`Path` 收窄）。网关仍在 session 前缀内做与桌面端相同的路径穿越防护。
+2. 后端预览网关校验**入口签名**后，从对象存储 `tenants/{tenantId}/ws-{workspaceId}/artifacts/{artifactId}/` 前缀流式返回文件（HTML 及其相对引用的 css/js/图片）；`previewSessionId` 只作为预览会话/签名维度，不作为对象存储顶层隔离前缀，也不等同于 Cowork `sessionId`。
+3. **相对子资源鉴权 = 预览会话级签名 Cookie / 令牌前缀，不做 per-file 签名**（附录 C D16）：iframe 加载入口 HTML 时，网关在入口响应上下发一个**作用域限于 `/p/{previewSessionId}/` 路径的短时签名 Cookie**（或把签名令牌编入 URL 前缀段），浏览器随后对 `./style.css`、`img/a.png` 等相对子请求自动携带该 Cookie / 前缀即可通过校验。逐文件 HMAC 签名在此不可行——浏览器发起的相对子请求不会带 `sig`/`exp`；同时须确保「沙箱域不设主应用 Cookie」的策略与该预览 Cookie 不冲突（Cookie 仅限沙箱域自身、`SameSite`/`Path` 收窄）。网关仍在预览会话前缀内做与桌面端相同的路径穿越防护。
 4. iframe 收紧 sandbox：
 
 ```tsx
@@ -186,7 +186,7 @@ Cache-Control: no-store
 
 关键订正（附录 C D16）：`script-src` / `style-src` **必须加沙箱 host 自身 `'self'`**——原文只有 `'unsafe-inline'` 会拦掉文件型 HTML 外链的 `<script src>` / `<link rel=stylesheet>`，直接使验收 #1（含相对 css/js）失败；并补 `worker-src blob:`、`base-uri`、`form-action` 收口 worker 与逃逸面。`connect-src 'none'` 默认阻断产物 `fetch`/`XHR`/`WebSocket`，避免数据外泄与 SSRF；确有联网需求（如产物调公共 CDN）时再按需放开，并在 §8 验收里单列。CSP 具体基线与 `14-安全合规与多租户隔离.md` 保持一致。
 
-**文件变更触发刷新**：桌面端用 `artifact:file:changed` 事件让 iframe reload（`HtmlRenderer.tsx:65`）。Web 端产物写入对象存储后由后端通过 WS `cowork:stream:*` 或专门的 `artifact:file:changed` WS 事件通知，前端换 `?_t=` 兜底刷新（见 `03` 桥事件映射）。
+**文件变更触发刷新**：桌面端用 `artifact:file:changed` 事件让 iframe reload（`HtmlRenderer.tsx:65`）。Web 端产物写入对象存储 / PVC 工作区后，由文件服务通过 canonical WS `files:changed {workspaceId, relPath, kind}` 通知；浏览器桥可为旧渲染器重放 `artifact:file:changed` 兼容别名，前端换 `?_t=` 兜底刷新（见 `03` 桥事件映射与 `08` §4.5）。
 
 ### 4.2 HTML inline（AI 生成、无文件）
 
@@ -305,7 +305,7 @@ name:{type}:{fileName} // video
 **Web 端改造**：
 
 - 保留 `url:*` / `name:*` 逻辑（远程 URL/内容不变）。
-- `file:*` 的路径不再是本地绝对路径，而是**对象存储相对 key**（`sessions/{sessionId}/artifacts/.../a.html`）。`normalizeFilePathForDedup`（`artifactParser.ts:44`）仍适用（统一分隔符 + 小写），但输入变为工作区相对路径，需在解析阶段把 `file://`/绝对路径归一为租户工作区相对 key。
+- `file:*` 的路径不再是本地绝对路径，而是**租户工作区相对 key**（例如 `ws-{workspaceId}/artifacts/{artifactId}/a.html`，对象存储正式前缀由服务端拼成 `tenants/{tenantId}/ws-{workspaceId}/...`）。`normalizeFilePathForDedup`（`artifactParser.ts:44`）仍适用（统一分隔符 + 小写），但输入变为工作区相对路径，需在解析阶段把 `file://`/绝对路径归一为租户工作区相对 key；不得再使用 `sessions/{sessionId}` 作为 artifact 存储前缀或挂载单位。
 - `shouldPreferArtifact`（`artifactParser.ts:69`）中"file 协议 < 远程 URL"的优先级语义不变，只是"本地文件"含义变为"工作区文件"。
 
 这部分是**纯逻辑**，可继续用 Vitest 覆盖（现有 `.test.ts` 模式），几乎不涉及 IPC。
@@ -326,7 +326,7 @@ name:{type}:{fileName} // video
 | 停用来源 | `HtmlShareDisabledSource`：user/admin/moderation/active_limit/system |
 | 错误码 | `HtmlShareErrorCode`：如 `UnsafeSvg=41312`、`ActiveShareLimitReached=41311`、`SubscriptionRequired=41307`、`AccessCodeInvalid=41308` |
 | 打包限制 | `htmlSharePackager.ts`：单 zip 20MB、总 100MB、单文件 10MB、≤500 文件、扩展名白名单、排除 `.git`/`node_modules`/`.openclaw`/`memory` 敏感目录 |
-| API 端点 | `htmlShareClient.ts`：`POST /api/html-shares`、`.../{id}`、`.../{id}/status`、`.../{id}/access-mode` |
+| 现状旧云 API 端点（非目标 SaaS 路由） | `htmlShareClient.ts`：`POST /api/html-shares`、`.../{id}`、`.../{id}/status`、`.../{id}/access-mode` |
 
 ### 7.2 自建服务设计
 
@@ -335,8 +335,8 @@ name:{type}:{fileName} // video
 ```mermaid
 flowchart LR
   U[用户点击分享] --> API[POST /api/v1/html-shares]
-  API --> PK[打包/扫描依赖<br/>复用 htmlSharePackager]
-  PK --> S3[(对象存储<br/>shares/{tenantId}/{shareId}/)]
+  API --> PK[后端隔离容器打包/扫描<br/>复用限额与错误码语义]
+  PK --> S3[(对象存储<br/>tenants/{tenantId}/shares/{shareId}/)]
   API --> DB[(Postgres html_shares<br/>tenant_id,shareId,accessMode,status)]
   API --> R[返回 shareId + 公开URL]
   V[访客] --> PUB[GET /s/{shareId}/ 公开子站/CDN]
@@ -366,7 +366,7 @@ CREATE TABLE html_shares (
   moderation_status TEXT NOT NULL DEFAULT 'pending',  -- 审核态（现状 moderationStatus）：pending/approved/rejected
   entry_file        TEXT NOT NULL,
   source_sha256     TEXT,
-  storage_prefix    TEXT NOT NULL,             -- shares/{tenantId}/{shareId}/
+  storage_prefix    TEXT NOT NULL,             -- tenants/{tenantId}/shares/{shareId}/
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -383,7 +383,7 @@ CREATE UNIQUE INDEX html_shares_source_uk
 
 - 独立域名（与沙箱域名同源策略，绝不与主应用同域）。
 - 静态资源经对象存储 + CDN 直供；`code` 模式在网关校验访问码后签发短时 URL。
-- 每个分享严格限制在 `shares/{tenantId}/{shareId}/` 前缀，路径穿越防护同 §4.1。
+- 每个分享严格限制在 `tenants/{tenantId}/shares/{shareId}/` 前缀，路径穿越防护同 §4.1。
 - CSP / `frame-ancestors` 同预览网关基线；SVG/HTML 上传时净化（复用 `UnsafeSvg` 拦截）。
 - 保留配额门控：`SubscriptionRequired`/`ActiveShareLimitReached` 等错误码语义在新计费系统（`09-模型代理与计费.md`）里落地。
 
@@ -425,20 +425,20 @@ HTML share 一旦公开，就不再只是“预览技术能力”，而是平台
 | IPC 通道（5 个，`ShareDeploymentIpc`） | `detectProjectCandidates` / `analyzeProjectDirectory` / `createNodeDeployment` / `get` / `getByLocalService` |
 | 部署状态机（`ShareDeploymentStatus`） | `queued → deploying → live`，失败 / 过期 / 停止分支 `deploy_failed` / `expired` / `stopped` |
 | 两类部署源（`ShareDeploymentKind`） | `node_service`（Node 服务，含 Next/Nuxt standalone、Vite/Angular 产物识别）与 `static_site`（构建产物静态站） |
-| 与 htmlShare 关联 | 部署记录挂到 html_share；现状客户端打 `POST /api/share-deployments/{node,static}`、`GET /api/share-deployments/{id}`、`GET /api/html-shares/{shareId}/deployment` |
+| 与 htmlShare 关联 | 部署记录挂到 html_share；现状客户端打旧云路由 `POST /api/share-deployments/{node,static}`、`GET /api/share-deployments/{id}`、`GET /api/html-shares/{shareId}/deployment`（非目标 SaaS 路由） |
 | 打包 / 分析器 | `nodeServiceDeploymentPackager.ts` / `nodeServiceProjectAnalyzer.ts`，同样深度耦合本地 fs（`os.tmpdir` / `createWriteStream` / 目录遍历），**须重写**（同 §7.2、附录 C D15） |
 
-**Web 化映射（若做）**：
+**Web 化映射（静态站 GA / Node 服务 GA 后续）**：
 
 | 旧 IPC | 新 REST |
 |---|---|
 | `shareDeployment:detectProjectCandidates` | `POST /api/v1/share-deployments/candidates` |
 | `shareDeployment:analyzeProjectDirectory` | `POST /api/v1/share-deployments/analyze` |
-| `shareDeployment:createNodeDeployment` | `POST /api/v1/share-deployments/node`（`static_site` 走同族 `/static`） |
+| `shareDeployment:createNodeDeployment` | 历史 IPC 名保留；`kind=static_site` 走 `POST /api/v1/share-deployments/static`（GA），`kind=node_service` 走 `POST /api/v1/share-deployments/node` 但 V1-V6 GA 主线隐藏入口；REST 调用返回 `501` + 统一错误信封 `UNSUPPORTED_FEATURE`，bridge 适配为 `UnsupportedFeatureResult` |
 | `shareDeployment:get` | `GET /api/v1/share-deployments/{deploymentId}` |
 | `shareDeployment:getByLocalService` | `GET /api/v1/html-shares/{shareId}/deployment`（按会话 + `localServiceUrl` 反查） |
 
-部署进度（`queued/deploying/...` 状态流转）经 WS 事件推送（复用 `03` 的产物事件通道，payload 含 `deploymentId` / `status` / `errorMessage`）；字段级契约以 `libs/shared/contracts` 为准（附录 C D1）。
+部署进度（`queued/deploying/...` 状态流转）经 WS 事件推送（复用 `03` 的产物事件通道，payload 含 `deploymentId` / `status` / `errorMessage`）；字段级契约以 `libs/shared/contracts` 为准（附录 C D1）。PR-1 contracts 需把上述静态站 GA 路径和 Node 服务 unsupported 响应都纳入 OpenAPI/契约测试，避免 `shareDeployment:*` 因不在附录 A 旧表而被桥层静默丢弃。
 
 **Pod 编排要点**：`shareDeployment` 的输入是**租户 Pod 内的项目目录 + 正在运行的 local-service**（`projectDirectory` / `localServiceUrl` 均为 Pod 内地址），与 §5 local-service 完全同源，因此：
 
@@ -446,7 +446,7 @@ HTML share 一旦公开，就不再只是“预览技术能力”，而是平台
 - **运行目标**：`node_service` 需要一个**常驻可运行时**（独立 Pod / 无服务器运行时），与 `07-OpenClaw运行时编排与沙箱隔离.md` 的 Pod 生命周期 / 休眠策略冲突点同 §5；`static_site` 落对象存储 + CDN，可与 §7.2 分享站点复用。
 - **越权 / SSRF / 供应链**：部署即运行不可信代码，隔离、egress、供应链门控随 `14`。
 
-**GA 主线决策**：与 §5 local-service 一致——`node_service` 真部署**在 V5 商业化生态前降级**，明确登记 `13-功能取舍与降级清单.md`（P1-11 项，不静默丢弃）；`static_site` 可随 §7.2 分享站点一并提供。完整部署契约（provider 编排、运行时选型、部署计费）作为 GA 后续增强，届时字段级契约以 `libs/shared/contracts` 为准。
+**GA 主线决策**：与 §5 local-service 一致——`node_service` 真部署在 **V1-V6 GA 主线均列为 GA 后续 / unsupported**，明确登记 `13-功能取舍与降级清单.md`（P1-11 项，不静默丢弃）；`static_site` 可随 §7.2 分享站点一并提供。完整部署契约（provider 编排、运行时选型、部署计费）作为 GA 后续增强，届时字段级契约以 `libs/shared/contracts` 为准。
 
 ---
 
@@ -461,27 +461,27 @@ flowchart TB
   L2 --> L3[层3 严格CSP<br/>connect-src none / frame-ancestors]
   L3 --> L4[层4 iframe sandbox<br/>无 allow-same-origin]
   L4 --> L5[层5 内容净化<br/>SVG/HTML DOMPurify]
-  L5 --> L6[层6 存储前缀隔离<br/>tenant/{id} 路径穿越防护]
+  L5 --> L6[层6 存储前缀隔离<br/>tenants/{id} 路径穿越防护]
 ```
 
 | 威胁 | 防御 |
 |---|---|
 | AI HTML/SVG XSS | 独立域名 + srcDoc opaque origin / iframe sandbox 无 same-origin + CSP + DOMPurify |
-| 越权访问他租户产物 | 签名 URL 绑定 `tenantId`+`sessionId`+过期；网关校验存储前缀 |
+| 越权访问他租户产物 | 签名 URL 绑定 `tenantId`+`previewSessionId`+`artifactId`+过期；网关校验存储前缀 |
 | 产物外泄数据（fetch 主应用/内网） | CSP `connect-src 'none'`；预览网关 SSRF 防护；产物不携带主应用 cookie |
 | 点击劫持 | `frame-ancestors https://app.lobsterai.com`；分享站禁止被任意页面嵌入 |
 | 路径穿越 | 前缀校验（沿用 `htmlPreviewServer.ts:285` 思路） |
 | 分享内容审核 | `disabled_source: moderation` + `UnsafeSvg` 拦截；打包排除敏感目录（`.openclaw`/`memory`） |
 | MIME 嗅探 | `X-Content-Type-Options: nosniff` + 显式 Content-Type |
 
-签名 URL 建议：**顶层入口**用 HMAC-SHA256(`tenantId|sessionId|artifactId|path|exp`)，`exp` ≤ 10 分钟，密钥仅后端持有并定期轮换。**文件型 HTML 的相对子资源不逐个签 path**——改由入口响应下发的**会话级签名 Cookie / 令牌前缀**承载鉴权（附录 C D16），作用域限 `/p/{sessionId}/`、随浏览器相对子请求自动携带。
+签名 URL 建议：**顶层入口**按 `14` §5.4 的固定顺序规范串 HMAC-SHA256(`v1\n{method}\n{tenantId}\n{previewSessionId}\n{artifactId}\n{path}\n{exp}\n{kid}`)，`exp` ≤ 10 分钟，密钥仅后端持有并按 `kid` 轮换。**文件型 HTML 的相对子资源不逐个签 path**——改由入口响应下发的**预览会话级签名 Cookie / 令牌前缀**承载鉴权（附录 C D16），作用域限 `/p/{previewSessionId}/`、随浏览器相对子请求自动携带。
 
 ---
 
 ## 9. 迁移步骤（建议顺序）
 
 1. **抽离纯逻辑**：确认 `artifactParser.ts` 去重逻辑无 Electron 依赖，补 Vitest；调整 `file:*` 键为工作区相对 key。
-2. **浏览器桥打桩**：`window.electron.artifact.*`（`createPreviewSession` / `destroyPreviewSession` / `createOfficePreviewSession` / `watchFile` / `unwatchFile`）改为调后端 REST，返回签名 URL 结构不变（保 `{success,url,sessionId}` 形状，减少渲染器改动）。**产物内联读写桥须保持现状 shim 形状**：`saveInlineFile({ dataBase64, fileName, mimeType, cwd }) -> { success, path }`（25MB 上限）、`readFileAsDataUrl(...) -> { success, dataUrl }`——桥把新 REST 响应适配回旧契约形状，避免打断 `ArtifactPanel` / `CodeRenderer`（见 附录 C §3.4 / P1-7）。见 `03`。
+2. **浏览器桥打桩**：`window.electron.artifact.*`（`createPreviewSession` / `destroyPreviewSession` / `createOfficePreviewSession` / `watchFile` / `unwatchFile`）改为调后端 REST；后端契约字段统一为 `previewSessionId`，若 `IElectronAPI` 现状必须保留 `{ success, url, sessionId }` 形状，只允许桥层把 `previewSessionId` 映射成兼容别名 `sessionId`，不得把该别名写入对象存储 key、HMAC payload、REST DTO 或 AsyncAPI。**产物内联读写桥须保持现状 shim 形状**：`saveInlineFile({ dataBase64, fileName, mimeType, cwd }) -> { success, path }`（25MB 上限）、`readFileAsDataUrl(...) -> { success, dataUrl }`——桥把新 REST 响应适配回旧契约形状，避免打断 `ArtifactPanel` / `CodeRenderer`（见 附录 C §3.4 / P1-7）。见 `03`。
 3. **预览网关服务**：新建沙箱域名服务，实现签名校验 + 对象存储流式返回 + CSP 头 + 路径穿越防护。
 4. **图片/视频/文档** 接对象存储签名 URL（依赖 `08`）。
 5. **PPTX/document** 从本地 preview server 迁到签名 URL 供给；pptx-preview 静态资源改主应用打包托管。
@@ -497,7 +497,7 @@ flowchart TB
 |---|---|---|
 | 1 | HTML 文件产物在预览网关沙箱域名下正确渲染，含相对 css/js/图片引用 | 通过 |
 | 2 | 预览 iframe 内脚本无法读取主应用 cookie/localStorage/API token | 渗透测试无法读取 |
-| 3 | 签名 URL 过期后（>10min）返回 403；篡改 `tenantId`/路径返回 403 | 通过 |
+| 3 | 签名 URL 过期后（>10min）返回 403；篡改 `tenantId`、`previewSessionId`、`artifactId`、`path`、`method` 或 `kid` 返回 403 | 通过 |
 | 4 | 租户 A 无法通过任何 URL 访问租户 B 的产物或分享 | 越权测试全部拒绝 |
 | 5 | inline HTML srcDoc 为 opaque origin，`allow-same-origin` 永不出现 | 代码审查 + DOM 断言 |
 | 6 | SVG/HTML 产物经 DOMPurify/净化，`<script>` 注入被拦截或不执行 | XSS 用例不触发 |
@@ -518,7 +518,7 @@ flowchart TB
 | 风险 | 影响 | 缓解 | 关联 |
 |---|---|---|---|
 | AI 产物 XSS 突破隔离 | 租户数据泄漏 | 独立域名 + 多层 CSP/sandbox + 净化；安全评审为发布门禁 | `14` |
-| 签名 URL 泄漏/重放 | 短时越权访问 | 短过期 + 绑定租户/会话 + IP/UA 可选绑定 + 密钥轮换 | `14` |
+| 签名 URL 泄漏/重放 | 短时越权访问 | 短过期 + 绑定 `method + tenantId + previewSessionId + artifactId + path + exp + kid`（不是 Cowork `sessionId`）+ IP/UA 可选绑定 + 密钥轮换 | `14` |
 | PPTX/DOCX 前端库保真度不足 | 用户体验回退 | GA 主线接受与桌面端同等保真；GA 后续上服务端 LibreOffice 转 PDF | `13` |
 | 大文件签名 URL 下载慢 | 预览卡顿 | CDN 加速 + Range + 缩略图先行 | `08`,`15` |
 | local-service 降级引发用户预期落差 | 功能缺失投诉 | 文档明确 + 降级提示 + GA 后续 Pod 端口代理路线图 | `13` |
@@ -529,7 +529,7 @@ flowchart TB
 
 ## 12. 与其他章节的接口
 
-- 浏览器桥与 WS 事件（`artifact:file:changed`、`createPreviewSession` 桩）→ `03-前端与传输层改造.md`。
+- 浏览器桥与 WS 事件（canonical `files:changed` / 兼容别名 `artifact:file:changed`、`createPreviewSession` 桩）→ `03-前端与传输层改造.md`。
 - 预览网关/分享站点部署与 CDN/域名 → `15-部署运维与可观测性.md`。
 - 对象存储路径规划、签名、缩略图 → `08-文件工作区与对象存储.md`。
 - 沙箱域名、CSP 基线、SSRF、签名密钥管理 → `14-安全合规与多租户隔离.md`。

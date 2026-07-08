@@ -8,6 +8,7 @@ interface ImageRendererProps {
 
 const ImageRenderer: React.FC<ImageRendererProps> = ({ artifact }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [displayedSrc, setDisplayedSrc] = useState('');
   const [scale, setScale] = useState(1);
   const [error, setError] = useState(false);
 
@@ -27,7 +28,37 @@ const ImageRenderer: React.FC<ImageRendererProps> = ({ artifact }) => {
     return () => el.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
 
-  if (!artifact.content) {
+  useEffect(() => {
+    if (!artifact.content) {
+      setDisplayedSrc('');
+      setError(false);
+      return;
+    }
+
+    if (artifact.content === displayedSrc) {
+      setError(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (isCancelled) return;
+      setDisplayedSrc(artifact.content);
+      setError(false);
+    };
+    image.onerror = () => {
+      if (isCancelled || displayedSrc) return;
+      setError(true);
+    };
+    image.src = artifact.content;
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [artifact.content, displayedSrc]);
+
+  if (!artifact.content && !displayedSrc) {
     return (
       <div className="flex items-center justify-center h-full text-muted text-sm">
         Loading image...
@@ -35,7 +66,7 @@ const ImageRenderer: React.FC<ImageRendererProps> = ({ artifact }) => {
     );
   }
 
-  if (error) {
+  if (error && (!displayedSrc || displayedSrc === artifact.content)) {
     return (
       <div className="flex items-center justify-center h-full text-muted text-sm">
         Failed to load image
@@ -50,10 +81,12 @@ const ImageRenderer: React.FC<ImageRendererProps> = ({ artifact }) => {
         style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
       >
         <img
-          src={artifact.content}
+          src={displayedSrc}
           alt={artifact.title}
           className="max-w-full max-h-full object-contain"
-          onError={() => setError(true)}
+          onError={() => {
+            if (displayedSrc === artifact.content) setError(true);
+          }}
         />
       </div>
       {scale !== 1 && (

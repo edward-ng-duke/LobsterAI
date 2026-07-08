@@ -89,6 +89,17 @@ OpenClaw environment variables:
   when intentionally developing OpenClaw locally.
 - `OPENCLAW_FORCE_BUILD=1`: force runtime rebuild where supported by scripts.
 
+## Cloud And Production Network Policy
+
+Testing and sandbox-image build environments may connect to the public internet.
+Use that phase to download and bake required Python packages and other runtime
+dependencies into the sandbox image.
+
+Production machines must not connect to the public internet. Do not rely on
+production runtime `pip`, `npm`, model-provider, browser, or tool calls to fetch
+external resources. Any dependency needed in production must be pre-bundled in
+the image or supplied from an approved internal source before deployment.
+
 ## Testing
 
 The current official test path is Vitest:

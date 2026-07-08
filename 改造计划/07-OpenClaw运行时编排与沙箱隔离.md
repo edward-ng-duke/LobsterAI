@@ -1,6 +1,6 @@
 # OpenClaw 运行时编排与多租户沙箱隔离（最难一章）
 
-> 本文档面向后端架构师、平台/SRE 工程师与安全工程师，说明如何把 LobsterAI 当前"单机本地 gateway"的 OpenClaw 运行时，改造为多租户 SaaS 下"每用户/每会话一个隔离沙箱 Pod"的运行时编排体系。这是整个改造计划中风险最高、技术最难、成本最敏感的一章。其它章节（`03-前端与传输层改造.md`、`04-后端服务与API设计.md`、`08-文件工作区与对象存储.md`、`14-安全合规与多租户隔离.md`、`15-部署运维与可观测性.md`）会反复引用本文的编排契约与隔离基线。
+> 本文档面向后端架构师、平台/SRE 工程师与安全工程师，说明如何把 LobsterAI 当前"单机本地 gateway"的 OpenClaw 运行时，改造为多租户 SaaS 下"每会话一个隔离沙箱 Pod，绑定 `tenant_id`/`session_id`/工作区租约"的运行时编排体系。这是整个改造计划中风险最高、技术最难、成本最敏感的一章。其它章节（`03-前端与传输层改造.md`、`04-后端服务与API设计.md`、`08-文件工作区与对象存储.md`、`14-安全合规与多租户隔离.md`、`15-部署运维与可观测性.md`）会反复引用本文的编排契约与隔离基线。
 
 ---
 
@@ -24,7 +24,7 @@ LobsterAI 的 OpenClaw runtime 本质上是一个**会执行不可信代码**的
 
 本文的设计分两层落地：
 
-- **第一版 V1（可行性验证）**：只要求一个真实 OpenClaw gateway 在 gVisor/Kata 候选沙箱中跑通一条 turn，并证明 config 注入、PVC 工作区、模型出网封锁、基础逃逸测试可行。V1 的产物是 go/no-go 证据，不是生产编排器。
+- **第一版 V1（可行性验证）**：只要求一个真实 OpenClaw gateway 在 gVisor/Kata 候选沙箱中跑通一条 turn，并证明 config 注入、PVC 工作区、provider 直连封锁 + D8 egress 白名单、基础逃逸测试可行。V1 的产物是 go/no-go 证据，不是生产编排器。
 - **第四版 V4（运行时强化）**：才交付 Runtime Orchestrator、每会话 Pod 自动编排、预热容量、自愈、ResourceQuota、egress 审计和生产性能目标。
 
 如果 V1 的任一硬门槛不通过，后续只能做不依赖阻断项的设计/mock，不能把失败假设带入 V2/V3/V4。
@@ -39,7 +39,7 @@ LobsterAI 的 OpenClaw runtime 本质上是一个**会执行不可信代码**的
 |---|---|
 | Linux 版能否构建，`resources/cfmind` 是否完整，原生模块是否匹配目标架构 | V1 Sandbox 镜像尖刺、`15` OpenClaw runtime 镜像化 |
 | Electron 必须有显示服务器、Xvfb/noVNC 可跑完整 GUI | 仅作为旧 GUI 调试/PoC；GA Sandbox 不运行浏览器 UI |
-| 独立 `HOME` 能隔离 `userData`、SQLite、OpenClaw state、默认工作目录 | 映射为 Pod state 卷 + 租户 PVC；用于确定哪些路径要注入/挂载 |
+| 独立 `HOME` 能隔离 `userData`、SQLite、OpenClaw state、默认工作目录 | 拆分为 Pod `/state` 运行时动态 state + 租户 PVC 工作区；用于确定哪些路径要注入/挂载 |
 | `shell.openExternal` + loopback OAuth 在容器内需要浏览器 | 只影响旧 GUI 容器 PoC；GA Web 采用标准 OIDC 重定向，不走容器内浏览器 |
 | 单实例资源约 2-4GB、50 实例需错峰启动/内存上限/日志上限 | 转化为 Sandbox resourceClass、压测、预热容量和容量风险 |
 | noVNC 入口必须加 TLS/认证，否则直接暴露桌面 | 纳入安全红线：noVNC 不得成为 GA 产品入口，调试入口必须短时、内网、强认证 |
@@ -95,9 +95,10 @@ runtime 事件从 gateway 经 WebSocket 上来，由 `openclawRuntimeAdapter.ts`
 | `messageUpdate` | `{ sessionId, messageId, content, metadata? }` | `cowork:stream:messageUpdate` |
 | `sessionStatus` | `{ sessionId, status }` | `cowork:stream:sessionStatus` |
 | `contextUsageUpdate` | `{ sessionId, usage }` | `cowork:stream:contextUsage` |
+| `goalUpdate` | `{ sessionId, goal }` | `cowork:stream:goal` |
 | `contextMaintenance` | `{ sessionId, active }` | `cowork:stream:contextMaintenance` |
 | `permissionRequest` | `{ sessionId, request }` | `cowork:stream:permission` |
-| （权限撤销） | `{ requestId }` | `cowork:stream:permissionDismiss` |
+| （权限撤销） | `{ requestId }`（SaaS `StreamEnvelope` 顶层必须带 `tenantId/sessionId` 供路由与断言） | `cowork:stream:permissionDismiss` |
 | `complete` | `{ sessionId, claudeSessionId? }` | `cowork:stream:complete` |
 | `error` | `{ sessionId, error }` | `cowork:stream:error` |
 
@@ -107,7 +108,7 @@ GatewayClient 的请求侧（Cowork → gateway）通过 `request(method, params
 
 `openclawConfigSync.ts` 把 LobsterAI 的 SQLite/内存状态渲染成 `{state}/openclaw.json` + 工作区 markdown 文件（`AGENTS.md`/`MEMORY.md` 等）。主要字段：providers/models、agents.defaults.workspace、plugins.entries、mcp.servers、cron.store、channels/bindings。其中 `gateway.auth.token` 写的是占位符 `${OPENCLAW_GATEWAY_TOKEN}`，spawn 时由环境变量替换。
 
-改造后，**config sync 的"落盘目标"从本机 `userData` 变成目标 Pod 的 state 卷**——这是本章 §5 的重点。
+改造后，**config sync 的"落盘目标"从本机 `userData` 拆成两个受控落点**：`openclaw.json`、端口/token 引用等每会话动态配置写 Pod `/state`（或 Secret/env 注入），`AGENTS.md`/`MEMORY.md`/`SOUL.md`/`IDENTITY.md` 等托管工作区文件写同一工作区 PVC 的 `/workspace/state`，并受工作区单写者租约约束——这是本章 §5 的重点。
 
 ### 1.5 现状架构图
 
@@ -133,13 +134,13 @@ flowchart LR
 
 ### 2.1 总体思路
 
-引入一个新的后端微服务 **Runtime Orchestrator（运行时编排器）**（NestJS 模块，见 `04-后端服务与API设计.md`），它负责：
+引入一个独立部署的 **Runtime Orchestrator（运行时编排器）**（PR-0 起落在 `apps/runtime-orchestrator`，内部仍按 NestJS 模块组织；见 `04-后端服务与API设计.md` 与 `19` 的物理 deployable 口径），它负责：
 
 1. 按"会话粒度"（GA 主线默认）在 Kubernetes 上创建/复用/回收 **Sandbox Pod**；
 2. 每个 Pod 内跑一个 OpenClaw gateway，监听 Pod 内 `0.0.0.0:{port}`（仅 Pod 网络可达），token 鉴权；
 3. 后端（Cowork Service）通过**集群内网 WS** 连接到该 Pod 的 gateway；
 4. 把租户工作区以 **PVC 子路径卷**挂载进 Pod；
-5. 把 config sync 写入该 Pod 的 state 卷；
+5. 运行 config sync：把 `openclaw.json` 等运行时动态配置写入 Pod `/state`，把 `AGENTS.md`/`MEMORY.md` 等托管工作区文件写入同一工作区 PVC 的 `/workspace/state`；
 6. 把 gateway 事件经 Cowork Service 转成 **WebSocket 流式**回传给前端（`cowork:stream:*` 语义不变）。
 
 **沙箱粒度决策（GA 主线默认）**：以**会话（session）为默认隔离单位**，一个活跃会话对应一个 Pod。同一租户的多个并发会话各自独立 Pod。理由：
@@ -150,7 +151,7 @@ flowchart LR
 
 > 备选粒度："每租户共享 Pod、多会话复用"能显著降本，但把租户内会话之间的隔离降级为进程内隔离，且单点故障放大。**GA 主线采用每会话 Pod + 预热容量/节点预热**（§7）平衡成本与隔离；每租户共享作为 §10 的成本优化选项，仅对低风险内部租户开放。
 
-**挂载单位 = 工作区（`workspace-{agentId}` / main 为 `workspace-main`），不是会话**（订正原按会话 `sessions/{id}` 子路径隔离的口径，见附录 C D5 / §2-C16）。`session : workspace` 为**多对一**：同一 agent 的多个会话共享同一工作区（`MEMORY.md`、`AGENTS.md` 的 LobsterAI 托管段、dreaming 产物在此持久化），映射到每租户 PVC 的工作区子路径。Pod 仍可按会话创建，但**同一工作区同一时刻只允许一个 RW 挂载**（Pod）：并发访问经分布式租约（Redis + PVC 上的 lease 文件）串行化，其余请求排队或降级只读，避免两个 Pod 以 RWX 并发写坏同一批文件与 `MEMORY.md`。据此补验收「并发写同一文件不丢写/不损坏」（见 §12、`16`）。
+**挂载单位 = 工作区，不是会话**（订正原按会话 `sessions/{id}` 子路径隔离的口径，见附录 C D5 / §2-C16）。现状 `workspace-{agentId}` / main `workspace-main` 只作为迁移来源；目标 PVC 子路径统一为 `tenants/{tenantId}/ws-{workspaceId}`。`session : workspace` 为**多对一**：同一 agent 的多个会话共享同一工作区（`MEMORY.md`、`AGENTS.md` 的 LobsterAI 托管段、dreaming 产物在此持久化）。Pod 仍可按会话创建，但**同一工作区同一时刻只允许一个 RW 挂载**（Pod）：并发访问经分布式租约（Redis + PVC 上的 lease 文件）串行化，其余请求排队或降级只读，避免两个 Pod 以 RWX 并发写坏同一批文件与 `MEMORY.md`。据此补验收「并发写同一文件不丢写/不损坏」（见 §12、`16`）。
 
 ### 2.2 Sandbox Pod 内部进程模型
 
@@ -183,13 +184,13 @@ flowchart TB
   subgraph Backend[后端服务 K8s namespace: lobster-svc]
     COW[Cowork Service<br/>会话/消息/权限/流式广播]
     ORCH[Runtime Orchestrator<br/>Pod 生命周期]
-    CFG[Config Sync Service<br/>渲染 openclaw.json]
+    CFG[Config Sync 渲染链路<br/>runtime-orchestrator entrypoint]
     AUTH[Auth/Tenant Service]
     REDIS[(Redis<br/>会话路由表 + Pub/Sub)]
     PG[(PostgreSQL<br/>tenant 隔离)]
   end
 
-  subgraph SandboxNS[沙箱 K8s namespace: lobster-sandbox 每租户]
+  subgraph SandboxNS[沙箱 K8s namespace: sandbox-<tenantId><br/>dev 可简化 lobster-sandbox]
     subgraph POD[Sandbox Pod gVisor/Kata]
       GW[OpenClaw Gateway<br/>0.0.0.0:port + token]
       MCP[MCP stdio 子进程]
@@ -212,8 +213,9 @@ flowchart TB
   ORCH -->|create/delete Pod| POD
   ORCH --> REDIS
   COW --> REDIS
-  CFG -->|写 openclaw.json + 工作区| PVC
-  ORCH -->|挂载| PVC
+  CFG -->|渲染 /state/openclaw.json| POD
+  CFG -->|受控写 /workspace/state| PVC
+  ORCH -->|挂载 /workspace -> ws-{workspaceId}| PVC
   POD -.->|持久化/快照| S3
   GW -->|OpenAI-compat 出站| MODEL
   COW --> PG
@@ -227,8 +229,9 @@ flowchart TB
 | `spawn/utilityProcess.fork` gateway | K8s API 创建 Sandbox Pod | 编排器持有 kube client |
 | `ws://127.0.0.1:{port}` | 集群内网 `ws://{pod-ip}:{port}` 或 Headless Service DNS | Pod 网络隔离，仅后端可达 |
 | `{state}/gateway-token` 本地文件 | K8s Secret 注入 env `OPENCLAW_GATEWAY_TOKEN` | 每 Pod 独立 token，编排器生成 |
-| `userData/openclaw/state` 本地目录 | 每租户 PVC + 会话子路径 | 见 `08-文件工作区与对象存储.md` |
-| 主进程写 `openclaw.json` | Config Sync Service 写 Pod state 卷 | 见 §5 |
+| `{userData}/openclaw/state/openclaw.json`、`gateway-port.json` 等运行时动态 state | Pod `/state` 卷 / Secret / env | 每 Pod 创建时渲染或注入；`/state` 是运行时动态 state，不等同于工作区托管状态目录 |
+| `{userData}/openclaw/state/workspace-main` / `workspace-{agentId}` | 每租户 PVC 的 `tenants/{tenantId}/ws-{workspaceId}` 工作区子路径 | 挂载到 `/workspace`，内部按 `08` 拆成 `/workspace/state` 与 `/workspace/project`；挂载/租约单位见附录 C D5 |
+| 主进程写 `openclaw.json` | `runtime-orchestrator` 内的 `config-sync` entrypoint / initContainer 写 Pod `/state/openclaw.json` | 见 §5；工作区 `AGENTS.md`/`MEMORY.md` 等写 `/workspace/state` |
 | `cowork:stream:*` via IPC | `cowork:stream:*` via WSS | 语义不变，传输改变，见 `03` |
 | gatewayRepair 本地文件操作 | 编排器"重建 Pod"+ 卷备份 | 见 §9 |
 
@@ -238,7 +241,7 @@ flowchart TB
 
 ### 3.1 职责边界
 
-编排器是**唯一持有 Kubernetes 集群写权限的服务**（最小权限 RBAC，仅限 sandbox namespace 的 Pod/PVC/Secret）。Cowork Service 不直接碰 K8s，只通过编排器的内部 gRPC/REST 契约申请与释放运行时。
+编排器是**唯一持有 Kubernetes 集群写权限的服务**（最小权限 RBAC：ClusterRole 只含所需动词，RoleBinding 模板只绑定到其管理的 `sandbox-*` 租户 namespace 的 Pod/PVC/Secret/NetworkPolicy/ResourceQuota）。Cowork Service 不直接碰 K8s，只通过编排器的内部 gRPC/REST 契约申请与释放运行时。
 
 ### 3.2 运行时租约（Runtime Lease）契约
 
@@ -249,10 +252,10 @@ Cowork Service 在需要执行会话 turn 前，向编排器"租借"一个运行
 interface AcquireRuntimeRequest {
   tenantId: string;
   sessionId: string;
-  agentId: string;               // main 或 workspace-{agentId}
+  agentId: string;               // main 或 agent id；旧 workspace-* 只作迁移映射来源
   workspaceRef: {                // 挂载哪个租户工作区子路径（单位=工作区，非会话，见附录 C D5）
     pvcName: string;             // 每租户 PVC，见 08
-    subPath: string;             // 工作区粒度，如 tenants/{tenantId}/workspace-{agentId}（main 为 workspace-main）
+    subPath: string;             // 工作区粒度，固定为 tenants/{tenantId}/ws-{workspaceId}
     writerLeaseKey: string;      // 同工作区单写者租约键；同一工作区同刻仅一个 RW 挂载
   };
   resourceClass: 'small' | 'standard' | 'large'; // 资源规格档位，见 §6
@@ -279,14 +282,16 @@ interface ReleaseRuntimeRequest { leaseId: string; reason: 'idle' | 'complete' |
 
 | Redis Key | 值 | 用途 |
 |-----------|-----|------|
-| `rt:session:{sessionId}` | `{ leaseId, podName, connectUrl, tenantId, resourceClass, lastActiveAt }` | 会话→Pod 寻址（Cowork 复用连接） |
-| `rt:lease:{leaseId}` | `{ podName, state, expiresAt }` | 租约 TTL 追踪 |
-| `rt:wslease:{tenantId}:{agentId}` | `{ podName, leaseId, acquiredAt }` | 工作区单写者租约（同工作区同刻仅一个 RW 挂载，见附录 C D5）|
+| `rt:session:{tenantId}:{sessionId}` | `{ leaseId, podName, connectUrl, workspaceId, resourceClass, lastActiveAt }` | 会话→Pod 寻址（Cowork 复用连接）；key 必须带租户段，禁止无租户 `rt:session:{sessionId}` |
+| `rt:lease:{tenantId}:{leaseId}` | `{ podName, sessionId, workspaceId, state, expiresAt }` | 租约 TTL 追踪；key 必须带租户段，便于审计与清理 |
+| `rt:workspace-lease:{tenantId}:{workspaceId}` | `{ podName, leaseId, holderSessionId, fencingToken, acquiredAt }` | 工作区单写者租约（同工作区同刻仅一个 RW 挂载，见附录 C D5）；锁粒度是 `workspaceId`，不是旧 `agentId` |
 | `rt:tenant:{tenantId}:count` | 整数 | 每租户活跃 Pod 计数（限流用，见 §6） |
 | `rt:warmpool:{resourceClass}` | Hash/List | 预热容量水位、可用节点/镜像/runtime 准备状态（见 §7），不是可动态挂卷接管的租户 Pod |
 | `rt:node:{nodeName}:load` | Hash | 节点负载（自定义调度用） |
 
-路由表以 Redis 为准；K8s 是"事实来源"的兜底（编排器定期 reconcile：列出 sandbox namespace 的 Pod 与 Redis 对账，清理孤儿 Pod）。
+除 `rt:warmpool:*`、`rt:node:*` 这类不含租户数据的全局容量元数据外，运行时路由/租约 Redis key 必须包含 `tenantId`，与 `14` PEN-ISO-5 的“所有租户态 Redis key/channel 均含租户段”保持一致。
+
+路由表以 Redis 为准；K8s 是"事实来源"的兜底（编排器定期 reconcile：列出其管理的 `sandbox-*` 租户 namespace 中的 Pod 与 Redis 对账，清理孤儿 Pod）。
 
 ### 3.4 生命周期状态机
 
@@ -329,7 +334,7 @@ stateDiagram-v2
 
 ### 4.1 网络寻址
 
-- Sandbox Pod **不暴露给公网**，仅在集群 `lobster-sandbox` namespace 内可达。
+- Sandbox Pod **不暴露给公网**，仅在对应 `sandbox-<tenantId>` namespace 内经受控 Service/NetworkPolicy 可达（dev 可用单 `lobster-sandbox` 简化）。
 - Cowork Service 用编排器返回的 `connectUrl`（Pod IP 或 Headless Service DNS）连 `ws://{pod}:{port}`，带 `OPENCLAW_GATEWAY_TOKEN`。
 - Pod IP 会随重建变化，因此 `connectUrl` 由编排器动态解析并写入 Redis 路由表；Cowork 断线重连时向编排器"刷新地址"（因为自愈可能已换 Pod，见 §9）。
 
@@ -346,7 +351,7 @@ sequenceDiagram
   participant CFG as Config Sync
 
   FE->>COW: WSS 发送 user 消息 (sessionId)
-  COW->>Redis: 查 rt:session:{sessionId}
+  COW->>Redis: 查 rt:session:{tenantId}:{sessionId}
   alt 无活跃 Pod
     COW->>ORCH: AcquireRuntime(tenantId, sessionId, workspaceRef)
     alt 预热容量命中
@@ -355,7 +360,7 @@ sequenceDiagram
       ORCH->>K8s: create Pod（可能等待拉镜像/扩节点）
     end
     K8s-->>ORCH: Pod Running
-    ORCH->>CFG: initContainer/Job 渲染 openclaw.json 写入 Pod state 卷
+    ORCH->>CFG: initContainer/Job 渲染 /state/openclaw.json；托管文件写 /workspace/state
     ORCH->>GW: 等待 /health OK
     ORCH-->>COW: RuntimeLease{connectUrl, gatewayToken}
     COW->>GW: WS 握手 (token) + connect.challenge
@@ -377,28 +382,28 @@ sequenceDiagram
 
 - 持有 gateway 连接的 Cowork 副本把 runtime 事件 `XADD` + `PUBLISH` 到含租户前缀的 Redis Stream/PubSub channel `stream:{tenantId}:{sessionId}`；
 - 持有前端 WSS 的副本 `SUBSCRIBE` 该 channel，收到即透传给浏览器；
-- 权限响应（`respondToPermission` / `permissionDismiss`）、`stopSession`、`compactContext`、`chat.send` 等**入站/反向命令**必须路由回持有该 gateway 连接的副本：以 **Redis「会话 → owning-replica」注册表** + 各副本订阅的命令通道下发，所有反向命令 payload 补 `tenantId` + `sessionId`。**禁止现状式静默 no-op**——`coworkEngineRouter.ts` 对未知 requestId 直接 `return`，多副本下用户点「允许」落到错副本会被静默吞掉→生成永久挂起，直接推翻 04 §9「领域服务无状态」验收；未命中 owning-replica 的命令**必须返回可路由错误或经总线转发**（见附录 C D7）。可辅以"会话粘性"（一致性哈希把同会话的 WSS 与 gateway 连接尽量收敛到同一副本）减少跨副本跳转，但粘性是优化、注册表才是正确性底座，不能以粘性替代注册表。
+- 权限响应（`respondToPermission`）、`stopSession`、`compactContext`、`chat.send` 等**入站/反向命令**必须路由回持有该 gateway 连接的副本：以 **Redis「会话 → owning-replica」注册表** + 各副本订阅的命令通道下发，所有反向命令的命令信封或路由元数据补 `tenantId` + `sessionId`。`permissionDismiss` 是前向事件，经 `StreamEnvelope` 顶层携带 `tenantId/sessionId`，data 保持 `{requestId}`。**禁止现状式静默 no-op**——`coworkEngineRouter.ts` 对未知 requestId 直接 `return`，多副本下用户点「允许」落到错副本会被静默吞掉→生成永久挂起，直接推翻 04 §9「领域服务无状态」验收；未命中 owning-replica 的命令**必须返回可路由错误或经总线转发**（见附录 C D7）。可辅以"会话粘性"（一致性哈希把同会话的 WSS 与 gateway 连接尽量收敛到同一副本）减少跨副本跳转，但粘性是优化、注册表才是正确性底座，不能以粘性替代注册表。
 
 > 详细的 WSS 协议、断线重连、背压处理见 `03-前端与传输层改造.md`；这里只约束"流式语义与 `cowork:stream:*` 事件名不变"。
 
 ---
 
-## 5. Config Sync 改造：从本机落盘到 Pod state 卷
+## 5. Config Sync 改造：从本机落盘到 `/state` + `/workspace/state` 双落点
 
 ### 5.1 现状回顾
 
 `openclawConfigSync.ts` 直接对本机 `{userData}/openclaw/state` 做 `fs` 写：`openclaw.json`（`:1478-1962`）、工作区 `AGENTS.md`/`MEMORY.md`/`SOUL.md` 等。token 以占位符 `${OPENCLAW_GATEWAY_TOKEN}` 写入，spawn 环境替换。
 
-### 5.2 目标：Config Sync Service
+### 5.2 目标：Config Sync 渲染链路（非独立 deployable）
 
-把 config sync 抽成后端服务（可作为编排器的子模块或独立微服务）。注意 `openclawConfigSync.ts`（约 3502 行）**深度耦合 Electron**——`import { app } from 'electron'` + 约 25 个 live getter，属「**必须去 Electron 化移植**」而非「纯逻辑直接复用」（订正原"直接受益于后端复用现有 TS 逻辑"的口径，见附录 C D15 / §2-A5）：移植时须把 `app.getPath` 等 Electron-only API 换成 Node 服务侧的路径/上下文注入，并在 `17` 立独立 Story（Config Sync Service 化，15–25pd）。移植后**写入目标从本机路径改为目标 Pod 的 state 卷**。
+把 config sync 抽成服务端模块 / initContainer 渲染链路，默认由 `apps/runtime-orchestrator` 调用（或作为 `apps/api` 的配置模块提供输入），**不在 PR-0~V3 另建独立 `apps/configsync` / `lobster-configsync` deployable**；若 V5/V6 或规模化后确需独立镜像，必须先按 `19` 做 RFC 并同步 Helm/CI 矩阵。注意 `openclawConfigSync.ts`（约 3502 行）**深度耦合 Electron**——`import { app } from 'electron'` + 约 25 个 live getter，属「**必须去 Electron 化移植**」而非「纯逻辑直接复用」（订正原"直接受益于后端复用现有 TS 逻辑"的口径，见附录 C D15 / §2-A5）：移植时须把 `app.getPath` 等 Electron-only API 换成 Node 服务侧的路径/上下文注入，并在 `17` 立独立 Story（Config Sync 渲染链路化，20 pd P50 基准 / 30-40 pd 高风险档）。移植后**写入目标不得再笼统称为 "state 卷"**：每会话动态配置写 `/state`，托管工作区状态写 `/workspace/state`，普通文件服务仍只暴露 `/workspace/project`。
 
 三种落盘方式（按推荐度排序）：
 
 | 方式 | 做法 | 优缺点 |
 |------|------|--------|
-| **A. InitContainer 渲染（推荐）** | 编排器把 config 输入（provider/agent/plugin/mcp 快照）以 ConfigMap/Secret 传入 Pod，Pod 的 initContainer 跑 config-sync 逻辑把 `openclaw.json` + 工作区文件渲染到 emptyDir/PVC，主容器再启动 gateway | 无需后端访问 Pod 文件系统；渲染在 Pod 内，边界清晰；secret 走 K8s Secret，token 不落磁盘明文 |
-| **B. 卷预填 + 挂载** | Config Sync Service 先把渲染结果写到租户 PVC 的会话子路径，再让 Pod 挂载该子路径 | 复用最多现有代码；但要求后端能写 PVC（通常需一个能挂 PVC 的 sidecar/job） |
+| **A. InitContainer 渲染（推荐）** | 编排器把 config 输入（provider/agent/plugin/mcp 快照）以 ConfigMap/Secret 传入 Pod，Pod 的 initContainer 跑 config-sync 逻辑：`openclaw.json` 渲染到 `/state/openclaw.json`，`AGENTS.md`/`MEMORY.md` 等托管工作区文件渲染到 PVC `/workspace/state`，主容器再启动 gateway | 无需后端访问 Pod 文件系统；渲染在 Pod 内，边界清晰；secret 走 K8s Secret，token 不落磁盘明文；两类 state 不混放 |
+| **B. 卷预填 + 挂载** | `runtime-orchestrator` 内的 `config-sync` 逻辑或受控 Job 先把渲染结果写到租户 PVC 的工作区子路径，再让 Pod 挂载该工作区子路径 | 复用最多现有代码；但要求后端能写 PVC（通常需一个能挂 PVC 的 sidecar/job），且必须遵守附录 C D5 的单写者租约 |
 | **C. gateway 启动后 API 下发** | Pod 起来后经内网 API 把 config 推给 gateway | 需要 OpenClaw 支持热配置接口；改动最大，作为长期方向 |
 
 **GA 主线采用 A（initContainer）+ 工作区走 PVC（见 08）**：`openclaw.json` 这类"每会话动态配置"由 initContainer 从注入的 ConfigMap 渲染；`MEMORY.md`/`AGENTS.md` 这类"租户持久记忆"走 PVC 持久化。该选择必须先在 V1 验证 config golden 与 PVC PoC。
@@ -409,8 +414,8 @@ sequenceDiagram
 |------|------|------|
 | `gateway.auth.token` | `${OPENCLAW_GATEWAY_TOKEN}` 占位符 | 不变，但 token 来自 K8s Secret（每 Pod 唯一） |
 | `gateway.mode` | `'local'` | `'local'`（Pod 内仍是本地模式，只是"本地"= Pod 内） |
-| `gateway.bind` | `loopback` | **改为 `0.0.0.0`（Pod 内），靠 NetworkPolicy 限制来源**（§8.3） |
-| `agents.defaults.workspace` | 本机 `workspace-main` | Pod 内挂载点，如 `/workspace/main` |
+| gateway bind 启动参数 | `--bind loopback` | 容器入口使用 `--bind lan` 或 `--bind auto`（解析为 Pod 内 `0.0.0.0`），靠 NetworkPolicy 限制来源；`--bind` 是 CLI 枚举，不是 `openclaw.json` 字段，禁止写裸 `--bind 0.0.0.0`（见 `15` §3.2） |
+| `agents.defaults.workspace` | 本机 `workspace-main` | Pod 内用户可见工作区根 `/workspace/project`；托管状态在 `/workspace/state`，不得暴露给普通文件 API（见 `08`） |
 | `mcp.servers` | stdio 用本机 `npx` | Pod 内跑，需沙箱内有 node/npx（§10.1，见 `10-MCP与技能改造.md`） |
 | `plugins.entries` callback | `http://127.0.0.1:{bridge}` | Pod 内 bridge 或经内网回调 Cowork（`LOBSTER_MCP_BRIDGE_SECRET`） |
 | provider apiKey | `LOBSTER_APIKEY_{PROVIDER}` env | 改为指向内网**模型代理 Service**，Pod 不持有真实上游 key（见 `09-模型代理与计费.md`） |
@@ -422,7 +427,7 @@ sequenceDiagram
 
 | env | 现状来源 | Pod 内来源 |
 |-----|---------|-----------|
-| `OPENCLAW_HOME` / `OPENCLAW_STATE_DIR` / `OPENCLAW_CONFIG_PATH` | userData 路径 | Pod 挂载点（如 `/state`） |
+| `OPENCLAW_HOME` / `OPENCLAW_STATE_DIR` / `OPENCLAW_CONFIG_PATH` | userData 路径 | Pod 运行时动态 state 挂载点（如 `/state`）；工作区托管状态另在 `/workspace/state` |
 | `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PORT` | 本机生成 | K8s Secret / 固定端口 |
 | `SKILLS_ROOT` / `LOBSTERAI_SKILLS_ROOT` | `~/SKILLs` | Pod 内 skills 挂载点（见 `10`） |
 | `LOBSTER_MCP_BRIDGE_SECRET` | 本机 UUID | K8s Secret |
@@ -430,7 +435,7 @@ sequenceDiagram
 | `TZ` | 本机推断 | 租户/会话时区（Pod env） |
 | `http_proxy`/`https_proxy` | 系统代理 | **egress 代理地址**（§8.4，强制出站经审计代理） |
 
-### 5.5 从容器 HOME 到 Pod state/PVC 的状态映射
+### 5.5 从容器 HOME 到 Pod /state 与 PVC 工作区的状态映射
 
 旧容器计划的一个关键洞察是：桌面端绝大多数状态集中在 Linux `HOME` 下的 `~/.config/LobsterAI` 与默认工作目录中。SaaS 化后不能直接把整个 `HOME` 暴露给浏览器或多个服务，但这份状态盘点可作为 Pod 挂载边界的依据：
 
@@ -439,8 +444,8 @@ sequenceDiagram
 | `~/.config/LobsterAI/lobsterai.sqlite` | PostgreSQL | 不进入 Sandbox；桌面导入工具解析后入库 |
 | `~/.config/LobsterAI/openclaw/state/openclaw.json` | Pod `/state/openclaw.json` | initContainer 每次按租户/会话快照渲染 |
 | `gateway-token` / `gateway-port.json` | K8s Secret / Pod env | token 不落租户工作区；port 固定或由 Orchestrator 分配 |
-| `workspace-main` / `workspace-{agentId}` | 租户 PVC `/workspace/...` | 持久文件工作区，由 `08` 约束路径与隔离 |
-| `MEMORY.md` / `AGENTS.md` / `SOUL.md` / `IDENTITY.md` | PVC 或 Config Sync 管理的 state | 按“持久记忆”和“会话动态配置”拆分，V1 golden 对齐 |
+| `workspace-main` / `workspace-{agentId}` | 租户 PVC 子路径 `tenants/{tenantId}/ws-{workspaceId}`，Pod 内挂载为 `/workspace` | 持久文件工作区，由 `08` 约束路径与隔离 |
+| `MEMORY.md` / `AGENTS.md` / `SOUL.md` / `IDENTITY.md` | `/workspace/state/*`（工作区 PVC 内托管状态） | 持久记忆 / agent 身份与用户可见 `project/` 分离；只由持锁 Pod / Config Sync 受控写入，V1 golden 对齐 |
 | logs / compile cache / temp | stdout / emptyDir / 只读缓存 | 日志走 Loki；缓存可作为预热容量的只读层，不带租户数据 |
 
 V1 PoC 必须证明这张映射足以跑通真实 turn；如果 OpenClaw 仍隐式读取未映射的 `HOME` 路径，先修正 runtime adapter/config sync，而不是把完整 `HOME` 卷原样挂进生产 Pod。
@@ -476,7 +481,7 @@ Pod 创建时由 initContainer 渲染一次配置（§5.2 方式 A），但**会
 
 | 层级 | 限制 | 实现 |
 |------|------|------|
-| 每租户并发 Pod 数 | 按套餐（免费 1、标准 5、企业可配） | Redis `rt:tenant:{id}:count` + acquire 前检查 |
+| 每租户并发 Pod 数 | 按套餐（免费 1、标准 5、企业可配） | Redis `rt:tenant:{tenantId}:count` + acquire 前检查 |
 | 每租户 CPU/内存总量 | ResourceQuota（K8s namespace 级） | 每租户独立 namespace 或 LimitRange |
 | 全局节点池容量 | Cluster Autoscaler + 节点上限 | 超限时 acquire 排队/降级（见 §6.3） |
 | 每会话 turn 频率 | 令牌桶 | Cowork Service + Redis |
@@ -545,9 +550,9 @@ flowchart LR
 |------|---------|------|------|
 | 裸容器（runc） | 弱（共享内核，靠 namespace/cgroup） | 最低 | **禁止**用于跑不可信代码 |
 | **gVisor（runsc）** | 强（用户态内核，拦截 syscall） | 中（部分 syscall 慢、少数不兼容） | **GA 主线默认**，兼容性好、启动快 |
-| **Kata Containers** | 最强（每 Pod 独立微 VM） | 高（内存/启动） | 高安全租户/企业档位可选 |
+| **Kata Containers** | 最强（每 Pod 独立微 VM） | 高（内存/启动） | 高安全/企业档位，以及 gVisor 兼容矩阵不达标的重/兼容资源档回退 |
 
-通过 `RuntimeClass` 选择：标准租户会话 `runtimeClassName: gvisor`（**默认**），为「重/兼容」资源档保留 `runtimeClassName: kata` 作**回退**，由 `resourceClass` 路由规则按档位注入（Pod spec 用变量 `runtimeClassName`，编排器按档位填充，见附录 C D4）。**V1 PoC 必须产出 gVisor 工作负载兼容 + 性能矩阵**：`npx` spawn 子进程 / node / shell / npm 解包 / 常用 stdio MCP / 技能脚本 的成功率与开销——OpenClaw 执行面恰踩 gVisor 最弱处（用户态内核下的密集子进程 spawn 与文件 IO），**矩阵不达标的工作负载路由到 Kata**。矩阵回退判据写进本章 V1 准入门与 `16`（见附录 C D4 / §8 G-V1）。
+通过 `RuntimeClass` 选择：标准租户会话 `runtimeClassName: gvisor`（**默认**），为「重/兼容」资源档保留 `runtimeClassName: kata` 作**回退**，由 `resourceClass` 路由规则按档位注入（Pod spec 用变量 `runtimeClassName`，编排器按档位填充，见附录 C D4）。**V1 PoC 必须产出 gVisor 工作负载兼容 + 性能矩阵**：`npx` spawn 子进程 / node / shell / npm 解包 / 常用 stdio MCP / 技能脚本 的成功率与开销——OpenClaw 执行面恰踩 gVisor 最弱处（用户态内核下的密集子进程 spawn 与文件 IO），**矩阵不达标的工作负载路由到 Kata**。矩阵回退判据写进本章 V1 准入门与 `16`（见附录 C D4 / §8 V1）。
 
 ### 8.2 seccomp / capabilities / 只读根
 
@@ -565,7 +570,7 @@ securityContext:
     type: RuntimeDefault                 # 或自定义收紧的 seccomp profile
 ```
 
-- **只读根 + 有限可写卷**：根文件系统只读，可写区仅 `/workspace`（PVC 子路径）、`/state`、`/tmp`（emptyDir，带 sizeLimit）。防止污染系统文件与持久化后门。
+- **只读根 + 有限可写卷**：根文件系统只读，可写区仅 `/workspace`（工作区 PVC，普通进程 cwd 为 `/workspace/project`，托管状态在 `/workspace/state`）、`/state`（Pod 运行时动态 state：`openclaw.json`、transcript/port 等）、`/tmp`（emptyDir，带 sizeLimit）。防止污染系统文件与持久化后门。
 - **禁止提权**、**drop 所有 capability**：即使 shell 拿到执行权也无法提权。
 - 与 gVisor 叠加：seccomp 收窄可用 syscall，gVisor 再在用户态过滤——双保险。
 
@@ -575,7 +580,7 @@ securityContext:
 # NetworkPolicy: sandbox Pod 默认拒绝所有入站，仅允许后端来源
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: sandbox-default-deny, namespace: lobster-sandbox }
+metadata: { name: sandbox-default-deny, namespace: sandbox-tenant-a } # 模板：sandbox-<tenantId>
 spec:
   podSelector: {}
   policyTypes: [Ingress, Egress]
@@ -598,7 +603,7 @@ spec:
       ports: [{ protocol: UDP, port: 53 }]
 ```
 
-- **入站**：只允许 `lobster-svc` namespace 的 Cowork Service 连 gateway 端口。这样即便 `gateway.bind` 改成 `0.0.0.0`（§5.3），网络层仍收敛到"仅后端可达"，等价于原来的 loopback 语义。
+- **入站**：只允许 `lobster-svc` namespace 的 Cowork Service 连 gateway 端口。这样即便容器入口用 `--bind lan/auto` 解析为 Pod 内 `0.0.0.0`（§5.3），网络层仍收敛到"仅后端可达"，等价于原来的 loopback 语义。
 - **出站**：`default deny` 之上**必须显式放行四类集群内网回调**——① 模型 token 代理 Service、② Cowork Service 承接 AskUser 回调、③ Media 回调、④ MCP bridge 回调，外加 kube-dns（见附录 C D8）。仅放行 `egress-proxy` + DNS 会让 Pod 内 gateway 一发模型请求即被拒、会话跑不起来。区分两条出站路径：**外网出站强制经审计 `egress-proxy`（唯一外网出口）**；**集群内控制面直连内网 Service（NetworkPolicy 精确 selector + 单独审计）**。模型 token 代理**托管为独立 Service（不作 Pod sidecar，否则 Pod 持密钥）**，`baseUrl` 渲染为集群 DNS。
 - **横向隔离**：Pod 之间默认不可互通，杜绝跨租户/跨会话横向移动。
 
@@ -646,7 +651,7 @@ flowchart TB
 | 节点故障 | 节点 NotReady | Pod 被驱逐，编排器在健康节点重建 |
 | Cowork 侧连接抖动 | WS 断开 | 指数退避重连（对齐桌面退避语义），期间前端展示"重连中" |
 
-**关键：至多丢当前 turn，历史与工作区零丢失**（订正原"无损续接/零丢失"口径，见附录 C D9 / §7 / P1-9）。工作区在 PVC、会话消息在 Postgres（见 `06-数据模型迁移.md`）、continuity capsule 持久化；但 **gateway 会话 / transcript 的持久化边界须明确**——把 `/state` 上 PVC 或 capsule 声明为可重放权威，evict/抢占给 SIGTERM grace 窗口并约定 capsule/工作区 flush 时序。重建 Pod 后 Cowork 经 `chat.send`（`continueSession` 封装）+ capsule 重放恢复上下文，用户视角尽量无感，但**进行中的当前 turn 会丢失**（从 capsule 重放），需前端明确提示重试。
+**关键：至多丢当前 turn，历史与工作区零丢失**（订正原"无损续接/零丢失"口径，见附录 C D9 / §7）。工作区在 PVC、会话消息在 Postgres（见 `06-数据模型迁移.md`）、continuity capsule 持久化；但 **gateway 会话 / transcript 的持久化边界须明确**——若使用 Pod `/state` 保存 transcript，则该 `/state` 必须是可迁移/可恢复的运行时 state 卷并与工作区 PVC 的 `/workspace/state` 区分；否则必须声明 capsule 为可重放权威。evict/抢占给 SIGTERM grace 窗口并约定 capsule/工作区 flush 时序。重建 Pod 后 Cowork 经 `chat.send`（`continueSession` 封装）+ capsule 重放恢复上下文，用户视角尽量无感，但**进行中的当前 turn 会丢失**（从 capsule 重放），需前端明确提示重试。
 
 ### 9.3 自愈时序
 
@@ -664,7 +669,7 @@ sequenceDiagram
   ORCH->>K8s: create Pod #B（同 PVC 子路径 + 新 token）
   ORCH->>PVC: 挂载 workspace（数据仍在）
   K8s-->>ORCH: Pod #B Ready
-  ORCH->>Redis: 更新 rt:session connectUrl→#B
+  ORCH->>Redis: 更新 rt:session:{tenantId}:{sessionId} connectUrl→#B
   ORCH-->>COW: lease refreshed
   COW->>NEW: WS 握手 + chat.send 续接（continueSession 封装，capsule 重放）
   COW-->>FE: cowork:stream:sessionStatus running（历史/工作区零丢失，当前 turn 提示重试）
@@ -682,7 +687,7 @@ sequenceDiagram
 |--------|---------|---------|
 | 会话 Pod 计算 | 并发活跃会话数 × 时长 × 规格 | idle 快速回收（§3.4）；小档位默认；bin-packing 提高节点利用率 |
 | 预热容量常驻 | minReady 水位 | 按时段/QPS 预测动态调水位；夜间缩容 |
-| Kata 微 VM 内存开销 | 每 Pod 固定 VM 内存 | 默认 gVisor，仅企业档位用 Kata |
+| Kata 微 VM 内存开销 | 每 Pod 固定 VM 内存 | 默认 gVisor；Kata 仅用于高安全/企业档位或 gVisor 兼容矩阵不达标的重/兼容资源档 |
 | 出站流量 | MCP/web 拉取 + 模型调用 | 内网 registry 镜像；模型走内网代理复用连接 |
 | PVC 存储 | 每租户工作区大小 | 生命周期归档冷数据到 S3（见 `08`）、配额限制 |
 
@@ -696,7 +701,7 @@ sequenceDiagram
 |------|------|------|---------|
 | 每会话 Pod + gVisor（GA 主线默认） | 中 | 高 | 大部分租户 |
 | 每租户共享 Pod、多会话进程内隔离 | 低 | 中 | 低风险内部/试用租户 |
-| 每会话 Kata 微 VM | 高 | 最高 | 企业/高合规租户 |
+| 每会话 Kata 微 VM | 高 | 最高 | 企业/高合规租户，或 gVisor 兼容矩阵不达标的重/兼容工作负载 |
 
 ---
 
@@ -731,14 +736,14 @@ sequenceDiagram
 | 编号 | 验收项 | 判定标准 |
 |------|--------|---------|
 | AC-0 | Sandbox 镜像可运行 | Linux 目标架构上可复现构建 `lobster-openclaw-runtime`；OpenClaw runtime 产物完整；不含 Electron Renderer、Xvfb/noVNC、真实密钥或租户数据；非 root 启动 gateway |
-| AC-1 | 会话隔离 | 租户 A 的会话 Pod 无法读取/写入租户 B 的 PVC 子路径；跨会话文件互不可见（用探针脚本验证越权读被拒） |
+| AC-1 | 租户 / 工作区隔离 | 租户 A 的会话 Pod 无法读取/写入租户 B 的 `tenants/{tenantId}/ws-{workspaceId}` PVC 子路径，也无法访问同租户未绑定/未授权的 workspace；同一 workspace 的多会话按 D5 共享文件并由写者租约串行，不能把“同 workspace 的另一个会话可见文件”误判为隔离失败（用探针脚本验证越权读写被拒） |
 | AC-2 | 网络隔离 | 沙箱内 `curl 169.254.169.254`、访问内网 RFC1918、访问另一 Pod IP 全部被拒（NetworkPolicy + egress 代理） |
 | AC-3 | 沙箱强度 | Pod 以非 root + 只读根 + drop caps + gVisor 运行；提权/写系统路径失败；`kubectl` 无法从 Pod 内调用（无 SA token 或最小 SA） |
-| AC-4 | 事件契约不变 | `cowork:stream:*` 九类事件语义、字段、顺序与桌面一致；前端无需改渲染逻辑（仅换传输） |
+| AC-4 | 事件契约不变 | `cowork:stream:*` 全 **10 类**事件（含 `cowork:stream:goal`，全集以附录 C §3.2/B13 与 PR-1 `CoworkStreamChannel` 注册表为准；落地前以 `preload.ts` 的 10 个 `onStream*` 和 `main.ts` runtime forwarder 核对）语义、字段、顺序与桌面一致；既有流式渲染 handler 不因通道名改变而重写，但 `activeSessionIds` 订阅、断线重连/重试提示等桥层与产品状态仍按 `03` 显式改造 |
 | AC-5 | 流式端到端 | 一条 turn 的 message/messageUpdate/contextUsage/complete 经 Cowork→WSS 正确增量到达；多副本下 Redis Stream/PubSub 频道 `stream:{tenantId}:{sessionId}` 广播正确 |
-| AC-6 | 冷启性能 | 交互路径以**预热容量命中**为准：命中路径 p95 acquire→ready 达标、warmpool 命中率 > 80%（正常负载）；**具体 p95 阈值以 `17` V4 的 p95 表为唯一权威**，本表不再写死"< 3s / < 15s"（原值与 §7.1「冷启数秒到十几秒」及 Kata 微 VM 冷启相矛盾）；纯冷启（未命中）不作交互 SLA、仅作容量兜底（见附录 C §8 G-V4、本章 §7.2） |
+| AC-6 | 冷启性能 | 交互路径以**预热容量命中**为准：命中路径 p95 acquire→ready 达标、warmpool 命中率 > 80%（正常负载）；**具体 p95 阈值以 `17` V4 的 p95 表为唯一权威**，本表不再写死"< 3s / < 15s"（原值与 §7.1「冷启数秒到十几秒」及 Kata 微 VM 冷启相矛盾）；纯冷启（未命中）不作交互 SLA、仅作容量兜底（见附录 C §8 V4、本章 §7.2） |
 | AC-7 | 并发与限流 | 免费租户超并发上限时新会话优雅排队/提示，不影响已有会话；节点满时 acquire 入队不打爆 K8s API |
-| AC-8 | 自愈续接 | 杀死一个活跃 gateway Pod 后，编排器 60s 内重建并经 `chat.send`（`continueSession` 封装）+ capsule 重放恢复上下文；**至多丢失当前进行中 turn，历史消息与工作区零丢失**（订正原"零丢失"口径，见附录 C D9 / §7 / P1-9）；前端明确提示"重连 / 重试当前 turn" |
+| AC-8 | 自愈续接 | 杀死一个活跃 gateway Pod 后，编排器 60s 内重建并经 `chat.send`（`continueSession` 封装）+ capsule 重放恢复上下文；**至多丢失当前进行中 turn，历史消息与工作区零丢失**（订正原"零丢失"口径，见附录 C D9 / §7）；前端明确提示"重连 / 重试当前 turn" |
 | AC-9 | 租约防泄漏 | 强杀持有租约的 Cowork 副本后，租约 TTL 到期，编排器自动回收孤儿 Pod（reconcile 对账） |
 | AC-10 | 回收正确性 | 会话 idleHard 后 Pod 被 drain→落盘→删除；PVC 数据保留；Redis 路由项清理 |
 | AC-11 | chat.send 限制 | 超过 30MB 的 chat.send 被拒并返回可读错误（对齐 `openclawRuntimeAdapter.ts:123-126`），不导致 Pod 崩溃 |
@@ -767,13 +772,13 @@ sequenceDiagram
 
 ## 14. 落地步骤（摘要，详见 `17-分阶段路线图与工作量估算.md`）
 
-1. **P0 POC**：先在 Linux 构建/运行环境证明 OpenClaw runtime 镜像可复现、原生模块匹配、`resources/cfmind` 完整；再用单租户单会话在 K8s 手动跑一个 gVisor Sandbox Pod，Cowork 内网 WS 连通，跑通一条 turn 的 `cowork:stream:*`。验证挂卷/config 注入/健康探测（对应 AC-0/AC-4/AC-5）。
-2. **P1 编排器 MVP**：实现 AcquireRuntime/Release/Renew 契约 + Redis 路由表 + 生命周期状态机 + idle 回收（AC-1/AC-7/AC-10）。
-3. **P2 隔离加固**：NetworkPolicy 默认拒绝 + egress 代理 + securityContext 基线 + 每租户 ResourceQuota（AC-1/AC-2/AC-3）。
-4. **P3 config sync 服务化**：把 `openclawConfigSync.ts` 逻辑抽为 initContainer/服务，写 Pod state（AC-13）。
-5. **P4 冷启优化**：预热容量 + 镜像预拉 + 动态水位（AC-6）。
-6. **P5 自愈与可观测**：Pod 级重建 + `chat.send`（`continueSession` 封装）续接（至多丢当前 turn，历史/工作区零丢失）+ 全套指标/追踪/审计（AC-8/AC-9/AC-11/AC-12）。
-7. **P6 成本与规模**：bin-packing、autoscaler 调优、Kata 企业档位、压测调参。
+1. **V1 可行性验证**：先在 Linux 构建/运行环境证明 OpenClaw runtime 镜像可复现、原生模块匹配、`resources/cfmind` 完整；再用 `19`/`16` 定义的 PR-4 PoC harness 在单租户单会话 K8s 环境创建 gVisor Sandbox Pod，Cowork 内网 WS 连通，跑通一条 turn 的 `cowork:stream:*`，并把 Pod manifest、脚本、日志、截图/指标写入证据包。验证挂卷/config 注入/健康探测（对应 AC-0/AC-4/AC-5），不得以现场手跑替代可复现脚本。
+2. **V4-E1 编排器 MVP**：实现 AcquireRuntime/Release/Renew 契约 + Redis 路由表 + 生命周期状态机 + idle 回收（AC-1/AC-7/AC-10）。
+3. **V4-E3/E4 隔离与 egress 加固**：NetworkPolicy 默认拒绝 + egress 代理 + securityContext 基线 + 每租户 ResourceQuota（AC-1/AC-2/AC-3）。
+4. **V2-E3 / V4-E2 Config Sync 渲染链路化与生命周期扩展**：把 `openclawConfigSync.ts` 的字段语义和 golden fixture 迁移到 `runtime-orchestrator` 内的 `config-sync` entrypoint / initContainer 渲染链路；`openclaw.json` 等每会话动态配置写 Pod `/state`，`AGENTS.md`/`MEMORY.md`/`SOUL.md`/`IDENTITY.md` 等托管工作区文件写 PVC `/workspace/state`，并在 V4 补齐中途变更的热更/重建映射（AC-13）。
+5. **V4-E5 冷启优化**：预热容量 + 镜像预拉 + 动态水位（AC-6）。
+6. **V4-E6 / V6-E4 自愈与可观测**：Pod 级重建 + `chat.send`（`continueSession` 封装）续接（至多丢当前 turn，历史/工作区零丢失）+ 全套指标/追踪/审计（AC-8/AC-9/AC-11/AC-12）。
+7. **V4/V6 成本与规模收敛**：bin-packing、autoscaler 调优、Kata 高合规/重兼容档位、压测调参。
 
 ---
 

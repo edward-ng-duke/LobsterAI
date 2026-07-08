@@ -9694,49 +9694,78 @@ if (!gotTheLock) {
   });
 
   // ---- artifact file watching ----
+  type ArtifactFileWatcherEntry = {
+    watcher: fs.FSWatcher;
+    debounceTimer: ReturnType<typeof setTimeout> | null;
+    lastSignature: string | null;
+    resolvedPath: string;
+  };
+
+  const readArtifactFileWatchSignature = async (filePath: string): Promise<string | null> => {
+    try {
+      const stat = await fs.promises.stat(filePath);
+      if (!stat.isFile()) return null;
+      return `${stat.size}:${stat.mtimeMs}`;
+    } catch {
+      return null;
+    }
+  };
+
   const fileWatchers = new Map<
     string,
-    { watcher: fs.FSWatcher; debounceTimer: ReturnType<typeof setTimeout> | null }
+    ArtifactFileWatcherEntry
   >();
 
-  ipcMain.handle('artifact:watchFile', (_event, filePath: string) => {
-    if (fileWatchers.has(filePath)) return;
+  ipcMain.handle('artifact:watchFile', async (_event, filePath: string) => {
+    if (typeof filePath !== 'string' || !filePath.trim()) return;
+    const watchKey = filePath.trim();
+    if (fileWatchers.has(watchKey)) return;
     try {
-      const watcher = fs.watch(filePath, eventType => {
+      const resolvedPath = path.resolve(watchKey);
+      const lastSignature = await readArtifactFileWatchSignature(resolvedPath);
+      const watcher = fs.watch(resolvedPath, eventType => {
         if (eventType !== 'change') return;
-        const entry = fileWatchers.get(filePath);
+        const entry = fileWatchers.get(watchKey);
         if (!entry) return;
         if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
         entry.debounceTimer = setTimeout(() => {
           entry.debounceTimer = null;
-          const windows = BrowserWindow.getAllWindows();
-          windows.forEach(win => {
-            if (!win.isDestroyed()) {
-              try {
-                win.webContents.send('artifact:file:changed', { filePath });
-              } catch {
-                /* */
+          void (async () => {
+            const nextSignature = await readArtifactFileWatchSignature(entry.resolvedPath);
+            if (fileWatchers.get(watchKey) !== entry) return;
+            if (nextSignature && nextSignature === entry.lastSignature) return;
+            entry.lastSignature = nextSignature;
+            const windows = BrowserWindow.getAllWindows();
+            windows.forEach(win => {
+              if (!win.isDestroyed()) {
+                try {
+                  win.webContents.send('artifact:file:changed', { filePath: watchKey });
+                } catch {
+                  /* */
+                }
               }
-            }
-          });
+            });
+          })();
         }, 300);
       });
       watcher.on('error', () => {
-        fileWatchers.delete(filePath);
+        fileWatchers.delete(watchKey);
         watcher.close();
       });
-      fileWatchers.set(filePath, { watcher, debounceTimer: null });
+      fileWatchers.set(watchKey, { watcher, debounceTimer: null, lastSignature, resolvedPath });
     } catch {
       /* file can't be watched */
     }
   });
 
   ipcMain.handle('artifact:unwatchFile', (_event, filePath: string) => {
-    const entry = fileWatchers.get(filePath);
+    if (typeof filePath !== 'string' || !filePath.trim()) return;
+    const watchKey = filePath.trim();
+    const entry = fileWatchers.get(watchKey);
     if (entry) {
       if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
       entry.watcher.close();
-      fileWatchers.delete(filePath);
+      fileWatchers.delete(watchKey);
     }
   });
 

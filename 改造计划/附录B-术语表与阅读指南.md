@@ -1,6 +1,6 @@
 # 附录 B：术语表与阅读指南
 
-> 本文档是整套「LobsterAI 桌面端 → 多租户 SaaS Web 应用」改造计划的**词典与导航图**。它有两个用途：（1）作为**术语表**，统一全套文档中反复出现的名词定义，避免同一个词在不同分册被不同理解；（2）作为**阅读指南**，给出 22 篇文档的一句话索引，并按角色给出推荐阅读顺序。适合读者：**所有人**——尤其是新加入项目、第一次翻开这套文档的读者，建议先读 `00-总览与执行摘要.md` 再回到本文建立词汇基线。
+> 本文档是整套「LobsterAI 桌面端 → 多租户 SaaS Web 应用」改造计划的**词典与导航图**。它有两个用途：（1）作为**术语表**，统一全套文档中反复出现的名词定义，避免同一个词在不同分册被不同理解；（2）作为**阅读指南**，给出 24 份 Markdown 的一句话索引，并按角色给出推荐阅读顺序。适合读者：**所有人**——尤其是新加入项目、第一次翻开这套文档的读者，建议先读 `00-总览与执行摘要.md` 再回到本文建立词汇基线。
 
 ---
 
@@ -9,7 +9,7 @@
 - **第一次读**：先读 `00-总览与执行摘要.md` 建立全局印象，再扫一遍本文第 2 节术语表，然后按第 4 节找到你的角色路线。
 - **读到不认识的词**：回到第 2 节按分类查（术语表按「产品与运行时」「多租户与账户」「数据与会话」「安全与网络」「运维与部署」「协议与集成」分组）。
 - **想找某篇文档**：看第 3 节全文档索引，每篇一句话摘要 + 关键交叉引用。
-- **命名与口径约束**：全套文档统一遵循 `02-目标架构与技术选型.md` 的技术选型总表；本文出现的定义若与源码/`package.json` 冲突，以源码为准（见 `CLAUDE.md` / `AGENTS.md` 的「以源码为权威」原则）。
+- **命名与口径约束**：全套文档统一遵循 `02-目标架构与技术选型.md` 的技术选型总表；本文出现的定义若与源码/`package.json` 冲突，以源码为准（见根 `AGENTS.md` 的「以源码为权威」原则）。
 - **决策与计数权威**：凡跨文档决策（定时任务权威、RLS 强制与否、阶段门命名等）、对现状源码的计数/断言，一律以 `附录C-决策基线与接口契约总纲.md`（决策 D1–D16、源码订正表 §2、接口契约 §3–§8）为「拍死层」权威。本文若与附录 C 冲突，以附录 C 为准，引用时写「见附录 C Dx / §x」而非复制其 schema。
 
 ---
@@ -27,7 +27,7 @@
 | **OpenClaw** | LobsterAI 当前**唯一的 Agent 运行时 / 网关**。现状是本机拉起的独立 Node 进程（`src/main/libs/openclawEngineManager.ts`），负责执行工具、读写工作区文件、跑 stdio MCP 子进程与技能脚本。目标架构里被搬进 K8s **沙箱 Pod** 运行。注意：`cowork:*` IPC 通道、`claude_session_id` 等是兼容 / 历史命名，不代表存在第二个运行时。见 `07`。 |
 | **gateway（网关）** | 有两个含义，需按上下文区分：（1）**OpenClaw gateway** —— OpenClaw 运行时进程本身，现状监听 `ws://127.0.0.1:{port}`、token 鉴权、维护 state dir 与每 agent 文件工作区；桌面**现状**的定时任务 cron 也在这里（**注意这是现状口径，非目标结论**：目标态调度权威改为服务端 BullMQ + Postgres，沙箱内 OpenClaw cron 禁用/不下发，见附录 C D14）。（2）**API 网关 / BFF** —— 目标架构接入层的 NestJS 服务，负责 HTTP 路由、REST access token/JWT 校验、WS 升级与广播、首帧 ticket 校验与消费、限流。除非明确写「API 网关」，术语「gateway」通常指前者（OpenClaw gateway）。 |
 | **CoworkAgentEngine** | Cowork 侧对「用哪个 Agent 运行时」的枚举，当前值只有 `'openclaw'`。历史上曾设计为可切换（如已被移除的 `yd_cowork`），现只保留 OpenClaw 一种。见 `01`。 |
-| **openclawConfigSync** | 把 LobsterAI 状态渲染为 OpenClaw 配置的模块（`src/main/libs/openclawConfigSync.ts`）：写 `openclaw.json`（providers/models、agents、IM 绑定、plugins、MCP servers、skills 目录、sandbox 模式）+ 工作区文件（`AGENTS.md` 等）。目标架构里由「运行时编排器 / MCP·技能服务」承接。见 `07`、`10`。 |
+| **openclawConfigSync** | 把 LobsterAI 状态渲染为 OpenClaw 配置的模块（`src/main/libs/openclawConfigSync.ts`）：写 `openclaw.json`（providers/models、agents、IM 绑定、plugins、MCP servers、skills 目录、sandbox 模式）+ 工作区文件（`AGENTS.md` 等）。目标架构里**渲染与落盘由 Runtime Orchestrator 的 config-sync entrypoint / initContainer 承接**；`apps/api` 内的 MCP/技能/模型/Agent/Config 模块只提供已授权的配置输入，不直接写 Pod `/state` 或 `/workspace/state`，也不新增独立 `apps/configsync` / `lobster-configsync` deployable（除非 V5/V6 之后先 RFC）。见 `07`、`10`、`19`。 |
 | **config sync（配置同步）** | 上一条描述的动作：把租户 / 会话状态注入到 OpenClaw 运行时。SaaS 下从「写本地文件」改为「生成配置 + 经 env/挂载注入沙箱 Pod」。 |
 | **Skills（技能）/ Kits** | OpenClaw 的可安装能力单元。技能包含同步、安装 / 升级、安全扫描、启用态、路由提示（`src/main/skillManager.ts`）。SaaS 下技能包存对象存储，stdio 型执行需在沙箱内。见 `10`。 |
 | **MCP（Model Context Protocol）** | Agent 连接外部工具 / 数据源的协议。传输类型有 `stdio` / `sse` / `http` 三种：`stdio` 是本地 `npx` 子进程（SaaS 下必须在服务端沙箱内起），`sse`/`http` 是远程直连。见 `10`。 |
@@ -38,8 +38,8 @@
 
 | 术语 | 定义 |
 |---|---|
-| **workspace / 工作区** | OpenClaw agent 的文件工作目录，现状在 Electron `userData/openclaw/state/` 下：`workspace-main`（主 agent）、`workspace-{agentId}`（非主 agent）。含 `AGENTS.md`（工作区指令 + LobsterAI 托管段）、`MEMORY.md`（durable 记忆）、`memory/YYYY-MM-DD.md`（每日笔记）、`USER.md`/`SOUL.md`/`IDENTITY.md`。**注意区分**：用户可见的「工作目录」是**会话 cwd**，不是 OpenClaw agent 工作区。SaaS 下映射为每租户 **PVC** + 对象存储。见 `08`。 |
-| **会话 cwd** | 用户在 UI 中看到并可读写的「当前工作目录」，是用户视角的项目根。与 OpenClaw 内部的 agent 工作区是两个概念，勿混淆。 |
+| **workspace / 工作区** | OpenClaw agent 的文件工作目录，现状在 Electron `userData/openclaw/state/` 下：`workspace-main`（主 agent）、`workspace-{agentId}`（非主 agent）。SaaS 下一个工作区映射为每租户 PVC 中的 `ws-{workspaceId}` 子路径并挂载为 `/workspace`，内部拆成 `/workspace/state`（`AGENTS.md`、`MEMORY.md`、`SOUL.md`、`IDENTITY.md`、`memory/YYYY-MM-DD.md` 等托管状态）与 `/workspace/project`（用户可见项目根）。挂载/租约单位是整个工作区，`session : workspace` 为多对一；普通文件 API 只暴露 `/workspace/project`。见 `08` 与附录 C D5。 |
+| **会话 cwd** | 用户在 UI 中看到并可读写的「当前工作目录」，目标态语义是 `workspaceId + project/relRoot`，即某工作区 `/workspace/project` 子树内的目录。它不是宿主绝对路径，也不能指向 `/workspace/state`、`project/.trash/`、`project/.lobsterai-tasks/` 或配额元数据。 |
 | **PVC（PersistentVolumeClaim）** | Kubernetes 的持久卷申领。目标架构里**每租户一个 PVC** 承载热工作区文件，随沙箱 Pod 挂载；冷 / 共享 / 大产物走对象存储。是文件层多租户隔离的载体。见 `07`、`08`。 |
 | **对象存储（S3 兼容）** | 外置的可横向扩展文件存储：自托管用 MinIO、云上用 AWS S3。存工作区大文件 / 快照、Artifact 产物、技能 / Kit 包、HTML 分享内容、上传附件。key 必须带 `tenant_id` 前缀做隔离。见 `08`。 |
 | **签名 URL（presigned URL）** | 对象存储签发的、带时效的临时访问链接，允许浏览器直传 / 直下而不穿过后端。用于文件下载、Artifact 预览、HTML 分享。见 `08`、`12`。 |
@@ -67,7 +67,7 @@
 | **claude_session_id** | `cowork_sessions` 表中的历史列名，实际存 OpenClaw 会话标识。是兼容 / 历史命名，非独立运行时证据。迁移时保留语义、可重命名的策略见 `06`。 |
 | **KV 表（`kv`）** | 存放 app 级 JSON 值（含 auth/config 标志）的键值表。迁移到 PG 时需按 `tenant_id` 归属或区分全局 vs 租户级配置。见 `06`。 |
 | **scheduled_tasks / scheduled_task_runs（历史遗留表）** | SQLite 中的定时任务与运行历史表，属**历史遗留**：目标态定时任务的权威是**服务端 BullMQ + Postgres**（沙箱内 OpenClaw cron 禁用/不下发，见附录 C D14），这两张表只在迁移逻辑里被读出、迁入服务端调度后即废弃（以 `11-定时任务调度.md` 口径为准）。 |
-| **scheduled_task_meta** | 保留下来的本地绑定元数据表，存 OpenClaw cron job 不支持的自定义字段（origin/binding）。见 `11`。 |
+| **scheduled_task_meta** | 桌面现状的本地绑定元数据表，存 OpenClaw cron job 不支持的自定义字段（origin/binding）。SaaS 目标态不建独立 `scheduled_task_meta` 表，导入时把这些字段并入 `scheduled_tasks.originJson/bindingJson`。见 `11`。 |
 | **subagent（子代理）** | Agent 派生的子任务运行体，运行与历史记录在 `subagent_runs`/`subagent_messages`。见 `06`。 |
 
 ### 2.5 前端与传输
@@ -75,9 +75,9 @@
 | 术语 | 定义 |
 |---|---|
 | **window.electron（唯一桥）** | 现状渲染层↔主进程的**唯一** contextBridge 桥（`src/main/preload.ts`）。实测 **481 处调用、72 个渲染文件**（附录 C B10）；**并非收口于 services**——components 直连 245 处 > services 207 处，过半绕过 services，故浏览器桥必须 1:1 实现整个 `window.electron` 全局表面，而非只替换 services 层（附录 C A4）。是整个 Web 化的最大杠杆点。见 `03`、`附录A-IPC通道与接口映射.md`。 |
-| **浏览器桥（windowElectronShim）** | 目标架构新增的、与 `window.electron` **同接口**的浏览器实现：`invoke(channel, ...)` → REST(HTTP)；`on('...:stream:*')` → WebSocket 订阅。SPA 启动时注入 `window.electron`，让业务组件近乎零改动。见 `03`。 |
+| **浏览器桥（windowElectronShim）** | 目标架构新增的、与 `window.electron` **同接口**的浏览器实现：`invoke(channel, ...)` → REST(HTTP)；`on(...)` 先登记桥本地 topic/scope 回调表，其中会话流 `cowork:stream:*` 只登记本地回调，`activeSessionIds` registry 才负责发 `subscribe/unsubscribe {sessionId,sinceSeq?}`；文件资源走 `subscribeEvent`，用户级事件随 auth 自动恢复，`api:stream:{requestId}:*` 仅按 `requestId` 本地分发；收到 `StreamEnvelope.type` 后回调旧 channel。SPA 启动时注入 `window.electron`，降低核心对话组件的传输层改造量；租户、工作区、计费、导入向导和 Electron-only 降级仍需显式产品改造。见 `03`。 |
 | **IPC（Inter-Process Communication）** | Electron 主进程与渲染进程间的通信。现状请求走 `ipcRenderer.invoke` / `ipcMain.handle`，流式走主进程 `webContents.send` + 渲染层 `ipcRenderer.on`。`src/main/main.ts` 已 **11307 行**（行号会漂移，定位优先用符号名）；`main.ts` 内 `handle 211 + on 6 = 217`、全 `src/main` `handle 277 + on 6 ≈ 283`（**无一等于旧文档的 259**，附录 C B9/B15）；`.send(` 调用点 ≈ **51**、`webContents.send` ≈ **36**、去重后事件通道 ≈ **29**（引用时须区分「调用点 / `webContents.send` / 去重通道」三种口径，附录 C B14）。见 `01`、`附录A-IPC通道与接口映射.md`。 |
-| **`cowork:stream:*`** | Cowork 对话的流式事件通道族，从 `CoworkIpcChannel` 的 `as const` 对象穷举共 **10 个**（`delta`/`tool`/`permission`/`thinking`/`contextUsage`/`goal`/`done`/`error`/`abort` + runtime 归一）——原文档漏了 `cowork:stream:goal`，禁止用字面量 grep 数通道（附录 C B13 / §3.2）。SaaS 下映射到 WS 订阅，经含租户前缀的 Redis Stream/PubSub 频道（如 `stream:{tenantId}:{sessionId}`）跨网关实例广播。见 `03`、`04`。 |
+| **`cowork:stream:*`** | Cowork 对话的前端桥流式事件通道族，按当前 `preload.ts` / runtime forwarder 真实表面共 **10 个**：`message`、`messageUpdate`、`sessionStatus`、`contextUsage`、`goal`、`contextMaintenance`、`permission`、`permissionDismiss`、`complete`、`error`。原文档漏了 `cowork:stream:goal`，后续必须在 `libs/shared/contracts` 中建立 `CoworkStreamChannel` `as const` 注册表并从该注册表生成 AsyncAPI，禁止再靠字面量 grep 数通道（附录 C B13 / §3.2）。SaaS 下由 `activeSessionIds` registry 按会话发 WS 订阅，经含租户前缀的 Redis Stream/PubSub 频道（如 `stream:{tenantId}:{sessionId}`）跨网关实例广播；旧 channel 名只保留为桥本地回调 topic。见 `03`、`04`。 |
 | **`api:stream`** | 模型 API 代理的流式通道（现状经 main 代理，`coworkOpenAICompatProxy.ts`/`coworkModelApi.ts`）。SaaS 下由模型网关承接。见 `09`。 |
 | **REST(HTTP)** | 目标架构里对应「请求 / 响应」语义的传输（顶替 `ipcRenderer.invoke`）。 |
 | **WebSocket（WS）** | 目标架构里对应「服务端主动多次推送」语义的传输（顶替 `webContents.send` 系列）。正式鉴权方案为 REST 先申请一次性短期 ticket，WS 首帧消费 ticket；还需处理跨实例广播、断线重连补发、`requestId` 多路复用。见 `03`。 |
@@ -88,7 +88,7 @@
 
 | 术语 | 定义 |
 |---|---|
-| **沙箱 Pod（sandbox Pod）** | 目标架构里跑 OpenClaw gateway 的 Kubernetes Pod，**每用户 / 每会话一个**，用 gVisor/Kata 加固、挂载租户 PVC、`NetworkPolicy` 默认拒绝出网（仅放行到模型网关）。必须假设它会被攻破。是全计划最难一章的核心。见 `07`、`14`。 |
+| **沙箱 Pod（sandbox Pod）** | 目标架构里跑 OpenClaw gateway 的 Kubernetes Pod，调度单位是**每会话一个 Pod**，并绑定 `tenant_id`、`session_id` 与工作区租约；Pod 挂载租户 PVC 下的 `ws-{workspaceId}` 工作区子路径，进程 cwd 限在 `/workspace/project`，`/workspace/state` 只给 Config Sync/runtime 受控访问。Pod 自身运行时动态 state 另在 `/state`，不得和工作区托管状态混用。用 gVisor/Kata 加固、`NetworkPolicy` 默认拒绝出网，仅显式放行 kube-dns、模型 token 代理、Cowork/Media/MCP bridge 受控回调与审计 egress-proxy。必须假设它会被攻破。是全计划最难一章的核心。见 `07`、`14`。 |
 | **Sandbox 生产镜像** | 给沙箱 Pod 使用的生产运行时镜像，目标是只包含 OpenClaw gateway、必要 Node runtime、MCP/Skills 执行依赖、配置同步入口与健康检查。不得包含 Electron Renderer、Xvfb、x11vnc、noVNC、真实密钥或租户数据。旧 `容器改造计划` 中关于 Linux runtime 构建、native modules、`resources/cfmind`、资源采样的内容并入此项。见 `07`、`15`、`16`。 |
 | **完整桌面容器 / 旧容器方案** | 旧 `容器改造计划` 里的过渡形态：把完整 Electron 桌面应用、Chromium、Xvfb/noVNC、本地 SQLite、OpenClaw gateway 和独立 `HOME` 放入一个 Docker 容器。它可用于旧 GUI 兼容 PoC、登录链路排查或 debug 镜像，但不是网页版 SaaS 的最终产品入口。有效经验已拆入 Sandbox 镜像、状态卷、资源测算和安全边界章节。 |
 | **运行时编排器（orchestrator）** | 管理沙箱 Pod 生命周期（创建 / 健康检查 / 回收）、端口 / token / config 注入、Pod↔会话映射、扩缩容与配额的后端服务。是**唯一直接操作 K8s API** 的服务。见 `07`。 |
@@ -98,7 +98,7 @@
 | **空闲回收 / 驱逐（eviction）** | 对空闲超时的沙箱 Pod 定时回收 / 驱逐，释放资源。见 `07`、`15`。 |
 | **gVisor / Kata Containers** | 两种容器内核级加固方案（application kernel / 轻量 microVM），比普通容器提供更强隔离、阻断容器逃逸。经 K8s `RuntimeClass` 选用。见 `07`、`14`。 |
 | **RuntimeClass** | Kubernetes 的运行时选择机制，用于给沙箱 Pod 指定 gVisor/Kata 运行时。见 `07`、`15`。 |
-| **NetworkPolicy** | Kubernetes 的网络访问策略。沙箱命名空间默认拒绝出网，仅放行到模型网关，且不可访问 `app`/`data` 内部服务。是沙箱不可信假设下的关键护栏。见 `14`。 |
+| **NetworkPolicy** | Kubernetes 的网络访问策略。沙箱命名空间默认拒绝出网，仅显式放行 kube-dns、模型 token 代理、Cowork/Media/MCP bridge 受控回调与审计 egress-proxy；仍不得横向访问 `app`/`data` 其它服务或 provider 公网域名。是沙箱不可信假设下的关键护栏。见 `07`、`14`。 |
 | **命名空间 / 节点池（namespace / node pool）** | K8s 逻辑分区（`ingress`/`app`/`sandbox`/`data`）与物理节点分组。沙箱 Pod 物理隔离到**专用节点池**，是多租户安全核心。见 `02`、`14`。 |
 | **HPA（Horizontal Pod Autoscaler，水平自动扩缩）** | Kubernetes 按 CPU/QPS/WS 连接数等指标自动增减无状态服务副本数的机制。用于网关、Cowork、模型网关等。见 `02`、`15`。 |
 
@@ -139,29 +139,29 @@
 | **computer-use** | 桌面自动化能力（`src/main/computerUse/`），依赖用户本机桌面。SaaS 无宿主桌面，**本次不做**。见 `13`。 |
 | **VM / 后台浏览器** | 每会话常驻浏览器 / VM 自动化。成本与隔离风险高，**本次不做**。见 `13`。 |
 | **youdao 云** | 现状挂靠的云能力提供方（登录 / 模型目录 / 配额计费 / HTML share / skill store / 更新，`src/main/libs/endpoints.ts`）。本次要**全部自建重建**，不再依赖。见 `05`、`09`、`12`。 |
-| **模型代理 / 模型网关** | 上游模型供应商的统一代理：协议转换（OpenAI↔Anthropic、Gemini schema 清洗）、流式转发、鉴权、按 token/credits 计量扣费、配额门控。现状经 main 代理（`coworkOpenAICompatProxy.ts`/`coworkModelApi.ts`），目标为独立模型网关服务。见 `09`。 |
+| **模型代理 / 模型网关** | 上游模型与 ASR 供应商的统一代理与账务归口：模型侧做协议转换（OpenAI↔Anthropic、Gemini schema 清洗）、流式转发、鉴权、按 token/credits 计量扣费、配额门控；ASR 侧做浏览器采音 stream ticket、上游转写代理、partial/final/error 契约与 `asr_transcription` ledger。现状模型经 main 代理（`coworkOpenAICompatProxy.ts`/`coworkModelApi.ts`），语音经 `asr:realtime:createSession`；目标态先是 `apps/api` 内的 **ModelProxyModule + AsrModule / 逻辑服务**，随 `lobster-api` 合并部署。只有 V5/V6 或规模化后有指标证据并完成 RFC/ADR、Helm/CI 矩阵更新，才允许拆成独立 `apps/modelgw` / `lobster-modelgw`；ASR 不新增独立 deployable，口径以 `09` 与 `19` 为准。 |
 | **NestJS / Fastify** | 后端框架。推荐 NestJS（模块化 / DI / 内置 WS gateway / 契合按域拆分）；Fastify 作为对性能敏感、逻辑简单服务的备选。见 `02`、`04`。 |
 | **Prisma** | PostgreSQL 的类型安全 ORM 与迁移工具，替代现状 `PRAGMA table_info()` 的 ad-hoc 迁移。见 `06`。 |
 | **HTML share（HTML 分享）** | 把 Artifact / HTML 内容生成公开可访问链接的能力。现状挂 youdao 云，目标由 Artifact / 预览服务自建（对象存储 + 分享记录 + 隔离预览域）。见 `12`。 |
 
 ---
 
-## 3. 全文档索引（22 篇一句话摘要）
+## 3. 全文档索引（24 份 Markdown 一句话摘要）
 
-全计划共 **22 份文档**（19 篇正文 + 3 篇附录 A/B/C）。下表每篇一句话摘要 + 最相关的交叉引用；文件名与仓库中完全一致。
+本目录共 **24 份 Markdown**（README + 20 篇正文 00-19 + 3 篇附录 A/B/C）。下表每篇一句话摘要 + 最相关的交叉引用；文件名与仓库中完全一致。
 
 | 编号 | 文件名 | 一句话摘要 | 强相关 |
 |---|---|---|---|
 | 00 | `00-总览与执行摘要.md` | 全局与决策入口：为什么做、做到什么程度、怎么做、代价与 Top 风险。 | 02、17、18 |
 | 01 | `01-现状架构调研.md` | 「知己」——桌面端现状深度调研：IPC、OpenClaw、SQLite、云能力的真实形态与关键数字。 | 附录A、02 |
 | 02 | `02-目标架构与技术选型.md` | 技术总纲：目标形态、分层职责、逐项选型理由、一次对话的端到端时序。 | 00、04、07 |
-| 03 | `03-前端与传输层改造.md` | 「同接口浏览器桥」顶替 `window.electron`，`invoke`→REST、`on`→WS 的传输改造。 | 附录A、04、12 |
-| 04 | `04-后端服务与API设计.md` | 后端按域拆分（8 服务 + 网关）与 REST/WS API 契约设计。 | 02、附录A、05 |
+| 03 | `03-前端与传输层改造.md` | 「同接口浏览器桥」顶替 `window.electron`，`invoke`→REST、`on`→本地 topic/scope 订阅并由桥转接 canonical WS StreamEnvelope 的传输改造。 | 附录A、04、12 |
+| 04 | `04-后端服务与API设计.md` | 后端按域拆分的逻辑模块边界与 REST/WS API 契约设计；物理 deployable 以 `19` 为准。 | 02、附录A、05、19 |
 | 05 | `05-认证与多租户账户.md` | OAuth2/OIDC + JWT + 租户 / 用户 / RBAC 模型，loopback→标准 web 重定向。 | 06、14、09 |
-| 06 | `06-数据模型迁移.md` | SQLite→Postgres 多租户迁移：全表补 `tenant_id`、Prisma schema、迁移脚本、**强制 RLS**（见附录 C D2；身份表 DDL 字段权威见附录 C §4）。 | 05、11、14、附录C |
-| 07 | `07-OpenClaw运行时编排与沙箱隔离.md` | **最难一章**：每租户 / 会话沙箱 Pod、gVisor/Kata、PVC、预热容量 / 租约 / 冷热状态。 | 08、14、02 |
+| 06 | `06-数据模型迁移.md` | SQLite→Postgres 多租户迁移：tenant-scoped 业务表补 `tenant_id`、Prisma schema、迁移脚本、**强制 RLS**；身份表按成员关系 / `app.user_id` 特殊策略，DDL 字段权威见附录 C §4。 | 05、11、14、附录C |
+| 07 | `07-OpenClaw运行时编排与沙箱隔离.md` | **最难一章**：每会话沙箱 Pod + 每租户工作区/PVC、gVisor/Kata、预热容量 / 租约 / 冷热状态。 | 08、14、02 |
 | 08 | `08-文件工作区与对象存储.md` | 工作区读写 API、PVC 与 S3 分工、签名 URL、路径校验防越权。 | 07、12 |
-| 09 | `09-模型代理与计费.md` | 自建模型网关 + 协议转换 + 配额门控 + token/credits 计量扣费（含 BYOK）。 | 05、14 |
+| 09 | `09-模型代理与计费.md` | 自建模型/ASR 上游代理 + 协议转换/转写 + 配额门控 + token/seconds/credits 计量扣费（含 BYOK）。 | 05、14 |
 | 10 | `10-MCP与技能改造.md` | MCP（stdio 沙箱化 / sse·http 直连）与 Skills/Kits 安装 / 同步 / 安全扫描改造。 | 07、14 |
 | 11 | `11-定时任务调度.md` | 定时任务调度：目标以**服务端 BullMQ + Postgres 为权威**（沙箱内 OpenClaw cron 禁用，见附录 C D14），历史表迁移即废弃。 | 06、07、04、附录C |
 | 12 | `12-Artifacts与预览改造.md` | Artifacts 解析与预览类型改造：对象存储 + 签名 URL + 隔离预览域 + CSP/iframe sandbox。 | 08、14、03 |
@@ -170,8 +170,9 @@
 | 15 | `15-部署运维与可观测性.md` | K8s/Helm 部署、dev/staging/prod、OTel+Prometheus/Grafana/Loki、SLO 与告警。 | 02、07、16 |
 | 16 | `16-测试策略与验收标准.md` | 契约 / 集成 / 隔离 / 压测测试策略与各里程碑验收标准。 | 15、07、附录A |
 | 17 | `17-分阶段路线图与工作量估算.md` | 第一版 V1 到第六版 V6 路线图、旧 M0-M9 映射、任务分解、人月估算与团队规模。 | 00、07、18 |
-| 18 | `18-风险登记册.md` | 全量风险登记：概率 / 影响评级、触发信号、缓解与责任人占位。 | 00、07、17 |
-| 附录A | `附录A-IPC通道与接口映射.md` | IPC 通道 → REST/WS 接口逐条映射基线（约 260 通道），前后端契约根据。 | 03、04 |
+| 18 | `18-风险登记册.md` | 全量风险登记：概率 / 影响评级、触发信号、缓解、明确 owner 与阶段门绑定。 | 00、07、17 |
+| 19 | `19-开工前补件与工程脚手架冻结.md` | V1 前置工程准入：PR-0~PR-4、Day-0 平台决策、目标 SaaS 脚手架与 CI 门禁。 | 17、16、附录C |
+| 附录A | `附录A-IPC通道与接口映射.md` | IPC 通道 → REST/WS 接口逐条映射基线（`main.ts` 内 217、全 `src/main` 约 283 个注册；字段级契约以附录 C / `libs/shared/contracts` 为准），前后端契约导航。 | 03、04 |
 | 附录B | `附录B-术语表与阅读指南.md` | 本文档：术语表 + 全文档索引 + 按角色阅读路线。 | 00、02 |
 | 附录C | `附录C-决策基线与接口契约总纲.md` | **权威「拍死层」**：跨文档决策 D1–D16、源码订正表 §2、接口契约事实源与关键 schema/DDL §3–§8；与任何文档（含本文）冲突以本附录为准。 | 全部 |
 
@@ -193,7 +194,7 @@ flowchart LR
 
   Dec --> D1["13 取舍 → 17 路线图<br/>→ 18 风险 → 09 计费"]
   Arch --> A1["01 现状 → 02 目标 → 04 API<br/>→ 07 沙箱 → 14 安全（把关全篇）"]
-  FE --> F1["03 前端传输 → 附录A 映射<br/>→ 12 Artifacts → 04 契约"]
+  FE --> F1["03 前端传输 → 附录A 映射导航<br/>→ 12 Artifacts → 附录C/04 契约"]
   BE --> B1["04 API → 05 认证 → 06 数据<br/>→ 09 模型 → 10 MCP/技能 → 11 定时"]
   Ops --> O1["07 沙箱 → 15 部署运维<br/>→ 14 安全 → 16 测试"]
   Sec --> S1["14 安全总纲 → 07 沙箱 → 05 认证<br/>→ 06 数据(RLS) → 09/10 出网/沙箱"]
@@ -223,29 +224,29 @@ flowchart LR
 | 4 | `07-OpenClaw运行时编排与沙箱隔离.md` | 最难一章：Pod 生命周期、隔离、池化。 |
 | 5 | `14-安全合规与多租户隔离.md` | 三层隔离模型与安全总纲。 |
 | 6 | `附录C-决策基线与接口契约总纲.md` | 「拍死层」：跨文档决策 D1–D16、源码订正表、接口契约事实源；冲突时以此为准。 |
-| 扩展 | 全部 | 把关三条硬主线（一切带 `tenant_id`、沙箱假设被攻破、模型出网收敛）。 |
+| 扩展 | 全部 | 把关三条硬主线（一切带 `tenant_id`、沙箱假设被攻破、模型/ASR 上游出网收敛）。 |
 
 ### 4.3 前端
 
-改造集中在「桥这一层」，业务组件近乎零改。
+改造集中在「桥这一层」降低核心对话链路的传输改造量；但新增 SaaS 语义与桌面能力降级仍要显式产品改造。
 
 | 顺序 | 文档 | 关注点 |
 |---|---|---|
 | 1 | `03-前端与传输层改造.md` | 浏览器桥、REST/WS 适配、Electron-only 降级。 |
-| 2 | `附录A-IPC通道与接口映射.md` | 逐通道映射契约基线（`cowork:stream:*`、`api:stream`）。 |
+| 2 | `附录A-IPC通道与接口映射.md` | 逐通道映射导航与任务清单（`cowork:stream:*`、`api:stream`）；字段级契约仍以附录 C / `libs/shared/contracts` 为准。 |
 | 3 | `12-Artifacts与预览改造.md` | 预览类型、签名 URL、iframe/CSP 隔离对前端的影响。 |
 | 扩展 | `04-后端服务与API设计.md`、`附录B`（本文） | 后端契约、术语对齐。 |
 
 ### 4.4 后端
 
-按域实现各服务，复用现有 TS 逻辑。
+按域实现后端模块 / 逻辑服务，复用现有 TS 语义和测试资产；V1-V3 物理部署仍以 `19` 冻结的 `apps/api` 合并承载为准。
 
 | 顺序 | 文档 | 关注点 |
 |---|---|---|
 | 1 | `04-后端服务与API设计.md` | 服务拆分与 API 契约总图。 |
 | 2 | `05-认证与多租户账户.md` | OIDC/JWT、租户上下文注入、RBAC。 |
 | 3 | `06-数据模型迁移.md` | Postgres 多租户 schema、Prisma、迁移与 RLS。 |
-| 4 | `09-模型代理与计费.md` | 模型网关、协议转换、配额与计费闭环。 |
+| 4 | `09-模型代理与计费.md` | 模型/ASR 网关、协议转换/转写、配额与计费闭环。 |
 | 5 | `10-MCP与技能改造.md` | MCP 传输 / 沙箱化、技能安装 / 扫描。 |
 | 6 | `11-定时任务调度.md` | 调度权威归属（服务端 BullMQ + Postgres，沙箱内 cron 禁用，见附录 C D14）、历史表迁移。 |
 | 扩展 | `07`、`附录A` | 与运行时协作、契约映射。 |
@@ -283,6 +284,6 @@ flowchart LR
 
 1. **一切带 `tenant_id`**：每条数据、每个 Pod、每个对象存储 key、每条日志都可追溯到租户；跨租户在 DB（`tenant_id`/RLS）、存储（key 前缀 / 策略）、Pod（命名空间 /NetworkPolicy）三层均被拒。
 2. **沙箱假设被攻破**：沙箱 Pod 跑不完全可信的 Agent 代码，必须假设它会被攻破——故物理隔离到专用节点池 + gVisor/Kata + 默认拒绝出网。
-3. **模型出网收敛到网关**：沙箱 Pod 不能直连模型供应商公网，一切模型调用经模型网关，保证密钥集中托管、计费准确、防数据外泄。
+3. **模型/ASR 上游出网收敛到网关/代理**：沙箱 Pod 不能直连模型供应商公网，一切模型调用经模型网关；浏览器或沙箱也不能直连 ASR provider，语音转写经后端 ASR 代理，保证密钥集中托管、计费准确、防数据外泄。
 
-> 小结：本文是全套文档的**入口词典 + 导航图**。第 2 节统一术语，第 3 节一句话索引 22 篇，第 4 节按角色给路线，第 5 节收束三条硬主线。遇到任何不确定，先回本文对齐词汇，再回 `00`/`02` 对齐全局。
+> 小结：本文是全套文档的**入口词典 + 导航图**。第 2 节统一术语，第 3 节一句话索引 24 份 Markdown，第 4 节按角色给路线，第 5 节收束三条硬主线。遇到任何不确定，先回本文对齐词汇，再回 `00`/`02` 对齐全局。

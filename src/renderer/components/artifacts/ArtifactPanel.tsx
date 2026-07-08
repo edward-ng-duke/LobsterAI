@@ -83,6 +83,7 @@ const COPYABLE_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg']);
 
 const PANEL_CLOSE_DRAG_THRESHOLD = 48;
 const FILE_LIST_DRAWER_TRANSITION_MS = 180;
+const ARTIFACT_FILE_REFRESH_DEBOUNCE_MS = 250;
 const NODE_DEPLOYMENT_PROJECT_DIRECTORY_STORAGE_PREFIX =
   'lobsterai:node-deployment-project-directory:';
 
@@ -1070,6 +1071,8 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const fileListDrawerAnimationFrameRef = useRef<number | undefined>(undefined);
   const fileListDrawerCloseTimeoutRef = useRef<number | undefined>(undefined);
   const htmlShareCopyStatusTimerRef = useRef<number | undefined>(undefined);
+  const artifactFileRefreshTimeoutRef = useRef<number | undefined>(undefined);
+  const artifactRefreshRequestIdRef = useRef(0);
   const nodeDeploymentAnalysisRunIdRef = useRef(0);
   const nodeDeploymentActionRunIdRef = useRef(0);
 
@@ -1714,17 +1717,30 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
 
     let cleanup: (() => void) | undefined;
     let watchedPath: string | null = null;
+    const scheduleRefresh = () => {
+      if (artifactFileRefreshTimeoutRef.current !== undefined) {
+        window.clearTimeout(artifactFileRefreshTimeoutRef.current);
+      }
+      artifactFileRefreshTimeoutRef.current = window.setTimeout(() => {
+        artifactFileRefreshTimeoutRef.current = undefined;
+        void handleRefreshRef.current();
+      }, ARTIFACT_FILE_REFRESH_DEBOUNCE_MS);
+    };
 
     window.electron?.artifact?.watchFile(filePath);
     watchedPath = filePath;
 
     cleanup = window.electron?.artifact?.onFileChanged(({ filePath: changedPath }) => {
       if (changedPath === watchedPath) {
-        handleRefreshRef.current();
+        scheduleRefresh();
       }
     });
 
     return () => {
+      if (artifactFileRefreshTimeoutRef.current !== undefined) {
+        window.clearTimeout(artifactFileRefreshTimeoutRef.current);
+        artifactFileRefreshTimeoutRef.current = undefined;
+      }
       if (cleanup) cleanup();
       if (watchedPath) window.electron?.artifact?.unwatchFile(watchedPath);
     };
@@ -3588,6 +3604,11 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
 
   const handleRefresh = useCallback(async () => {
     if (!selectedArtifact?.filePath) return;
+    const refreshRequestId = artifactRefreshRequestIdRef.current + 1;
+    artifactRefreshRequestIdRef.current = refreshRequestId;
+    const isLatestRefreshRequest = () =>
+      artifactRefreshRequestIdRef.current === refreshRequestId;
+
     if (selectedArtifact.type === 'video') {
       dispatch(addArtifact({
         sessionId: selectedArtifact.sessionId,
@@ -3612,7 +3633,12 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       const isTextType = selectedArtifact.type !== 'image' && selectedArtifact.type !== 'document';
       if (isTextType && window.electron?.dialog?.readTextFile) {
         const result = await window.electron.dialog.readTextFile(selectedArtifact.filePath);
+        if (!isLatestRefreshRequest()) return;
         if (result?.success && typeof result.content === 'string') {
+          if (result.content === selectedArtifact.content) {
+            reportSelectedArtifactAction('refresh_preview', { result: 'success' });
+            return;
+          }
           dispatch(addArtifact({
             sessionId: selectedArtifact.sessionId,
             artifact: { ...selectedArtifact, content: result.content, contentVersion: Date.now() },
@@ -3625,6 +3651,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       }
 
       const result = await window.electron.dialog.readFileAsDataUrl(selectedArtifact.filePath);
+      if (!isLatestRefreshRequest()) return;
       if (result?.success && result.dataUrl) {
         const isTextType =
           selectedArtifact.type !== 'image' && selectedArtifact.type !== 'document';
@@ -3637,6 +3664,10 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
           } catch {
             content = result.dataUrl;
           }
+        }
+        if (content === selectedArtifact.content) {
+          reportSelectedArtifactAction('refresh_preview', { result: 'success' });
+          return;
         }
         dispatch(
           addArtifact({

@@ -19,7 +19,7 @@
 
 - **决策**：REST 用 OpenAPI 3.1、WS 流用 AsyncAPI 2.6，物理落在 `libs/shared/contracts/`（`openapi.yaml` + `asyncapi.yaml`，或等价的 `zod` schema + `ts` 类型），由 CI 生成后端 DTO 校验、前端桥类型、契约测试三方代码。
 - **理由**：附录 A / 04 只到「动词+路径」，字段级 DTO 恒为 0；后端 `class-validator`、前端桥、契约测试若各自臆测必然漂移。
-- **落地要点**：**附录 A / 04 降级为「导航与任务清单」，字段级一律以 `libs/shared/contracts` 为权威**；事件与通道全集从 `src/shared/*/constants.ts` 的 `as const` 对象穷举导出，**禁止用字面量 grep 数通道**（已因此漏掉 `cowork:stream:goal`，见 §2-B13）。代表性 schema 见 §3。
+- **落地要点**：**附录 A / 04 降级为「导航与任务清单」，字段级一律以 `libs/shared/contracts` 为权威**；稳定态的事件与通道全集由 contracts 内的注册表导出。初始抽取要结合 `src/shared/*/constants.ts` 的 `as const` 对象、`src/main/preload.ts` 的 `onStream*`、`src/main/main.ts` runtime forwarder 与 `src/renderer/types/electron.d.ts` 的 `IElectronAPI`，**禁止用字面量 grep 数通道**（已因此漏掉 `cowork:stream:goal`，见 §2-B13）。`cowork:stream:*` 必须新增 `CoworkStreamChannel` 注册表（见 §3.2），不能误认为现有 `CoworkIpcChannel` 已覆盖全部 stream 通道。代表性 schema 见 §3。
 - **影响**：04、05、08、09、11、16、附录 A。
 
 ### D2 · RLS = 强制（不是「可选」）
@@ -32,7 +32,7 @@
 ### D3 · 身份表 DDL 的唯一 owner = 06；字段权威 = 本附录 §4
 
 - **决策**：`users / tenants / memberships / identities / refresh_tokens / auth_codes / oauth_clients` 的字段级 DDL 由 **本附录 §4** 给出，`06` 为叙述 owner 并内联引用，`05` 只保留鉴权语义与 policy，**不再互指**。
-- **理由**：05 §9 指向 06、06 指回 05，两端互指、内容落空，身份 Prisma schema 无法生成，P0 第一步停摆。
+- **理由**：05 §9 指向 06、06 指回 05，两端互指、内容落空，身份 Prisma schema 无法生成，开工第一步停摆。
 - **影响**：05、06。
 
 ### D4 · gVisor 为默认 runtime，Kata 为兼容档回退（V1 用兼容矩阵决定回退面）
@@ -42,9 +42,9 @@
 - **落地要点**：Pod spec 用变量 `runtimeClassName`，由编排器按档位注入；矩阵回退判据写进 07 与 16 的 V1 准入门。
 - **影响**：02、07、15、18、16。
 
-### D5 · 工作区挂载单位 = 工作区（`workspace-{agentId}`），单写者租约
+### D5 · 工作区挂载单位 = 工作区（现状 `workspace-*` → 目标 `ws-{workspaceId}`），单写者租约
 
-- **决策**：挂载单位统一为**工作区**（现状 OpenClaw state-dir 即 `workspace-{agentId}` / main 为 `workspace-main`），映射到每租户 PVC 的子路径。`session : workspace` 为多对一。**同一工作区同一时刻只允许一个 RW 挂载**（Pod），并发访问经分布式租约（Redis + PVC 上的 lease 文件）串行化，其余请求排队或降级只读。
+- **决策**：挂载单位统一为**工作区**。现状 OpenClaw state-dir 名称是 `workspace-{agentId}` / main 为 `workspace-main`；目标态必须映射为每租户 PVC 子路径 `tenants/{tenantId}/ws-{workspaceId}`，并挂载到 Pod `/workspace`。`session : workspace` 为多对一。**同一工作区同一时刻只允许一个 RW 挂载**（Pod），并发访问经分布式租约（Redis + PVC 上的 lease 文件）串行化，其余请求排队或降级只读。
 - **理由**：挂载单位三处打架——07 按会话 `sessions/{id}`、08 按工作区 `ws-{id}`、源码按 agent `workspace-{agentId}`。按会话隔离→跨会话记忆 / `MEMORY.md` 断裂；按工作区共享而无锁→两个 Pod 以 RWX 并发写同一批文件和 `MEMORY.md`，记忆/文件损坏。
 - **落地要点**：`MEMORY.md`、dreaming 产物、`AGENTS.md` 的 LobsterAI 托管段落写入归属单一持锁 Pod；补验收「并发写同一文件不丢写/不损坏」（16）。
 - **影响**：06、07、08。
@@ -60,7 +60,7 @@
 
 - **决策**：`respondToPermission / stopSession / compactContext` 等「回指某活跃会话」的命令，经 **Redis 会话→owning-replica 注册表** + 实例订阅的命令通道下发到持有该 gateway 连接的副本。**未命中 requestId 必须返回可路由错误或经总线转发，禁止现状式静默 no-op**（`coworkEngineRouter.ts` 对未知 requestId 直接 return）。
 - **理由**：多副本无状态部署下，用户点「允许」落到错副本会被静默吞掉→生成永久挂起，直接推翻 04 §9「领域服务无状态」验收。
-- **落地要点**：`permissionDismiss` 等所有反向命令 payload 补 `sessionId` + `tenantId`。
+- **落地要点**：`respondToPermission / stopSession / compactContext` 等反向命令的命令信封或路由元数据必须带 `tenantId + sessionId + requestId`；`permissionDismiss` 这类前向事件用 `StreamEnvelope` 顶层携带 `tenantId/sessionId`，其 `data` 为旧桥兼容形状 `{ requestId }`，不得把两层字段混成两套 payload。
 - **影响**：04、07。
 
 ### D8 · Egress 默认拒绝，但显式放行运行时必需的内网回调
@@ -91,14 +91,14 @@
 
 ### D12 · 计费四桶模型为权威，Redis 4-key + 优先级 Lua 原子扣减
 
-- **决策**：额度四桶（日/月/赠送/充值）为权威，**Redis 侧用 4 个 key（或一个 hash 的 4 字段）**，跨桶按优先级原子扣减用 Lua；单计数器方案作废。预扣公式落到字段级；量纲统一 `credits = Σ(tokens_i × unit_price_i) ÷ 1000`（**修正原文漏 `÷1000` 的 1000× 放大**）；幂等唯一键 = `(tenant_id, request_id, entry_type)`，`request_id` 由服务端签发（不复用客户端值，避免跨租户碰撞与重放白嫖）。
+- **决策**：额度四桶（日/月/赠送/充值）为权威，**Redis 侧用 4 个 key（或一个 hash 的 4 字段）**，跨桶按优先级原子扣减用 Lua；单计数器方案作废。`credit_accounts` 的物化快照字段必须统一为四桶**当前可用余额**（`daily_balance/monthly_balance/granted_balance/topup_balance`），`*_used` 只能由 ledger 派生给旧 API/报表展示，不得作为快照权威字段。`GET /api/v1/billing/account` 的旧桥兼容顶层字段必须由 breakdown 派生：`creditsRemaining=Σbalance`、`creditsLimit=daily.limit+monthly.limit+granted.total+topup.balance`、`creditsUsed=creditsLimit-creditsRemaining`。预扣公式落到字段级；量纲统一 `credits = Σ(tokens_i × unit_price_i) ÷ 1000`（**修正原文漏 `÷1000` 的 1000× 放大**）；账务表统一为 `billing_ledger`，`entry_type` 固定为 `hold/settle/release/refund/topup/grant/adjust`，`credits` 为账户有符号变动（负=扣减/占用，正=入账/释放/返还），`bucket_deltas` 必须记录四桶同号分摊且 Σbucket_deltas=`credits`；`refund` 不固定正负，必须用 `reason` 区分 `usage_correction`（用量迟到/多扣修正，通常正向返还）与 `payment_refund` / `chargeback`（支付退款/拒付 clawback，负向冲销已入账 credits）；幂等唯一键 = `(tenant_id, request_id, entry_type, reason)`，`request_id` 由服务端签发（不复用客户端值，避免跨租户碰撞与重放白嫖），同一业务请求若需要写多条同 `entry_type` 分录（如模型 usage + 沙箱成本、不同退款来源）必须用稳定 `reason` 区分。
 - **理由**：09 §3.2 四桶与 §5.2 单计数器互斥、Lua 无定义、预扣公式把 input/output/cache 折叠成单一 `price/maxTokens` 不可编码、量纲漏 `÷1000`、幂等键不含 `tenant_id` 且复用客户端 requestId。
 - **落地要点**：schema 见 §6。`costMultiplier` 现状是 **per-model**（`renderer/services/auth.ts` 的 `Model.costMultiplier`，前端「积分消耗倍率」直接展示），09 若引入 per-plan 倍率必须说明二者叠加顺序与前端取值来源，不得默认「前端零改」。
 - **影响**：09。
 
-### D13 · 阶段门唯一命名 = V1–V6，废弃 P0–P3 / GV 别名
+### D13 · 阶段门唯一命名 = V1–V6，废弃 P0–P3 / G-V/GV 别名
 
-- **决策**：全套文档阶段门统一用 **V1–V6**。废弃 `P0–P3`、`GV1–GV6` 别名。越权门、迁移双读门、egress 门等的版本时点，以本附录 §8 的唯一对照表为准，16/17/18 就地对齐。
+- **决策**：全套文档阶段门统一用 **V1–V6**。废弃 `P0–P3`、`G-V1–G-V6`、`GV1–GV6` 别名；退出子门使用 `V1.0`、`V2.1` 这类编号，且必须上卷到对应版本门。越权门、SaaS schema 迁移校验、桌面存量导入双读、egress 门等的版本时点，以本附录 §8 的唯一对照表为准，16/17/18 就地对齐。形如 `P0-2` / `P1-7` / `P2-6` 的文本仅作为历史评审问题编号保留，不代表阶段门；裸 `P0/P1/P2/P3` 只能表示缺陷、事故、告警、客户支持或测试基准里的严重级 / 优先级，不得作为路线图阶段或工程 PR 批次名。
 - **理由**：三套命名并存互不映射，越权/迁移门时点在 16/17/18 间差 1–2 个版本，写 CI gate 的 agent 不知实现 3 段还是 6 段门。
 - **影响**：16、17、18、附录 B、README。
 
@@ -110,14 +110,14 @@
 
 ### D15 · 复用口径 = 按文件分级，`coworkStore` / `openclawConfigSync` 属「必须重写/移植」
 
-- **决策**：`04 §3.2 / 02 §4.3` 的「A 类直接复用」拆成三级——**lift-as-is（纯 `libs/` 逻辑）/ 需适配 / 必须重写**。`coworkStore.ts`（3044 行，`import better-sqlite3` + `electron`，~68 处 `db.prepare`）→ 必须重写为 Prisma/PG；`openclawConfigSync.ts`（3502 行，`import { app } from 'electron'` + 约 25 个 live getter）→ 必须去 Electron 化移植为 Node 服务。
+- **决策**：`04 §3.2 / 02 §4.3` 的「A 类直接复用」拆成三级——**lift-as-is（纯 `libs/` 逻辑）/ 需适配 / 必须重写**。`coworkStore.ts`（3044 行，`import better-sqlite3` + `electron`，~68 处 `db.prepare`）→ 必须重写为 Prisma/PG；`openclawConfigSync.ts`（3502 行，`import { app } from 'electron'` + 约 25 个 live getter）→ 必须去 Electron 化移植为 Node 模块与 `runtime-orchestrator` 的 `config-sync` entrypoint。
 - **理由**：把深度耦合 SQLite/electron 的模块标为「直接搬」，与「不得把 electron-only API 带进后端」自相矛盾，派「搬」和派「重写」的 agent 拿到相反指令。
-- **落地要点**：17 为这两项各新增独立 Story（`coworkStore→PG 重写`、`Config Sync Service 化` 各 15–25pd）。
+- **落地要点**：17 为这两项各新增独立 Story（`coworkStore→PG 重写`、`Config Sync 渲染链路化` 各 20 pd P50 基准 / 30-40 pd 高风险档；20 pd 只作 WBS 排期基线）。Config Sync 默认落在 `runtime-orchestrator` 的 `config-sync` entrypoint / initContainer，不新建独立 deployable。
 - **影响**：00、02、04、17。
 
-### D16 · 预览子资源鉴权 = 会话级签名 Cookie 前缀；CSP 放行沙箱自身脚本
+### D16 · 预览子资源鉴权 = 预览会话级签名 Cookie 前缀；CSP 放行沙箱自身脚本
 
-- **决策**：文件型 HTML 预览的相对子资源（`./style.css`、`img/a.png`）用**会话级签名 Cookie / 令牌前缀**鉴权（作用域限沙箱预览路径），不用 per-file 签名。网关 CSP 的 `script-src / style-src` **加入沙箱 host（self）** 并补 `worker-src blob:`、`base-uri`、`form-action`。
+- **决策**：文件型 HTML 预览的相对子资源（`./style.css`、`img/a.png`）用**预览会话级签名 Cookie / 令牌前缀**鉴权（作用域限 `/p/{previewSessionId}/` 这类沙箱预览路径），不用 per-file 签名。`previewSessionId` 是预览网关短期授权 ID，不是 Cowork `sessionId`，不得作为 artifact 对象存储前缀。网关 CSP 的 `script-src / style-src` **加入沙箱 host（self）** 并补 `worker-src blob:`、`base-uri`、`form-action`。
 - **理由**：iframe 从沙箱域加载 HTML 后，浏览器对相对子资源发起的不带 sig/exp 子请求无法逐个验签，而「沙箱域不设 Cookie」与之冲突；§4.1 CSP 只有 `unsafe-inline` 缺 self 会拦掉文件型 HTML 的外部 css/js（验收 #1 必失败）。
 - **影响**：12、14。
 
@@ -136,7 +136,7 @@
 | A3 | `sessionId` 为 1:1 会话键 | 网关按 `sessionKey` 寻址，1 `sessionId`→多 sessionKey | `getSessionKeysForSession()`、`parseManagedSessionKey`（`openclawChannelSessionSync.ts`） |
 | A4 | `window.electron` 调用「收口在 `src/renderer/services/*`」 | components 直连 **245** 处 > services **207** 处，过半绕过 services。前端桥必须 **1:1 实现整个 `window.electron` 全局表面**，非替换 services 层 | `rg -o "window\.electron" src/renderer/{components,services}` |
 | A5 | `coworkStore` / `openclawConfigSync` 为「纯逻辑直接复用」 | 二者深度耦合 `better-sqlite3`/`electron`/`app.getPath`，**必须重写/移植**（见 D15） | 两文件 import 头 |
-| A6 | 扫描门控：severity `critical`(50 分) → 阻断，普通租户无法启用 | `riskScoreToLevel(50)='high'`，单条 data-exfiltration 得 high 而非 blocked，「普通租户无法启用」实为假 | `riskScoreToLevel` |
+| A6 | 扫描门控：severity `critical`(50 分) → 聚合 `riskLevel='critical'`，因此自动阻断 | 现状事实：`riskScoreToLevel(50)='high'`，单条 data-exfiltration 只靠聚合 level 会落到 high。目标态不能再只看聚合 level，必须按 `10` §5.3 / `14` §8.1 新增 **finding 级 severity 硬门**：任一 `critical` severity finding 默认 `blocked`，普通租户不可自助启用，仅企业租户管理员可强制放行并审计。 | `riskScoreToLevel`；`10` §5.3 / `14` §8.1 |
 | A7 | 定时任务 `Stop` 为既有能力 | `Stop` handler 现状是**空实现**（`return { result:false }`），OpenClaw 无 stop API；需作为全新能力设计取消机制 | scheduled task stop handler |
 | A8 | `commandSafety` 白名单 / `managed_npx_only` / `requireScan` 为现状/复用 | 现有 `src/main/libs/commandSafety.ts` 只做**危险命令分级**（语义不同）；白名单模式是全新概念，新模块须改名（如 `mcpCommandPolicy.ts`）避免撞名 | `libs/commandSafety.ts` |
 
@@ -148,7 +148,7 @@
 | B10 | `window.electron` ~446 处 / 74 文件 | 实测 **481 处 / 72 文件**（且组件直连过半，见 A4） | `rg -o` |
 | B11 | patch「共 61 / v2026.6.1 有 15」 | 实测**版本内 65 个（v2026.3.2:9 / v2026.4.5:1 / v2026.4.8:9 / v2026.4.14:26 / v2026.6.1:20）+ 1 个游离顶层 `openclaw-llm-request-debug-log.patch` = 66**；游离 patch 不被脚本应用，须交代归属 | `ls scripts/patches/**` |
 | B12 | 测试基数「151 个 Vitest 用例」 | 实测 **175 个 `.test.ts` 文件**（文件数≠用例数）；用作迁移/验收基线会漏 | `rg -l --glob '*.test.ts'` |
-| B13 | `cowork:stream:*` 共 **9** 个事件 | 实为 **10** 个——漏 `cowork:stream:goal`（`CoworkIpcChannel.StreamGoal`，preload `onStreamGoal`、`main.ts` 发送、`cowork.ts` 订阅）。runtime 侧另有 `goalUpdate/sessionStopped`，事件名是 `contextUsageUpdate`（非 `contextUsage`） | `preload.ts:onStreamGoal`；`cowork.ts:260` |
+| B13 | `cowork:stream:*` 共 **9** 个事件 | 实为 **10** 个——漏 `cowork:stream:goal`（`CoworkIpcChannel.StreamGoal`，preload `onStreamGoal`、`main.ts` 发送、`cowork.ts` 订阅）。真实前端桥通道是 `message/messageUpdate/sessionStatus/contextUsage/goal/contextMaintenance/permission/permissionDismiss/complete/error`；runtime 内部事件名如 `contextUsageUpdate`、`goalUpdate` 由 adapter 归一，不能把 runtime 内部事件表误写成前端 WS 契约 | `preload.ts:onStreamGoal`；`cowork.ts:260` |
 | B14 | `webContents.send` 计数 47 / 33 / 29 混用 | 统一口径：`.send(` 调用点 ≈ **51**（含非 webContents）；`webContents.send` ≈ **36**；去重事件通道 ≈ **29**。引用必须区分「调用点/`webContents.send`/去重通道」 | `rg "\.send\("` / `rg "webContents\.send"` |
 | B15 | 各处精确行号（main.ts ~10560、流事件行号等） | `main.ts` 已 **11307 行**，流事件行号整体偏移约 240–750 行；`30MB` 常量为 `30*1000*1000`（十进制），真实拦截线是 `OPENCLAW_CHAT_SEND_PAYLOAD_SAFE_LIMIT_BYTES`（安全线），30MB 是 WS 帧硬限（超限触发 close 1009）。**全套改用符号名定位** | `openclawRuntimeAdapter.ts:133-138` |
 
@@ -175,10 +175,98 @@
 { "error": { "code": "PERMISSION_DENIED", "message": "…", "requestId": "…", "details": {} } }
 ```
 
-### 3.1 权限响应（对应 D2 权限流 / P0-2）—— 对齐真实 `PermissionResult`
+### 3-A 契约落地与生成规则
+
+> 本节把 D1 从「原则」落成可执行规则：契约源码、生成物、CI diff、错误码与事件信封必须一条链闭合。任何字段级契约只允许从这里指定的事实源生成，业务文档与代码注释不得另立口径。
+
+**事实源与物理路径**：
+
+| 类型 | 权威源码 | 生成物路径（建议） | 消费方 |
+|---|---|---|---|
+| DTO / payload schema | `libs/shared/contracts/src/**/*.schema.ts`（Zod） | `libs/shared/contracts/generated/types.ts`、`libs/shared/contracts/generated/validators.ts` | 后端 controller/service、前端 Web bridge、契约测试 |
+| REST API | 由 Zod + route metadata 生成 `libs/shared/contracts/openapi.yaml`（OpenAPI 3.1） | `apps/api/src/generated/openapi-types.ts`、`apps/web/src/generated/api-client.ts`、契约测试 fixture | API 服务、前端桥、supertest 契约套件 |
+| WS / SSE / runtime event | 由事件 Zod schema + channel metadata 生成 `libs/shared/contracts/asyncapi.yaml`（AsyncAPI 2.6） | `apps/api/src/generated/ws-events.ts`、`apps/web/src/generated/stream-events.ts`、WS/SSE mock server | Gateway、Web bridge、Playwright 流式夹具 |
+| 错误码 | `libs/shared/contracts/src/errors.ts`（`as const` + Zod enum） | `generated/error-codes.ts`、OpenAPI error responses、AsyncAPI error messages | 前后端错误分类、i18n 映射、测试断言 |
+
+**生成与禁止项**：
+
+- `openapi.yaml` / `asyncapi.yaml` / `generated/*` 均为生成物，文件头必须标注 `DO NOT EDIT`；**禁止手改生成物**。需要改字段时，只能改 `contracts/src` 的 Zod schema、route/event metadata 与共享常量。
+- 生成命令必须是幂等的：同一输入重复运行不得产生 diff；CI 先运行 contract generate，再 `git diff --exit-code libs/shared/contracts/openapi.yaml libs/shared/contracts/asyncapi.yaml libs/shared/contracts/generated`。
+- PR 修改任何 `src/shared/*/constants.ts` 的通道、状态、错误码，或修改任何 API/WS handler payload，必须同步修改 `contracts/src`；否则 contract diff / 静态覆盖断言失败。
+- 契约生成物不得反向 import 应用代码；只允许 import `libs/shared/contracts/src` 与 `src/shared/*/constants.ts` 中稳定的 `as const` 常量，防止后端/前端循环依赖。
+
+**CI contract diff 门禁**：
+
+| 门 | 检查 | 失败含义 |
+|---|---|---|
+| schema compile | Zod schema、route metadata、event metadata 可生成 OpenAPI/AsyncAPI | 契约源码不可用 |
+| generated diff | 生成后无未提交 diff | 手改生成物或忘记重新生成 |
+| coverage diff | `CoworkIpcChannel` / API route / error code / stream event 穷举均有契约条目 | 新通道或新错误码未入契约 |
+| breaking diff | 对比 main 分支上一次 contract snapshot，标记删除字段、收窄 enum、必填字段新增、错误码删除、event envelope 破坏 | 需要显式版本升级或兼容策略 |
+| mock conformance | 由 OpenAPI/AsyncAPI 生成的 mock 与 Web bridge / Playwright fixture 可跑通 | 契约无法驱动消费者测试 |
+
+**错误码规则**：
+
+- 错误码使用稳定大写 snake case（如 `PERMISSION_DENIED`、`SESSION_BUSY`、`PAYLOAD_TOO_LARGE`、`QUOTA_EXCEEDED`、`STORAGE_QUOTA_EXCEEDED`），不得把人类可读 message 当分类依据。
+- 每个错误码必须定义：`httpStatus`、是否可重试、是否可展示给用户、默认 i18n key、可选 `details` schema。REST 错误统一走 `{ error: { code, message, requestId, details } }`；WS/SSE 错误走 event envelope 的 `type:'error'`。
+- 删除或重命名错误码视为 breaking change；废弃错误码须保留至少一个 GA 小版本，标注 `deprecatedSince` 与替代码。
+
+**版本兼容规则**：
+
+- OpenAPI/AsyncAPI 顶层版本使用 `x-lobster-contract-version`（`major.minor.patch`）。新增可选字段、增加 enum 值、增加事件类型为 minor；删除字段、字段改必填、字段类型收窄、错误码删除、event envelope 字段改名为 major。
+- 服务端至少兼容当前前端发布版本与上一个 minor 的契约；前端 bridge 必须忽略未知可选字段与未知非关键事件，并对未知必需事件上报 `UNSUPPORTED_EVENT_TYPE`。
+- REST 路由废弃必须在 OpenAPI 标注 `deprecated: true`，并给 `sunsetAt`；WS/SSE 事件废弃必须保留 envelope 与 no-op 解析，直到约定窗口结束。
+
+**SSE / WebSocket event envelope**：
+
+所有流式事件（含 `cowork:stream:*`、`api:stream:*`、任务事件、runtime 归一事件）统一用 envelope，payload 只放在 `data`：
 
 ```ts
-// POST /cowork/sessions/:id/permission  —— 单端点同时承接工具授权与 AskUser
+type StreamEnvelope<TType extends string, TData> = {
+  type: TType;                 // 稳定事件类型，不等同于展示文案
+  version: 1;                  // envelope 版本，非业务 schema 版本
+  tenantId: string;
+  sessionId?: string;
+  requestId?: string;
+  seq?: string;                // Redis Stream id 或等价单调游标
+  idempotencyKey?: string;     // 可选，重复投递去重
+  emittedAt: string;           // ISO timestamptz
+  data: TData;
+};
+```
+
+- WS 与 SSE 只允许在传输 framing 上不同，`StreamEnvelope` 字段语义必须一致；SSE 的 `id:` 对应 `seq`，`event:` 对应 `type`。
+- `tenantId` 用于服务端路由与审计，客户端不得以其越权切租户；服务端鉴权仍以 JWT/RLS 上下文为准。
+- `seq` 是断连补发和去重的唯一游标；不得用可重排的展示序号替代（对齐 D10）。
+
+### 3-B 关键 DTO / 事件覆盖清单
+
+> 下表不是完整 OpenAPI/AsyncAPI，而是必须进入 `contracts/src` 且生成到 OpenAPI/AsyncAPI/generated types 的最小清单。任一项只在实现代码中存在、不在契约源码中存在，视为契约缺口。
+
+| 域 | 必入 DTO / 事件 | 必须覆盖的字段或语义 | 生成物 |
+|---|---|---|---|
+| Auth / OAuth | `LoginRequest`、`LoginResponse{code}`、`OAuthTokenRequest`、`TokenResponse`、`RefreshRequest`、`LogoutResponse`、`AuthError` | PKCE `code_challenge`/`verifier`、`redirect_uri`、CSRF `state`、refresh rotation family、cookie refresh 与 body refresh 分流 | OpenAPI DTO + error responses |
+| Tenant / RBAC | `TenantSummary`、`Membership`、`SwitchTenantRequest`、`Role`、`TenantScopedError` | `tenantId` 只来自鉴权上下文；角色 enum；跨租户/IDOR/需隐藏存在性的越权统一 404，同租户内角色不足可用 403；拒绝存在性泄露 | OpenAPI DTO + error enum |
+| Cowork session | `StartSessionRequest`、`StartSessionResponse`、`ContinueTurnRequest`、`TurnAcceptedResponse`、`SessionSummary`、`SessionDetail`、`SessionPatchRequest`、`DeleteSessionResponse` | start=首 prompt 必填并立即生成；continue 返回 `requestId`；`sessionId` 与 `sessionKey[]` 关系；`goal`/`capsule` 字段 | OpenAPI DTO + bridge types |
+| Message / pagination | `MessageDto`、`MessageListResponse`、`PageInfo`、`MessageCursor` | 游标为 `(created_at,id)` 或 ksuid；`sequence` 仅展示；稳定排序与 `hasMore` | OpenAPI DTO |
+| Permission / AskUser | `PermissionRespondRequest`、`PermissionResult`、`PermissionUpdate`、`AskUserQuestion`、`PermissionDismissEvent` | `kind:'tool'|'ask'`；`allow/deny` 判别联合；`updatedPermissions` 表达始终允许；反向路由带 `tenantId/sessionId/requestId`（命令信封/路由元数据）；`PermissionDismissEvent.data` 保持 `{ requestId }`，`tenantId/sessionId` 在 `StreamEnvelope` 顶层 | OpenAPI + AsyncAPI event |
+| Stream events / WS ticket | `StreamTicketRequest/Response`、10 个 `cowork:stream:*`、`api:stream:{data,done,error,abort}`、`goalUpdate/sessionStopped` 归一事件 | ticket body = `sessions[]` + `resourceSubscriptions[]`（至少 `files:changed` 的 `{workspaceId,path?}`），用户级事件随 auth；统一 `StreamEnvelope`；`seq` 补发；`contextUsageUpdate` 命名；`goal` 不得漏 | OpenAPI + AsyncAPI + WS/SSE generated types |
+| Agent / model | `AgentDto`、`AgentCreate/UpdateRequest`、`ModelDto`、`ModelDetailResponse`、`ProviderConfig`、`PricingCatalogResponse` | agent `id='main'` 语义、skillIds、workingDirectory、model `costMultiplier`（per-model）；`GET /api/v1/models/{id}` 返回同租户可见模型详情（单价/能力/降级链），跨租户/套餐不可见/不存在统一 404；登录后 pricing-catalog 兼容视图由 `/api/v1/pricing/models` 生成旧 `textModels/imageModels/videoModels` 形状，公开定价页不得复用该 IPC | OpenAPI DTO |
+| Media tasks | `MediaTaskDto`、`MediaTaskStatusResponse`、`MediaCancelResponse`、`MediaStatusPollUpdate` | `taskId` 是对外 text id（租户内唯一，不暴露内部 UUID），`GET /api/v1/media/tasks/{taskId}` 与 `POST /api/v1/media/tasks/{taskId}/cancel` 均带 tenant scope，跨租户/不存在统一 404；状态枚举 `pending/running/succeeded/failed/canceled`；结果只给对象存储签名 URL/key 引用；WS `mediaStatusPollUpdate` 与轮询响应字段同源 | OpenAPI + AsyncAPI event |
+| ASR realtime | `AsrSessionCreateRequest/Response`、`AsrStreamTicket`、`AsrAudioChunk`、`AsrPartialEvent`、`AsrFinalEvent`、`AsrErrorEvent` | `POST /api/v1/asr/sessions` 返回 `asrSessionId/streamTicket/expiresAt/recommendedMimeType`；WS `/api/v1/asr/sessions/{asrSessionId}/stream` 只接受绑定同租户同用户的短期 ticket；partial/final/error 进入 AsyncAPI；计费 ledger reason=`asr_transcription`，失败/取消必须 release 或写 0 credits usage/audit | OpenAPI + AsyncAPI |
+| Workspace / files | `WorkspaceListResponse`、`WorkspaceCreateRequest/Response`、`WorkspaceTreeRequest/Response`、`FileUploadIntent`、`UploadCompleteRequest/Response`、`FileDeleteResponse`、`FileSyncStatus`、`SaveInlineFileRequest/Response`、`ReadFileAsDataUrlResponse` | 工作区 list/create、S3 直传、异步落 PVC、软删、`tree` cursor/depth/sort、25MB inline 上限、桥 shim 旧形状 | OpenAPI DTO |
+| Artifact / preview | `ArtifactDto`、`PreviewTokenRequest/Response`、`PreviewEvent` | `previewSessionId` 预览授权、预览会话级签名 Cookie/令牌前缀、CSP mode、file/html/svg/document 类型 | OpenAPI + AsyncAPI |
+| MCP / Skills | `McpServerConfig`、`McpLaunchResolution`、`SkillManifest`、`SkillScanResult`、`SupplyChainPolicyError` | 新白名单模块命名为 `mcpCommandPolicy`，不得复用旧 `commandSafety` 名；risk level、integrity、registry、lifecycle scripts、secref | OpenAPI DTO + error enum |
+| Scheduled tasks | `ScheduledTaskDto`、`TaskCreate/UpdateRequest`、`TaskRunDto`、`TaskStatusEvent`、`TaskRunEvent` | 服务端 BullMQ 权威；沙箱 OpenClaw cron 禁用；job tenant 上下文 | OpenAPI + AsyncAPI |
+| Billing / quota | `QuotaBuckets`、`BillingHoldRequest/Response`、`BillingSettleRequest`、`BillingLedgerEntry`、`UsageReport`、`BillingError` | 四桶、Lua 原子扣减、`credits=Σ(tokens_i×unit_price_i)÷1000`、`billing_ledger.entry_type=hold/settle/release/refund/topup/grant/adjust`、`billing_ledger.reason` 区分 `model_usage` / `media_generation` / `asr_transcription` / `usage_correction` / `payment_refund` / `chargeback` / 沙箱成本等来源、`bucket_deltas` 四桶分摊、幂等键 `(tenant_id,request_id,entry_type,reason)`、usage missing 与 refund/adjust 补偿 | OpenAPI DTO + error enum |
+| Sandbox runtime | `RuntimeSessionClaim`、`PodLease`、`RuntimeClass`、`GatewayRpcRequest/Response`、`RuntimeHealthEvent` | `runtimeClassName` gVisor/Kata、workspace 单写者租约、owning-replica、gateway RPC 真名 | AsyncAPI/internal OpenAPI |
+| Sharing / content safety | `ShareCreateRequest`、`ShareDto`、`ShareAbuseReport`、`ShareTakedownEvent` | noindex、下架/CDN 失效、CSP 外链 allowlist、举报状态 | OpenAPI + AsyncAPI |
+
+### 3.1 权限响应（对应 D2 权限流 / 历史评审编号 P0-2，非阶段门）—— 对齐真实 `PermissionResult`
+
+```ts
+// POST /api/v1/sessions/:id/permissions/:requestId/respond
+// 单端点同时承接工具授权与 AskUser；requestId 同时在路径和 body 中用于桥同形/幂等校验。
 type PermissionRespondRequest =
   | { kind: 'tool';   requestId: string; result: PermissionResult }
   | { kind: 'ask';    requestId: string; answers: Record<string, string> }; // AskUserQuestion
@@ -192,45 +280,75 @@ type PermissionResult =
 
 `kind:'ask'` 分支对应 `resolveAskUser`（走 McpBridge）；MCP 工具授权的第二个 `cowork:stream:permission` 发送点须复用同一端点。
 
-### 3.2 流式事件全集（对应 D1 / B13）—— **10 个**，从 constants 穷举
+### 3.2 流式事件全集（对应 D1 / B13）—— **10 个**，以桥表面为准
 
-| 事件（`CoworkIpcChannel.*`）| AsyncAPI channel | payload 关键字段 |
-|---|---|---|
-| `cowork:stream:delta` | `cowork/stream/delta` | `{ sessionId, requestId, text }` |
-| `cowork:stream:tool` | `cowork/stream/tool` | `{ sessionId, requestId, tool, input }` |
-| `cowork:stream:permission` | `cowork/stream/permission` | `{ sessionId, requestId, permission }` |
-| `cowork:stream:thinking` | `cowork/stream/thinking` | `{ sessionId, requestId, text }` |
-| `cowork:stream:contextUsage` | `cowork/stream/context-usage` | 事件名实为 `contextUsageUpdate` |
-| `cowork:stream:goal` **（原漏）** | `cowork/stream/goal` | `{ sessionId, goal }` |
-| `cowork:stream:done` | `cowork/stream/done` | `{ sessionId, requestId }` |
-| `cowork:stream:error` | `cowork/stream/error` | `{ sessionId, requestId, errorKey }` |
-| `cowork:stream:abort` | `cowork/stream/abort` | `{ sessionId, requestId }` |
-| （runtime）`goalUpdate/sessionStopped` | 内部 | 由 adapter 归一 |
+当前源码里只有 `cowork:stream:goal` 被纳入 `CoworkIpcChannel.StreamGoal`，其余 stream 通道仍有字面量。因此 **PR-1 contracts/codegen 必须先新增 `CoworkStreamChannel` 共享注册表**（建议落 `libs/shared/contracts/src/cowork-stream.ts` 或等价 zod/TypeBox 源），并由该注册表生成 AsyncAPI、Web bridge 类型与静态断言。直到该注册表落地前，字段核对以 `src/main/preload.ts` 的 `onStream*` 表面 + `src/main/main.ts` runtime forwarder 为准，不能把 OpenClaw runtime 内部事件名误写成前端契约。
 
-契约测试须加静态断言：**`CoworkIpcChannel` 中每个 `Stream*` 通道都必须在 AsyncAPI 中有映射**（防再次漏事件）。
+| 前端桥事件 | AsyncAPI channel | payload 关键字段 | 源码现状 |
+|---|---|---|---|
+| `cowork:stream:message` | `cowork/stream/message` | `{ sessionId, message, beforeMessageId? }` | `preload.onStreamMessage` / runtime `message` |
+| `cowork:stream:messageUpdate` | `cowork/stream/message-update` | `{ sessionId, messageId, content, metadata? }` | `preload.onStreamMessageUpdate` / runtime `messageUpdate` |
+| `cowork:stream:sessionStatus` | `cowork/stream/session-status` | `{ sessionId, status }` | `preload.onStreamSessionStatus` / runtime `sessionStatus` |
+| `cowork:stream:contextUsage` | `cowork/stream/context-usage` | `{ sessionId, usage }` | runtime 内部名 `contextUsageUpdate`，forwarder 归一为该通道 |
+| `cowork:stream:goal` **（原漏）** | `cowork/stream/goal` | `{ sessionId, goal }` | `CoworkIpcChannel.StreamGoal` / runtime `goalUpdate` |
+| `cowork:stream:contextMaintenance` | `cowork/stream/context-maintenance` | `{ sessionId, active }` | `preload.onStreamContextMaintenance` |
+| `cowork:stream:permission` | `cowork/stream/permission` | `{ sessionId, request }` | `preload.onStreamPermission`；工具授权与 AskUser 共用 |
+| `cowork:stream:permissionDismiss` | `cowork/stream/permission-dismiss` | `{ requestId }`（`tenantId/sessionId` 在 `StreamEnvelope` 顶层） | `preload.onStreamPermissionDismiss` |
+| `cowork:stream:complete` | `cowork/stream/complete` | `{ sessionId, claudeSessionId? }` | `preload.onStreamComplete` / runtime `complete` |
+| `cowork:stream:error` | `cowork/stream/error` | `{ sessionId, error }` | `preload.onStreamError` / runtime `error` |
+
+契约测试须加两条静态断言：**(1) `CoworkStreamChannel` 注册表中的每个通道都必须在 AsyncAPI 中有映射；(2) `IElectronAPI` / `ElectronBridge` 暴露的每个 `onStream*` 方法都必须绑定到注册表中的通道**。这样才能防止再次漏 `goal`，也能防止把 `delta/tool/thinking/done/abort` 这类非当前前端桥通道误写进契约。
 
 ### 3.3 会话创建语义（对应 P2-1）
 
 `cowork:session:start` 现状是 **create + 首 prompt + 立即生成** 的原子操作（prompt 必填），不存在「创建空闲会话」；后续轮次走独立 `cowork:session:continue`。契约据此：
 
 ```
-POST /cowork/sessions            body: { agentId, prompt, cwd?, ... }  -> { sessionId, ... }  // 首 prompt 必填，立即开跑
-POST /cowork/sessions/:id/turns  body: { prompt, ... }                 -> { requestId }        // = continue
+POST /api/v1/sessions              body: { agentId, prompt, cwd?, ... }  -> { sessionId, ... }  // 首 prompt 必填，立即开跑
+POST /api/v1/sessions/:id/turns    body: { prompt, ... }                 -> { requestId }        // = continue
 ```
+
+**canonical REST/WS 路径（PR-1 必须写入 OpenAPI/AsyncAPI，其他文档不得另起口径）。**
+
+> 参数占位写法：正文表格里的单段 `:paramName`（例如 `:id` / `:requestId` / `:wid` / `:key` / `:taskId` / `:provider` / `:runId` / `:presetId` / `:artifactId` / `:previewSessionId` / `:asrSessionId` / `:exportId` / `:deletionId`）是 Nest/Express 风格 shorthand，便于阅读；`libs/shared/contracts/openapi.yaml` 的正式 REST 路径与 AsyncAPI channel path 必须使用对应 OpenAPI/AsyncAPI 语法 `{paramName}`。contract check 需要把任意单段文档 shorthand 与 OpenAPI/AsyncAPI `{}` 形式归一比对，禁止把二者误判为两套不同路由；但冒号式 action path（如 `/sessions/{id}:exportText`、`/plugins:detect`）不是参数 shorthand，仍按禁用路径拒绝。
+
+| 语义 | canonical 路径 | 禁用/易错写法 |
+|---|---|---|
+| 创建会话并发送首 prompt | `POST /api/v1/sessions` | `/api/cowork/sessions`、创建空闲会话后另发首消息 |
+| 继续会话 / 新一轮生成 | `POST /api/v1/sessions/:id/turns` | `POST /api/v1/sessions/:id/messages`、`POST /sessions/{id}/messages` |
+| 拉取历史消息 | `GET /api/v1/sessions/:id/messages` | 把 `messages` 端点同时当写入/生成入口 |
+| 响应工具授权 / AskUser | `POST /api/v1/sessions/:id/permissions/:requestId/respond` | `/permissions/respond` 无 sessionId、仅 body 带 requestId |
+| WS ticket 申请 | `POST /api/v1/stream/ticket` | WS URL query 带 JWT、首帧长效 bearer、无 REST ticket 端点、ticket body 未校验 session/workspace scope |
+| 非流式模型代理 | `POST /api/v1/model/proxy` | `/api/model/proxy`、浏览器直连 provider |
+| 流式模型代理启动 | `POST /api/v1/model/stream` | `/api/model/stream`、只发 WS 控制帧启动、把启动混入 `/api/v1/model/proxy` |
+| 流式模型代理取消 | `POST /api/v1/model/stream/:requestId/abort` | 另设 WS cancel 控制帧、`api:stream:cancel` 无 REST 路由 |
+| ASR 会话创建 / 实时流 | `POST /api/v1/asr/sessions`；配套 AsyncAPI channel `WS /api/v1/asr/sessions/:asrSessionId/stream` | 无版本 `/asr/sessions`、把 ASR 混入 `/api/v1/model/stream`、只实现前端 MediaRecorder 而没有服务端 stream ticket / tenant scope |
+| 模型配置兼容 | `GET /api/v1/model/config`、`PUT /api/v1/model/config`、`POST /api/v1/model/config/check` | `/model/config`、`/api/model/config`、`/model/config:check`、把旧 `get-api-config`/`check-api-config`/`save-api-config` 漏出 PR-1 OpenAPI 或另建并行密钥库 |
+| 模型目录 / 详情 | `GET /api/v1/models`、`GET /api/v1/models/:id` | `/model/catalog`、`/api/models/available`、`/api/models/{id}`、`/model/{id}`、直接读 youdao available |
+| 登录后 pricing-catalog 兼容视图 | `GET /api/v1/pricing/models` | `/billing/pricing`、`/api/models/pricing-catalog`、把 `/api/v1/models` 响应直接当旧 pricing-catalog 形状 |
+| 媒体任务状态 / 取消 | `GET /api/v1/media/tasks/:taskId`、`POST /api/v1/media/tasks/:taskId/cancel` | `/api/v1/media/models`、`/media/tasks/:taskId`、`/media/tasks/:taskId/cancel`、`/media/tasks/{taskId}:cancel`、`/api/v1/media/tasks/{taskId}:cancel` |
+| 计费账户 / 用量 / 套餐 / BYOK | `GET /api/v1/billing/account`、`GET /api/v1/billing/usage`、`GET /api/v1/billing/plan`、`POST /api/v1/billing/byok`、`DELETE /api/v1/billing/byok/:provider` | `/billing/account`、`/billing/usage`、`/billing/plan`、`/billing/byok`、`/api/v1/billing/quota`、把 `auth:getQuota` 继续映射到旧 quota 路径 |
+| 隐私导出/删除 | `POST /api/v1/privacy/exports`、`GET /api/v1/privacy/exports/:exportId`、`POST /api/v1/privacy/deletions`、`GET /api/v1/privacy/deletions/:deletionId` | `/api/v1/privacy/export`、`/api/v1/privacy/delete`、`/api/v1/privacy/delete/:deletionId`、只在合规专题定义而不进入 PR-1 OpenAPI |
+| 其它动作类端点 | 子资源 + `POST`，例如 `/api/v1/sessions/:id/stop`、`/api/v1/sessions/:id/exports/text`、`/api/v1/model/config/check`、`/api/v1/runtime/restart` | 冒号式 action path：`/sessions/{id}:exportText`、`/model/config:check`、`/runtime:restart` |
+
+字段级 request/response 仍以 `libs/shared/contracts` 为权威；上表只冻结资源命名，避免继续出现 `/api/cowork/*` 与 `messages` 写端点混用。
+
+> **完整路由集说明**：本节表格是高风险跨域路径的命名裁决，不是 OpenAPI/AsyncAPI 全量清单。PR-1 的完整 REST/WS 契约必须以 `附录A` 所有 ✅/部分 ✅ 通道和各专题文档的 GA 路径为输入生成，并由 contract check 逐条断言；因此 ASR realtime、artifact 预览、htmlShare、shareDeployment 静态站、scheduledTask CRUD/stop/count/resolve/channels 等即使未逐项列在上表，也仍是 contracts 必做项。缺席本表不得被解释为「不进 PR-1」或「可用无版本 shorthand」。
 
 ### 3.4 文件 / 上传（对应 P1-7）
 
-- 统一错误码：`413` 拆为 `PAYLOAD_TOO_LARGE`（文本过大 → 改用 URL 拉取）与 `QUOTA_EXCEEDED`（`507`，超配额）。
+- 统一错误码：`413` 拆为 `PAYLOAD_TOO_LARGE`（文本过大 → 改用 URL 拉取）与 `STORAGE_QUOTA_EXCEEDED`（`507`，超存储配额）；模型/账单 credits 不足仍使用 `QUOTA_EXCEEDED`（`402`，见 `09`），任务数量/触发频率分别使用 `TASK_LIMIT_EXCEEDED`（`403`）/`RATE_LIMITED`（`429`，见 `11`）。
 - 大文件方向定死为 **S3 直传 → 异步落 PVC**，落地失败/重试/幂等写进同步表状态机。
 - 配额「当前用量」权威读**单一来源**（Redis 预留计数，原子 `INCRBY`/回补），DB `size_bytes` 仅对账。
+- REST 路径冻结：工作区 `GET /api/v1/workspaces`、`POST /api/v1/workspaces`；目录 `GET /api/v1/workspaces/:wid/files/tree?path=`；读/签名 URL `GET /api/v1/workspaces/:wid/files/download?path=&as=text|url`；内联写 `POST /api/v1/workspaces/:wid/files/upload`；直传 `POST /api/v1/workspaces/:wid/uploads`、`POST /api/v1/workspaces/:wid/uploads/:id/complete`；软删 `DELETE /api/v1/workspaces/:wid/files?path=`；元信息 `GET /api/v1/workspaces/:wid/files/stat?path=`；缩略图 `GET /api/v1/workspaces/:wid/files/thumbnail?path=`；禁止把读取写成 `/files?path=` 或冒号式 `files:download` / `files:upload`。
 - `tree` 定义 cursor 编码、depth 语义、稳定排序键 `(type, name, id)`。
-- 桥 shim 形状对齐现状：`saveInlineFile({ dataBase64, fileName, mimeType, cwd }) -> { success, path }`（25MB 上限）、`readFileAsDataUrl(...) -> { success, dataUrl }`——桥须把新响应适配回旧契约形状，避免打断 `ArtifactPanel`/`CodeRenderer`。
+- 桥 shim 形状对齐现状：`saveInlineFile({ dataBase64, fileName, mimeType, cwd }) -> { success, path }`（25MB 上限）、`readFileAsDataUrl(...) -> { success, dataUrl }`——桥须把新响应适配回旧契约形状，避免打断 `ArtifactPanel`/`CodeRenderer`；其中 `cwd` 只表示 `workspaceId + project/relRoot` 语义，不得透传为服务器绝对路径或指向 `/workspace/state`。
 
 ---
 
 ## 4. 身份与租户表 DDL（对应 D3；06 为 owner，此为字段权威）
 
-> Postgres 方言；所有 tenant-scoped 表额外 `ENABLE ROW LEVEL SECURITY` + `FORCE`（见 §5）。时间列 `timestamptz`，主键 `uuid default gen_random_uuid()`。
+> Postgres 方言；所有 tenant-scoped 表额外 `ENABLE ROW LEVEL SECURITY` + `FORCE`（见 §5）。时间列 `timestamptz`，主键 `uuid default gen_random_uuid()`。PR-2 首个迁移必须先执行/校验 `CREATE EXTENSION IF NOT EXISTS citext`；若目标 Postgres 版本或托管库不提供内建 `gen_random_uuid()`，同一迁移必须启用 `pgcrypto` 或改为应用侧生成 UUID，并同步更新 Prisma schema、DDL 示例与导入脚本，不能让 DDL 依赖隐式扩展。
 
 ```sql
 CREATE TABLE tenants (
@@ -259,7 +377,7 @@ CREATE TABLE memberships (               -- 用户↔租户 多对多 + 角色
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    uuid NOT NULL REFERENCES users(id),
   tenant_id  uuid NOT NULL REFERENCES tenants(id),
-  role       text NOT NULL CHECK (role IN ('owner','admin','member')),
+  role       text NOT NULL CHECK (role IN ('owner','admin','member','viewer')),
   status     text NOT NULL DEFAULT 'active'
                CHECK (status IN ('invited','active','suspended')),
   invited_by uuid REFERENCES users(id),
@@ -328,14 +446,15 @@ CREATE POLICY tenant_isolation ON cowork_sessions
 // NestJS：每请求事务内 SET LOCAL，AsyncLocalStorage 传递上下文
 async function withTenant<T>(ctx: {tenantId: string; userId: string}, fn: (tx) => Promise<T>) {
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${ctx.tenantId}'`);
-    await tx.$executeRawUnsafe(`SET LOCAL app.user_id  = '${ctx.userId}'`);
+    await tx.$executeRaw`SELECT set_config('app.tenant_id', ${ctx.tenantId}, true)`;
+    await tx.$executeRaw`SELECT set_config('app.user_id', ${ctx.userId}, true)`;
     return fn(tx);
   });
 }
 ```
 
 - 连接层 **PgBouncer transaction 模式**：必须用 `SET LOCAL`（事务级），不可用 `SET`（会话级，池化下串租户）。
+- RLS 上下文注入必须走参数化 SQL（如上面的 `set_config(..., true)`，等价于事务级 `SET LOCAL`）；不得用 `$executeRawUnsafe` 或字符串拼接把 `tenantId/userId` 写进 SQL。
 - Prisma tenant extension 仍在应用层强制注入 `where tenant_id`（纵深，覆盖 `upsert / createMany / aggregate / groupBy` 的注入漏洞）。
 - 连接数预算：`RLS 每请求事务 × HPA 水平副本 × 连接池` 会撞 `max_connections`，PgBouncer 须列为一等部署组件（见 15）。
 
@@ -345,23 +464,39 @@ async function withTenant<T>(ctx: {tenantId: string; userId: string}, fn: (tx) =
 
 ```
 Redis（每租户，原子）：
-  quota:{tenantId}:daily     quota:{tenantId}:monthly
+ quota:{tenantId}:daily     quota:{tenantId}:monthly
   quota:{tenantId}:granted   quota:{tenantId}:topup
 预扣（Lua，按优先级 daily→monthly→granted→topup 扣减，跨桶补差，允许负余额熔断）：
-  hold = ceil( maxTokens_est × unit_price_out ÷ 1000 )   -- 量纲修正
-结算：真实 usage 回补差额，写 ledger（幂等键唯一约束）。
+  holdCredits = ceil((maxInputTokens_est × price_input + maxOutputTokens_est × price_output) ÷ 1000 × costMultiplier)
+结算：真实 usage 回补差额，写 billing_ledger（幂等键唯一约束）。
 ```
 
 ```sql
+CREATE TABLE credit_accounts (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id      uuid NOT NULL UNIQUE,
+  daily_limit    numeric NOT NULL DEFAULT 0,
+  daily_balance  numeric NOT NULL DEFAULT 0,
+  monthly_limit  numeric NOT NULL DEFAULT 0,
+  monthly_balance numeric NOT NULL DEFAULT 0,
+  granted_total  numeric NOT NULL DEFAULT 0,
+  granted_balance numeric NOT NULL DEFAULT 0,
+  topup_balance  numeric NOT NULL DEFAULT 0,
+  period_start   timestamptz NOT NULL,
+  updated_at     timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE billing_ledger (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id   uuid NOT NULL,
   request_id  text NOT NULL,               -- 服务端签发
-  entry_type  text NOT NULL CHECK (entry_type IN ('hold','settle','refund','topup','grant')),
-  credits     numeric NOT NULL,            -- 负=扣，正=入
+  entry_type  text NOT NULL CHECK (entry_type IN ('hold','settle','release','refund','topup','grant','adjust')),
+  reason      text NOT NULL,               -- model_usage/media_generation/payment_topup/usage_correction/payment_refund/chargeback/manual_adjust/seat_proration/sandbox_seconds/egress_bytes/workspace_bytes 等
+  credits     numeric NOT NULL,            -- 有符号账户变动：负=扣减/占用，正=入账/释放/返还
+  bucket_deltas jsonb NOT NULL,           -- {daily,monthly,granted,topup} 有符号分摊，Σ=credits，不允许省略
   model_id    text, input_tokens int, output_tokens int, cache_tokens int,
   created_at  timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, request_id, entry_type)  -- 幂等：跨租户不碰撞、重放不白嫖
+  UNIQUE (tenant_id, request_id, entry_type, reason)  -- 幂等：同请求多来源不互相冲突、跨租户不碰撞、重放不白嫖
 );
 
 CREATE TABLE byok_keys (
@@ -376,7 +511,7 @@ CREATE TABLE byok_keys (
 ```
 
 - 短期 model token：签名（内含 `tenantId/jti/maxCredits/exp`），`jti` 撤销存 Redis；`maxCredits` 为该 token 会话累计上限。
-- 订阅生命周期状态机（对应 P1-14）：`active → past_due → dunning → suspended → canceled`，退款走 `refund` 分录 clawback，定义数据保留窗口。`AuthSubscriptionStatus` 枚举扩至含 `past_due/canceled`。
+- 订阅生命周期状态机（对应 P1-14）：`active → past_due → dunning → suspended → canceled`，支付退款/拒付走 `refund + reason=payment_refund/chargeback` 负向 clawback；usage missing 或迟到 usage 的多扣修正走 `refund + reason=usage_correction` 正向返还，定义数据保留窗口。`AuthSubscriptionStatus` 枚举扩至含 `past_due/canceled`。
 - 媒体计价（对应 P2-5）：新增 `media_tasks` 表（`task_id text` 统一类型、`status` 枚举）；`ModelCatalog` 补媒体计价列（固定 / per-image / per-second）。
 
 ---
@@ -403,21 +538,21 @@ CREATE TABLE byok_keys (
 | 轮换 BYOK / 切 provider | 必须重建 Pod |
 | IM 绑定变更 | 不影响沙箱（控制面处理）|
 
-**无损续接（D9 / P1-9）**：gateway 会话/transcript 持久化边界须明确——`/state` 上 PVC 或声明 capsule 为可重放权威；evict/抢占给 SIGTERM grace 窗口 + capsule/工作区 flush 时序；in-flight turn「丢当前 turn 从 capsule 重放」。**AC-8 改为「至多丢当前 turn，历史与工作区零丢失」**。
+**受限续接（D9 / P1-9）**：gateway 会话/transcript 持久化边界须明确——若使用 Pod `/state` 保存 transcript，则该 `/state` 必须是可迁移/可恢复的运行时 state 卷并与工作区 PVC 的 `/workspace/state` 区分；否则必须声明 capsule 为可重放权威。evict/抢占给 SIGTERM grace 窗口 + capsule/工作区 flush 时序；in-flight turn「丢当前 turn 从 capsule 重放」。**AC-8 改为「至多丢当前 turn，历史与工作区零丢失」**。
 
 ---
 
 ## 8. 阶段门唯一对照表（对应 D13）
 
-> 唯一权威；16 的必过测试、17 的 WBS、18 的风险准入门均对齐此表。废弃 P0–P3 / GV 别名。
+> 唯一权威；16 的必过测试、17 的 WBS、18 的风险准入门均对齐此表。废弃 P0–P3 / G-V / GV 别名。**PR-0~PR-4 scaffold/contract/db/deploy/PoC harness 是 V1 前置工程准入门（见 `19`），不作为第七个阶段门，也不计入 V1 PoC 周期。**
 
-| 版本 | 门 ID | 核心验收 | 必过测试（16） | 必清风险（18） |
-|---|---|---|---|---|
-| V1 可行性验证 | G-V1 | 真实 gVisor Pod 跑通一条 turn；RWX/PVC+S3 PoC；桥契约冻结；Config Sync golden；模型出网封锁 PoC；**gVisor 工作负载兼容矩阵（D4）** | 沙箱/存储/桥/配置/egress 均有实测证据 | R-OC-01、R-OC-02 证伪 |
-| V2 单租户 Web 闭环 | G-V2 | 登录→发消息→流式→artifact | 契约测试（10 事件全覆盖）、单租户集成 | — |
-| V3 多租户 Beta | G-V3 | Tenant/RBAC/**RLS 强制**、工作区 API、服务端 BullMQ 定时任务 | **跨租户越权必过（R-SEC-01 硬门）**、迁移双读校验（SaaS schema，R-DATA-01 硬门） | R-SEC-01、R-DATA-01 |
-| V4 运行时强化 | G-V4 | Orchestrator、每会话 Pod、gVisor/Kata、NetworkPolicy、egress、预热、自愈 | 并发压测、沙箱逃逸、egress、冷启动、自愈 | R1、R2 |
-| V5 商业化生态 | G-V5 | 模型网关计费、短期 model token、MCP/Skills 供应链、公开分享治理、桌面导入（含存量双读，可选） | 计费不可绕过、stdio MCP 不在宿主执行、供应链门控 | R5、供应链 |
-| V6 GA 运营 | G-V6 | 安全压测、混沌、告警回滚、SLO、合规生命周期 | P0/P1 清零、DR/Chaos/回滚/on-call 演练 | 全量 |
+| 版本门 | 核心验收 | 必过测试（16） | 必清风险（18） |
+|---|---|---|---|
+| V1 可行性验证 | 真实 gVisor Pod 跑通一条 turn；RWX/PVC+S3 PoC；桥契约冻结；Config Sync golden；provider 直连封锁 + D8 egress 白名单 PoC；**gVisor 工作负载兼容矩阵（D4）** | 沙箱/存储/桥/配置/egress 均有实测证据 | R-OC-03、R-ISO-01、R-ISO-04、R-OC-01、R-STOR-01、R-SEC-04、R-OPS-01 |
+| V2 单租户 Web 闭环 | 登录→发消息→流式→artifact | 契约测试（10 事件全覆盖）、单租户集成、WS 断连续传达标 | R-STREAM-01 |
+| V3 多租户 Beta | Tenant/RBAC/**RLS 强制**、工作区 API、服务端 BullMQ 定时任务 | **跨租户越权必过（R-SEC-01 硬门）**、SaaS schema 迁移校验（Prisma migrate/DDL/RLS/幂等，R-DATA-01 硬门） | R-SEC-01、R-DATA-01 |
+| V4 运行时强化 | Orchestrator、每会话 Pod、gVisor/Kata、NetworkPolicy、egress、预热、自愈 | 并发压测、沙箱逃逸、egress、冷启动、自愈；Sandbox 实测资源模型已回写 requests/limits | R-ISO-01、R-ISO-02、R-PERF-01、R-PERF-03 |
+| V5 商业化生态 | 模型/ASR 代理计费、短期 model token、MCP/Skills 供应链、公开分享治理、桌面导入（含存量双读，可选） | 模型/ASR 上游计费不可绕过、stdio MCP 不在宿主执行、供应链门控、公开分享 abuse 治理、provider 故障切换演练 | R-COST-01、R-ISO-03、R-SEC-03、R-VENDOR-01 |
+| V6 GA 运营 | 安全压测、混沌、告警回滚、SLO/SLA、状态页/客户支持、合规生命周期 | P0/P1 清零、DR/Chaos/回滚/on-call/状态页演练；SLA 计量同源于内部 SLO | R-COMP-01 + 全量 P0/P1 |
 
 > R-DATA-01 澄清为两条独立门：**(a) SaaS schema 迁移校验 = V3 早硬门**；**(b) 桌面存量导入双读 = V5 可选门**。
