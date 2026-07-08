@@ -1,14 +1,14 @@
 # 后端服务拆分与 API 设计
 
-> 本文档面向后端架构师与服务端工程师，定义 LobsterAI 从「Electron 主进程一体化」改造为「多租户 SaaS 后端」时的服务边界、模块拆分策略、REST 资源约定、WebSocket 流式协议与并发一致性方案。它是 03（前端与传输层）与 07（OpenClaw 运行时编排）之间的「服务端契约层」文档。完整的 IPC→REST/WS 逐条映射见 `附录A-IPC通道与接口映射.md`；目标整体架构与技术选型见 `02-目标架构与技术选型.md`。
+> 本文档面向后端架构师与服务端工程师，定义 LobsterAI 从「Electron 主进程一体化」改造为「多租户 SaaS 后端」时的服务边界、模块拆分策略、REST 资源约定、WebSocket 流式协议与并发一致性方案。它是 03（前端与传输层）与 07（OpenClaw 运行时编排）之间的「服务端契约层」文档。完整的 IPC→REST/WS 逐条映射见 `附录A-IPC通道与接口映射.md`；目标整体架构与技术选型见 `02-目标架构与技术选型.md`。**契约事实源见附录 C D1**：字段级 DTO / 事件 payload 一律以 `libs/shared/contracts`（OpenAPI 3.1 + AsyncAPI 2.6）为权威，本文与附录 A 降级为「导航与任务清单」，代表性 schema 见附录 C §3。
 
 ---
 
 ## 0. 一句话背景与本文范围
 
-现状：渲染层通过唯一桥 `window.electron`（`src/main/preload.ts`）向主进程发起 `~446` 处调用，主进程 `src/main/main.ts`（约 `10560` 行）注册 `259` 个 `ipcMain.handle/on` 处理器，并通过 `webContents.send('cowork:stream:*' 等)` 向渲染器推送流式/事件（`src/main` 内 `.send(` 调用点约 `47` 处、其中 `webContents.send` 约 `33` 处；去重后 renderer 事件通道约 `29` 个）。这一层在桌面端既是「BFF」也是「领域服务」也是「本地运行时宿主」，三者混在一个进程里。
+现状（计数以附录 C §2 核对值为准，2026-07-08）：渲染层通过唯一桥 `window.electron`（`src/main/preload.ts`）向主进程发起调用，实测 **481 处 / 72 文件**，且组件层直连过半、并非「收口在 services」（见附录 C A4/B10）；主进程 `src/main/main.ts`（约 `11307` 行）注册的 IPC 处理器为 **`main.ts` 内 `ipcMain.handle 211 + on 6 = 217`、全 `src/main` 约 `283`**（旧稿沿用的 `259` 无一对得上，见附录 C B9）；并通过 `webContents.send('cowork:stream:*' 等)` 向渲染器推送流式/事件（`.send(` 调用点约 `51` 处、其中 `webContents.send` 约 `36` 处；去重后 renderer 事件通道约 `29` 个，见附录 C B14）。这一层在桌面端既是「BFF」也是「领域服务」也是「本地运行时宿主」，三者混在一个进程里。
 
-目标：把这 259 个 handler 按业务域拆成一组**无状态、可水平扩展、带 `tenant_id` 隔离**的后端服务；用 REST 承载请求/响应、用 WebSocket 承载流式；把 OpenClaw 运行时从「本进程 fork」外移到「每会话沙箱 Pod」（见 `07-OpenClaw运行时编排与沙箱隔离.md`）。
+目标：把这批 IPC 处理器（口径见附录 C B9）按业务域拆成一组**无状态、可水平扩展、带 `tenant_id` 隔离**的后端服务；用 REST 承载请求/响应、用 WebSocket 承载流式；把 OpenClaw 运行时从「本进程 fork」外移到「每会话沙箱 Pod」（见 `07-OpenClaw运行时编排与沙箱隔离.md`）。
 
 本文只解决「服务如何拆、API 如何设计、业务逻辑怎么搬」。不重复：认证细节见 `05`，数据模型见 `06`，运行时编排见 `07`，模型代理/计费见 `09`。
 
@@ -81,11 +81,11 @@ flowchart TB
 
 ---
 
-## 2. 后端模块拆分（对应 259 个 handler 的域）
+## 2. 后端模块拆分（对应全部 IPC handler 的域）
 
-下表把 259 个 handler 的域映射到目标 NestJS 模块。列「搬迁难度」区分「纯 Node 直接搬」「需适配」「必须重写」（详见第 3 节）。「v1」列标注是否在 v1 范围（IM 与 computer-use 见 `13-功能取舍与降级清单.md`）。
+下表把全部 IPC handler（计数见附录 C B9）的域映射到目标 NestJS 模块。列「搬迁难度」区分「纯 Node 直接搬」「需适配」「必须重写」（详见第 3 节）。「GA 主线」列标注是否进入 V1-V6 GA 主线（IM 与 computer-use 见 `13-功能取舍与降级清单.md`）。
 
-| 目标模块 | 覆盖 IPC 域 | 现状核心文件 | 主要职责 | 搬迁难度 | v1 |
+| 目标模块 | 覆盖 IPC 域 | 现状核心文件 | 主要职责 | 搬迁难度 | GA 主线 |
 |---|---|---|---|---|---|
 | **AuthTenantModule** | `auth:*` | `authQuota.ts`、`authLocalCallbackServer.ts`、`authCallbackRouter.ts`、`endpoints.ts` | OIDC 登录、JWT 签发、租户/用户、配额读取 | 重写为主 | ✔ |
 | **CoworkModule** | `cowork:session:*`、`cowork:config:*`、`cowork:memory:*`、`cowork:dreaming:*`、`cowork:bootstrap:*`、`cowork:permission:*`、`cowork:media:*` | `coworkStore.ts`、`agentEngine/coworkEngineRouter.ts`、`agentEngine/openclawRuntimeAdapter.ts` | 会话/消息 CRUD、上下文用量、权限响应、连续性胶囊、记忆、流式编排 | 直接搬 + 适配 | ✔ |
@@ -103,7 +103,7 @@ flowchart TB
 | （不做） | `openclaw:browser:*`、computer-use | `computerUse/` | 桌面自动化/后台浏览器 | **不做** | ✘ |
 | （降级/移除） | `window-*`、`shell:*`、`clipboard:*`、`app:*`、`log:*`、`appUpdate:*`、`asr:*`、`permissions:*`、`copilot:*`、`openai-codex-oauth:*` | 分散 | Electron 专属能力 | 见 `13` 降级清单 | 部分 |
 
-> 域计数依据附录 A 事实清单；`259` 是主进程 handler 总数，其中相当一部分（`window-*`/`shell:*`/`clipboard:*`/`log:*` 等 Electron-only）在 web 化后被浏览器原生能力取代或降级，不进入领域服务，故领域模块承载的是「可移植 + 需适配 + 需重写」子集。
+> 域计数依据附录 A 事实清单与附录 C §8 契约清单；主进程 handler 总数为 `main.ts` 内 `211 handle + 6 on = 217`、全 `src/main` 约 `283`（旧稿的 `259` 作废，见附录 C B9；42 个 `im:*` handler 全内联在 `main.ts`），其中相当一部分（`window-*`/`shell:*`/`clipboard:*`/`log:*` 等 Electron-only）在 web 化后被浏览器原生能力取代或降级，不进入领域服务，故领域模块承载的是「可移植 + 需适配 + 需重写」子集。
 
 ### 2.1 BFF 与领域服务边界
 
@@ -115,7 +115,7 @@ flowchart TB
 
 ## 3. main.ts 业务逻辑抽取策略
 
-`main.ts`（`10560` 行）是最大的迁移难点。策略：**逐 handler 分类 → 纯逻辑抽库 → Electron 依赖重写**。切忌整文件搬运。
+`main.ts`（约 `11307` 行，见附录 C B15）是最大的迁移难点。策略：**逐 handler 分类 → 纯逻辑抽库 → Electron 依赖重写**。切忌整文件搬运。
 
 ### 3.1 三类划分标准
 
@@ -164,9 +164,9 @@ flowchart TB
 
 ### 4.1 命名与版本化
 
-- 统一前缀：`/api/v1/...`。破坏性变更升 `/api/v2`；非破坏性字段增量走 `v1`。
+- 统一前缀：`/api/v1/...`。破坏性变更升 `/api/v2`；非破坏性字段增量走 API `v1`。
 - 资源用**复数名词**、kebab 语义、层级化：`/sessions`、`/sessions/{id}/messages`、`/agents`、`/mcp-servers`、`/scheduled-tasks`、`/skills`、`/artifacts`。
-- 动作类（非纯 CRUD）用子资源 + POST：`POST /sessions/{id}/stop`、`POST /sessions/{id}/fork`、`POST /sessions/{id}/compact-context`、`POST /permissions/{requestId}/respond`。避免动词 URL 满天飞，但显式动作优先于晦涩的 PATCH 语义。
+- 动作类（非纯 CRUD）用子资源 + POST：`POST /sessions/{id}/stop`、`POST /sessions/{id}/fork`、`POST /sessions/{id}/compact-context`、`POST /sessions/{id}/permissions/{requestId}/respond`。避免动词 URL 满天飞，但显式动作优先于晦涩的 PATCH 语义。
 - **租户不入 URL**：`tenant_id` 从 JWT 解出，注入请求上下文；URL 里只出现资源 ID。防止越权与 URL 泄露租户。
 
 ### 4.2 鉴权
@@ -177,7 +177,7 @@ flowchart TB
 
 ### 4.3 分页
 
-沿用现有页大小常量（`COWORK_SESSION_PAGE_SIZE`、`COWORK_MESSAGE_PAGE_SIZE`，`src/shared/cowork/constants`）作为默认值，统一游标分页优先（消息按 `sequence` 稳定排序，避免 OFFSET 漂移）：
+沿用现有页大小常量（`COWORK_SESSION_PAGE_SIZE`、`COWORK_MESSAGE_PAGE_SIZE`，`src/shared/cowork/constants`）作为默认值，统一游标分页优先（消息按**不可变复合游标 `(created_at, id)`** 稳定排序，避免 OFFSET 漂移；`sequence` 可空且 insert-before 会 shift 重排，不能作游标键，见附录 C D10）：
 
 ```
 GET /api/v1/sessions?limit=30&cursor=<opaque>
@@ -190,14 +190,14 @@ GET /api/v1/sessions/{id}/messages?limit=50&cursor=<opaque>&direction=backward
 {
   "data": [ /* items */ ],
   "page": {
-    "nextCursor": "eyJzZXEiOjEyMzR9",   // null 表示到底
+    "nextCursor": "b64(created_at,id)",  // 编码不可变键 (created_at, id)；null 表示到底
     "hasMore": true,
     "limit": 50
   }
 }
 ```
 
-> 消息分页保留现状「按 `COALESCE(sequence, created_at)` 排序 + 告知 UI 加载偏移」的语义（见 `coworkStore.ts` 分页段），游标编码 `{ sequence }`，`direction=backward` 用于「向上加载更早消息」。
+> 消息分页游标改用**不可变复合键 `(created_at, id)`**（现状排序已用 `COALESCE(sequence, created_at), created_at, ROWID` 兜底，`sequence` 仅作展示序、不作游标键，见附录 C D10）；`direction=backward` 用于「向上加载更早消息」；存量会话导入时 NULL `sequence` 保留、一律以 `(created_at, id)` 兜底。
 
 ### 4.4 统一错误结构
 
@@ -253,7 +253,7 @@ GET /api/v1/sessions/{id}/messages?limit=50&cursor=<opaque>&direction=backward
 ### 5.2 连接与鉴权
 
 - 端点：`wss://<host>/api/v1/stream`。
-- 鉴权：连接握手时不放 token 到 URL query（会进日志）；采用「先建连 → 首帧 `auth` 携带短期 WS 票据」或子协议头 `Sec-WebSocket-Protocol: bearer.<jwt>`。票据由 `POST /api/v1/stream/ticket` 用主 JWT 换取，TTL 60s、一次性。
+- 鉴权：连接握手时不放 token 到 URL query（会进日志）；正式方案采用「REST 先换取一次性短期 WS ticket → 连接建立后首帧 `auth` 携带 ticket」。ticket 由 `POST /api/v1/stream/ticket` 用 access token 换取，TTL 30-60s、一次性消费，绑定 `tenantId/userId/sessionScopes/subscriptions/nonce`。不使用 `Sec-WebSocket-Protocol: bearer.<jwt>` 作为正式方案。
 - 认证失败 → 服务端发 `error` 帧后关闭（code `4401`）。
 - 连接建立后，Gateway 从票据解出 `{ tenantId, userId }`，绑定到该 socket，用于后续订阅授权。
 
@@ -264,6 +264,7 @@ GET /api/v1/sessions/{id}/messages?limit=50&cursor=<opaque>&direction=backward
 ```typescript
 // 客户端 -> 服务端
 type ClientFrame =
+  | { type: 'auth';        ticket: string }
   | { type: 'subscribe';   sessionId: string; sinceSeq?: number }
   | { type: 'unsubscribe'; sessionId: string }
   | { type: 'ping';        ts: number }
@@ -273,13 +274,14 @@ type ClientFrame =
 type ServerFrame = {
   type: StreamEventType;          // 见下表
   sessionId: string;
-  seq: number;                    // 单会话内单调递增，用于去重/补发
+  seq: number;                    // Redis Stream 序号(不可变、单调递增)，用于去重/补发；非 DB sequence 列(见附录 C D10)
   data: unknown;                  // 具体负载
 } | { type: 'pong'; ts: number }
+  | { type: 'authok'; expiresAt: string }
   | { type: 'error'; code: string; message: string; sessionId?: string };
 ```
 
-`StreamEventType` 与现状 9 个 `cowork:stream:*` + 参数化 `api:stream:*` + 定时任务事件映射：
+`StreamEventType` 与现状 **10 个** `cowork:stream:*`（含原漏的 `cowork:stream:goal`，见附录 C §3.2/B13）+ 参数化 `api:stream:*` + 定时任务事件映射：
 
 | WS `type` | 现状 send 事件（`main.ts` 参考行） | data 负载 |
 |---|---|---|
@@ -292,11 +294,12 @@ type ServerFrame = {
 | `permissionDismiss` | `cowork:stream:permissionDismiss` | `{ requestId }` |
 | `complete` | `cowork:stream:complete` | `{ claudeSessionId? }` |
 | `error` | `cowork:stream:error` | `{ error }` |
+| `goal` | `cowork:stream:goal`（原漏，见附录 C §3.2/B13） | `{ sessionId, goal }` |
 | `apiStreamChunk` | `api:stream:{reqId}:data` | `{ requestId, chunk }` |
 | `apiStreamDone/Error` | `api:stream:{reqId}:done/error` | `{ requestId, error? }` |
 | `taskStatus/taskRun/taskRefresh` | `scheduledTask:statusUpdate/runUpdate/refresh` | 任务负载 |
 
-> 非会话维度事件（`skills:changed`、`mcp:changed`、`auth:quotaChanged`、`sessions:changed` 等）走**用户级频道** `stream:{tenantId}:user:{userId}`，前端连接建立即自动订阅，无需显式 `subscribe`。会话级事件走会话频道，按需订阅。计数口径见 §0：`src/main` 内 `.send(` 调用点约 `47` 处，去重后 renderer 事件通道约 `29` 个（用户级 + 会话级合计），本节按「去重后事件通道」组织，勿把调用点数直接当作 `webContents.send` 或通道数。
+> 非会话维度事件（`skills:changed`、`mcp:changed`、`auth:quotaChanged`、`sessions:changed` 等）走**用户级频道** `stream:{tenantId}:user:{userId}`，前端连接建立即自动订阅，无需显式 `subscribe`。会话级事件走会话频道，按需订阅。计数口径见 §0：`.send(` 调用点约 `51` 处、`webContents.send` 约 `36` 处，去重后 renderer 事件通道约 `29` 个（用户级 + 会话级合计，见附录 C B14），本节按「去重后事件通道」组织，勿把调用点数直接当作 `webContents.send` 或通道数。**流式事件全集（10 个 `cowork:stream:*`，真实通道名如 `delta/tool/thinking/done/abort`、`goal`，`contextUsage` 运行时事件名实为 `contextUsageUpdate`）以 `CoworkIpcChannel` 常量穷举为准（见附录 C §3.2/B13），本表为语义导航，禁止用字面量 grep 数通道。**
 
 ### 5.4 订阅 / 取消订阅 / 多路复用
 
@@ -321,12 +324,14 @@ sequenceDiagram
   participant POD as 沙箱 Pod (OpenClaw)
   participant RS as Redis
 
-  C->>GW: POST /stream/ticket (REST, JWT)
+  C->>GW: POST /stream/ticket (REST, access token)
   GW-->>C: { ticket }
-  C->>GW: WS connect (ticket)
-  GW-->>C: connected
+  C->>GW: WS connect (no credential in URL/query/protocol)
+  C->>GW: auth { ticket }
+  GW->>GW: consume ticket once + bind tenant/user
+  GW-->>C: authok
   C->>GW: subscribe {sessionId, sinceSeq?}
-  GW->>RS: SUBSCRIBE stream:{t}:{sid} + XRANGE 补发
+  GW->>RS: SUBSCRIBE stream:{tenantId}:{sessionId} + XRANGE 补发
   RS-->>GW: 历史事件(若有)
   GW-->>C: 补发帧
 
@@ -337,7 +342,7 @@ sequenceDiagram
   OR->>POD: ws chat.send
   loop 生成中
     POD-->>OR: message / messageUpdate / permission ...
-    OR->>RS: XADD + PUBLISH stream:{t}:{sid}
+    OR->>RS: XADD + PUBLISH stream:{tenantId}:{sessionId}
     RS-->>GW: 事件
     GW-->>C: 帧 (seq++)
   end
@@ -352,13 +357,14 @@ sequenceDiagram
 
 ## 6. 代表性端点示例
 
-> 完整清单见 `附录A-IPC通道与接口映射.md`；此处给出最能体现设计约定的代表端点。
+> 完整清单见 `附录A-IPC通道与接口映射.md`；此处给出最能体现设计约定的代表端点。字段级 request/response/error/事件 schema 以 `libs/shared/contracts` + 附录 C §3 为权威（见 D1），本节仅示例。
 
 ### 6.1 会话 CRUD
 
 ```
 GET    /api/v1/sessions?limit=30&cursor=...          # 列表(游标分页) ← cowork:session:list
-POST   /api/v1/sessions                              # 新建 ← cowork:session:start
+POST   /api/v1/sessions                              # 建会话+首prompt+立即开跑(prompt必填) ← cowork:session:start
+POST   /api/v1/sessions/{id}/messages                # 后续轮次(=continue,独立映射) ← cowork:session:continue
 GET    /api/v1/sessions/{id}                         # 详情 ← cowork:session:get
 PATCH  /api/v1/sessions/{id}                         # 改名/置顶等 ← rename/pin
 DELETE /api/v1/sessions/{id}                         # 删除 ← cowork:session:delete
@@ -368,28 +374,30 @@ POST   /api/v1/sessions/{id}/compact-context         # 压缩上下文 ← compa
 GET    /api/v1/sessions/{id}/context-usage           # 上下文用量 ← contextUsage
 ```
 
-创建会话请求/响应：
+创建会话请求/响应（**start = 建会话 + 首 prompt + 立即开跑，`prompt` 必填，不存在「创建空闲会话」，见附录 C §3.3**）：
 
 ```jsonc
 // POST /api/v1/sessions   Idempotency-Key: <uuid>
 {
-  "title": "重构登录模块",
+  "prompt": "重构登录模块",         // 必填：首轮 prompt（缺失即 400）
   "agentId": "main",
-  "cwd": "workspace/proj-a",      // 相对租户工作区根，见 08
+  "cwd": "workspace/proj-a",       // 相对租户工作区根，见 08
   "model": "claude-...",           // 可选覆盖
   "executionMode": "auto"
 }
-// 201 Created
+// 202 Accepted —— 会话已建且首轮已开跑，结果经 WS 会话频道流式返回
 {
   "data": {
-    "id": "sess_01H...",
-    "title": "重构登录模块",
-    "status": "idle",
+    "sessionId": "sess_01H...",
+    "requestId": "req_01H...",     // 关联 WS 流式帧
+    "status": "running",
     "agentId": "main",
     "createdAt": "2026-07-02T08:00:00.000Z"
   }
 }
 ```
+
+> 后续轮次（continue）是**独立映射**，走 §6.2 `POST /sessions/{id}/messages`（契约规范名 `POST /sessions/:id/turns`，见附录 C §3.3），与 start 不共用创建语义。
 
 ### 6.2 发送消息触发流式
 
@@ -397,13 +405,14 @@ REST 触发 + WS 收结果（分离控制面与数据面）：
 
 ```jsonc
 // POST /api/v1/sessions/{id}/messages   Idempotency-Key: <uuid>
+// = continue / 后续轮次（契约规范名 POST /sessions/:id/turns，独立于 start，见附录 C §3.3）
 {
   "content": [{ "type": "text", "text": "帮我加单测" }],
   "attachments": [{ "artifactId": "art_..." }]   // 大文件先经 08 上传拿到引用
 }
 // 202 Accepted —— 表示已入队/开始生成，结果通过 WS 会话频道流式返回
 {
-  "data": { "userMessageId": "msg_...", "sessionStatus": "running" }
+  "data": { "userMessageId": "msg_...", "requestId": "req_...", "sessionStatus": "running" }
 }
 ```
 
@@ -412,20 +421,25 @@ REST 触发 + WS 收结果（分离控制面与数据面）：
 
 ### 6.3 权限响应
 
-现状 `cowork:permission:respond`（`src/main/main.ts:6752`）→
+现状 `cowork:permission:respond`（`main.ts` 的 `cowork:permission:respond` handler；MCP 工具授权另有第二个 `cowork:stream:permission` 发送点）→ **单端点同时承接工具授权与 AskUser**，请求体对齐源码 `types.ts` 的判别联合 `PermissionResult`（原稿 `decision/scope/allow_always` 三字段在源码中均不存在，见附录 C §3.1/D2）：
 
 ```jsonc
-// POST /api/v1/permissions/{requestId}/respond
-{
-  "sessionId": "sess_...",
-  "decision": "allow",            // allow | deny | allow_always
-  "scope": "tool"                 // 可选
-}
+// POST /api/v1/sessions/{id}/permissions/{requestId}/respond   （sessionId 走路径，tenantId 取自 JWT 上下文）
+// kind:'tool' —— 工具授权（允许）
+{ "kind": "tool", "result": { "behavior": "allow", "updatedInput": { } } }
+// 拒绝：
+{ "kind": "tool", "result": { "behavior": "deny", "message": "用户拒绝", "interrupt": true } }
+// 「本次会话始终允许」= 在 updatedPermissions 追加对应 rule（无独立 allow_always 布尔）：
+{ "kind": "tool", "result": { "behavior": "allow", "updatedPermissions": [ /* PermissionUpdate rule */ ] } }
+// kind:'ask' —— AskUserQuestion（复用同一端点，对应 resolveAskUser / McpBridge）
+{ "kind": "ask", "answers": { "q1": "选项A" } }
 // 200 OK
 { "data": { "requestId": "...", "applied": true } }
 ```
 
-对应流式：授予/拒绝后沙箱继续，事件经 `permissionDismiss`（关闭 UI 待办）与后续 `message` 帧回传。
+- 字段级 `PermissionResult` / `PermissionUpdate` / `AskUserQuestion` 以 `libs/shared/contracts` + 附录 C §3.1 为权威；MCP 授权的第二个 `cowork:stream:permission` 发送点须**复用同一端点**，不另开路由。
+- 多副本下用户点「允许」可能落到非持有该会话 gateway 连接的副本：反向路由 + **未命中 requestId 禁止静默 no-op** 见 §7.6 与附录 C D7。
+- 对应流式：授予/拒绝后沙箱继续，事件经 `permissionDismiss`（关闭 UI 待办）与后续消息帧回传。
 
 ### 6.4 模型代理流式（api:stream）
 
@@ -459,17 +473,17 @@ GET  /api/v1/models                # 模型目录 ← auth:getModels
 
 ### 7.2 消息序号与写入一致性
 
-- 保留现状「单会话内 `sequence` 单调递增」为唯一顺序真相。分布式下 sequence 由**持锁的写路径**在 Postgres 事务内 `MAX(sequence)+1` 生成（或用 Postgres 序列/`SELECT ... FOR UPDATE` 行锁兜底），避免竞态。
+- **分页/去重游标 = 不可变复合键 `(created_at, id)`，不用 `sequence`**（见附录 C D10）：现状 `sequence` 可空、按 `SELECT COALESCE(MAX(sequence),0)+1` 赋值、insert-before 会 shift 重排（`coworkStore.ts`），**不是稳定键**；`sequence` 仅保留为展示序，现状排序已用 `COALESCE(sequence, created_at), created_at, ROWID` 兜底。消息写入仍在**持锁的写路径** + Postgres 事务内完成、`UNIQUE(session_id, ...)` 兜底以避免竞态；`cowork_messages` V1 不做声明式分区（见附录 C D10）。
 - `replaceConversationMessages`（gateway 同步覆盖 user/assistant、保留 tool_*/system）等敏感写在事务内完成，保证前端分页不读到半更新状态。
-- WS 帧的 `seq` 与消息 `sequence` 语义对齐：前端可据 `seq` 去重、检测缺口并触发 `subscribe sinceSeq` 补发。
+- WS 帧的 `seq` 是 **Redis Stream 序号（不可变、单调递增）**，与 DB 分页游标 `(created_at, id)` 解耦、也不再与可变的 `sequence` 列绑定；前端据 `seq` 去重、检测缺口并触发 `subscribe sinceSeq` 补发。
 
 ### 7.3 流式广播（Redis pub/sub + Stream）
 
 ```mermaid
 flowchart LR
   POD["沙箱 Pod (OpenClaw)"] -->|gateway 事件| OR["Orchestrator"]
-  OR -->|XADD stream:t:sid| STREAM[("Redis Stream<br/>(补发缓冲, 保留窗口)")]
-  OR -->|PUBLISH stream:t:sid| PUBSUB[("Redis Pub/Sub<br/>(实时唤醒)")]
+  OR -->|XADD stream:{tenantId}:{sessionId}| STREAM[("Redis Stream<br/>(补发缓冲, 保留窗口)")]
+  OR -->|PUBLISH stream:{tenantId}:{sessionId}| PUBSUB[("Redis Pub/Sub<br/>(实时唤醒)")]
   PUBSUB --> GW1["Gateway A (订阅者)"]
   PUBSUB --> GW2["Gateway B (订阅者)"]
   GW1 -->|WS| C1["SPA 连接1"]
@@ -489,6 +503,14 @@ flowchart LR
 
 - 长耗时/可后台化的工作用 BullMQ 队列：会话标题生成（`generate-session-title`）、技能安全扫描、MCP 启动决议探测、定时任务触发（见 `11`）、记忆 dreaming（cron）。
 - 队列同样按 `tenantId` 打标，便于配额与优先级；worker 幂等（job id = 业务键）。
+
+### 7.6 控制面反向路由（会话↔owning-replica，禁止静默 no-op）
+
+「领域服务无状态」只对**前向事件流**（Pod→Redis→任意 Gateway）成立；对**回指某活跃会话**的反向命令（`respondToPermission` / `stopSession` / `compactContext` / `permissionDismiss` 等）存在会话亲和——这些命令必须送达**持有该会话 gateway 连接的那个 Orchestrator 副本**，否则会被静默吞掉（现状 `coworkEngineRouter.ts` 对未知 requestId 直接 `return`，多副本下会造成生成永久挂起）。落地按附录 C D7：
+
+- 维护 **Redis 会话→owning-replica 注册表**（`owner:session:{tenantId}:{sessionId} -> replicaId`），每副本订阅自己的命令通道；BFF 收到反向命令后查注册表、经该副本命令通道下发。
+- 所有反向命令 payload 补 `sessionId` + `tenantId`（tenantId 取自 JWT 上下文，绝不信前端）。
+- **未命中 requestId / owner 时禁止静默 no-op**：返回可路由错误（如 `409 SESSION_NOT_OWNED` / `410`）或经总线转发重投，由前端重试或提示，杜绝「点了允许却永久挂起」。
 
 ---
 
@@ -512,13 +534,13 @@ flowchart LR
 
 ## 9. 验收标准
 
-- [ ] 259 个 handler 全部完成 A/B/C 分类，且每个「进入 v1」的域都有对应 NestJS Module 与至少一条端到端可用端点。
+- [ ] 全部 IPC handler（口径见附录 C B9：`main.ts` `211 handle + 6 on = 217`、全 `src/main` 约 `283`，旧稿 `259` 作废）完成 A/B/C 分类，并对齐附录 C §8 契约清单；每个「进入 GA 主线」的域都有对应 NestJS Module 与至少一条端到端可用端点。
 - [ ] 所有 REST 端点：走 `/api/v1` 前缀、JWT 鉴权、`tenantId` 从上下文注入且服务层查询强制过滤、统一错误信封、游标分页信封。
 - [ ] 副作用型 POST 支持 `Idempotency-Key`，重复请求不产生重复副作用（有测试覆盖）。
-- [ ] WS：可用票据鉴权、`subscribe/unsubscribe/ping/pong` 帧、`sinceSeq` 断线补发、单连接多会话多路复用；9 个 `cowork:stream:*` 事件与用户级事件均能正确路由到对应连接。
+- [ ] WS：可用票据鉴权、`subscribe/unsubscribe/ping/pong` 帧、`sinceSeq` 断线补发、单连接多会话多路复用；**10 个** `cowork:stream:*` 事件（含原漏的 `cowork:stream:goal`，全集从 `CoworkIpcChannel` 常量穷举，见附录 C §3.2/B13）与用户级事件均能正确路由到对应连接。
 - [ ] 同一会话并发发送：第二个请求得到 `409 SESSION_BUSY`（或正确排队），不出现 sequence 冲突或 OpenClaw 会话错乱。
 - [ ] 跨租户访问任意资源返回 `404`，无法探测存在性（含渗透测试用例，见 `14`）。
-- [ ] 领域服务无状态：任意副本重启/扩缩容不影响进行中会话（事件经 Redis 广播，重连补发无丢帧）。
+- [ ] 领域服务无状态：任意副本重启/扩缩容不影响进行中会话——**前向**事件经 Redis 广播、重连补发无丢帧；**反向**命令（权限/停止/压缩）经会话→owning-replica 注册表路由，**未命中 requestId 返回可路由错误或经总线转发、禁止静默 no-op**（见 §7.6 / 附录 C D7）。
 - [ ] `coworkStore`/`openclawConfigSync`/`coworkModelApi`/`cronJobService` 的纯逻辑抽库后行为与桌面版一致（Vitest 覆盖关键路径，见 `16`）。
 
 ---
@@ -527,7 +549,7 @@ flowchart LR
 
 | 风险 | 说明 | 缓解 | 详见 |
 |---|---|---|---|
-| `main.ts` 抽取遗漏隐式副作用 | 10560 行里 handler 常顺带改全局状态/触发其他 send | 逐 handler 分类 + 抽库前后行为快照测试 | `16`、`18` |
+| `main.ts` 抽取遗漏隐式副作用 | 约 11307 行里 handler 常顺带改全局状态/触发其他 send | 逐 handler 分类 + 抽库前后行为快照测试 | `16`、`18` |
 | 会话锁与生成超时不匹配 | 长任务锁过期导致并发闯入 | 看门狗续期 + TTL 对齐 3600s 超时 | 本文 §7.1 |
 | 流式补发窗口不足 | 弱网重连丢首帧 | Redis Stream 保留窗口 + `sinceSeq` | 本文 §5.4 |
 | 大 payload 冲击 WS/服务 | 30MB 限制原为单机 | BFF 层 `413` 拦截 + 附件走 S3 引用 | `08`、`09` |
