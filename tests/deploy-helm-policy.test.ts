@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
-import { checkHelmStatic, validateValues } from '../scripts/check-helm.mjs';
+import { checkHelmStatic, scanRenderedManifests, validateValues } from '../scripts/check-helm.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const chartRoot = path.join(repositoryRoot, 'charts', 'lobsterai');
@@ -85,5 +85,28 @@ describe('P03 Helm security baseline', () => {
     }
     expect(networkPolicies.match(/app\.kubernetes\.io\/component:/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
     expect(networkPolicies.match(/ports:/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
+
+    const broad = `
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: p03-allow-service-plane }
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/part-of: lobsterai } }
+  policyTypes: [Ingress, Egress]
+`;
+    expect(scanRenderedManifests(broad).join('\n')).toContain('broad allow-service-plane');
+
+    const missingPort = `
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: p03-web-to-api }
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/component: web } }
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector: { matchLabels: { app.kubernetes.io/component: api } }
+`;
+    expect(scanRenderedManifests(missingPort).join('\n')).toContain('explicit TCP port');
   });
 });

@@ -175,6 +175,24 @@ export const scanRenderedManifests = (rendered) => {
     errors.push('rendered default-deny ingress/egress policy is missing');
   }
   if (!documents.some(document => document.kind === 'ResourceQuota')) errors.push('rendered ResourceQuota is missing');
+  const expectedEdges = [
+    ['web-to-api', 'web', 'api'],
+    ['worker-to-api', 'worker', 'api'],
+    ['orchestrator-to-api', 'runtime-orchestrator', 'api'],
+  ];
+  for (const [suffix, source, destination] of expectedEdges) {
+    const policy = policies.find(candidate => candidate.metadata?.name?.endsWith(suffix));
+    const rule = policy?.spec?.egress?.[0];
+    if (policy?.spec?.podSelector?.matchLabels?.['app.kubernetes.io/component'] !== source
+      || rule?.to?.[0]?.podSelector?.matchLabels?.['app.kubernetes.io/component'] !== destination
+      || rule?.ports?.[0]?.protocol !== 'TCP'
+      || !Number.isInteger(rule?.ports?.[0]?.port)) {
+      errors.push(`${suffix}: component selectors and explicit TCP port are required`);
+    }
+  }
+  if (policies.some(policy => policy.metadata?.name?.endsWith('allow-service-plane'))) {
+    errors.push('broad allow-service-plane NetworkPolicy is forbidden');
+  }
   const roles = documents.filter(document => document.kind === 'Role');
   for (const role of roles) {
     for (const rule of role.rules ?? []) {

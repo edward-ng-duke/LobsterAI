@@ -32,22 +32,13 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "lobsterai.fullname" . }}-allow-service-plane
+  name: {{ include "lobsterai.fullname" . }}-web-to-api
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/part-of: lobsterai
+      app.kubernetes.io/component: web
   policyTypes:
-    - Ingress
     - Egress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: {{ .Values.networkPolicy.serviceNamespace }}
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: lobsterai
   egress:
     - to:
         - namespaceSelector:
@@ -55,7 +46,74 @@ spec:
               kubernetes.io/metadata.name: {{ .Values.networkPolicy.serviceNamespace }}
           podSelector:
             matchLabels:
-              app.kubernetes.io/part-of: lobsterai
+              app.kubernetes.io/component: api
+      ports:
+        - { protocol: TCP, port: {{ .Values.components.api.port }} }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-worker-to-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.serviceNamespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - { protocol: TCP, port: {{ .Values.components.api.port }} }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-orchestrator-to-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: runtime-orchestrator
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.serviceNamespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - { protocol: TCP, port: {{ .Values.components.api.port }} }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-api-from-components
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.serviceNamespace }}
+          podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values: [web, worker, runtime-orchestrator]
+      ports:
+        - { protocol: TCP, port: {{ .Values.components.api.port }} }
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
