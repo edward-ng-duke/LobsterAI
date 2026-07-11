@@ -31,10 +31,14 @@ const createContractCopy = (): string => {
   for (const relativePath of [
     'apps/api/src/generated',
     'apps/web/src/generated',
+    'libs/client/bridge/codegen',
     'libs/client/bridge/src',
     'libs/shared/contracts',
     'scripts/contracts',
-    'src/renderer/types/electron.d.ts',
+    'src',
+    'tsconfig.base.json',
+    'tsconfig.json',
+    'tsconfig.node.json',
     '改造计划/附录A-IPC通道与接口映射.md',
   ]) {
     const source = path.join(repositoryRoot, relativePath);
@@ -197,14 +201,15 @@ describe('Reviewer Round 1 atomic generation mutations', () => {
   }, 30_000);
 
   test('keeps the published outputs intact when staging fails closed', () => {
-    const publishedOutput = path.join(repositoryRoot, 'libs/shared/contracts/openapi.yaml');
+    const root = createContractCopy();
+    const publishedOutput = path.join(root, 'libs/shared/contracts/openapi.yaml');
     const before = readFileSync(publishedOutput, 'utf8');
     const result = spawnSync(process.execPath, ['scripts/contracts/generate.mjs'], {
-      cwd: repositoryRoot,
+      cwd: root,
       encoding: 'utf8',
       env: { ...process.env, CONTRACT_GENERATE_FAIL_AFTER_STAGE: '1' },
     });
     expect(result.status, result.stdout + result.stderr).not.toBe(0);
     expect(readFileSync(publishedOutput, 'utf8')).toBe(before);
-  });
+  }, 30_000);
 });
