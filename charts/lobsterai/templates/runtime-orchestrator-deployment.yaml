@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-runtime-orchestrator
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: runtime-orchestrator
+spec:
+  replicas: {{ .Values.components.runtimeOrchestrator.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "runtime-orchestrator") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "runtime-orchestrator") | nindent 8 }}
+        app.kubernetes.io/part-of: lobsterai
+    spec:
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: {{ include "lobsterai.fullname" . }}-runtime-orchestrator
+      automountServiceAccountToken: false
+      securityContext:
+        {{- include "lobsterai.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: runtime-orchestrator
+          image: "{{ .Values.images.runtimeOrchestrator.repository }}@{{ .Values.images.runtimeOrchestrator.digest }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "lobsterai.containerSecurityContext" . | nindent 12 }}
+          envFrom:
+            - configMapRef: { name: {{ include "lobsterai.fullname" . }}-config }
+          ports:
+            - name: http
+              containerPort: {{ .Values.components.runtimeOrchestrator.port }}
+          readinessProbe: &orchestratorProbe
+            httpGet: { path: /healthz, port: http }
+            {{- toYaml .Values.components.runtimeOrchestrator.probe | nindent 12 }}
+          livenessProbe: *orchestratorProbe
+          resources:
+            {{- toYaml .Values.components.runtimeOrchestrator.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }

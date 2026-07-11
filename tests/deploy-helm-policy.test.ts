@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { checkHelmStatic, validateValues } from '../scripts/check-helm.mjs';
+
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const chartRoot = path.join(repositoryRoot, 'charts', 'lobsterai');
 
@@ -48,5 +50,27 @@ describe('P03 Helm security baseline', () => {
     expect(sandbox).toContain('required "sandbox.runtimeClassName');
     expect(sandbox).toContain('required "sandbox.serviceAccountName');
     expect(sandbox).toContain('automountServiceAccountToken: false');
+  });
+
+  test('static checker accepts baseline and rejects schema/security mutations', async () => {
+    expect(checkHelmStatic(repositoryRoot)).toEqual([]);
+    const yaml = await import('js-yaml');
+    const baseline = yaml.load(readFileSync(path.join(chartRoot, 'values.yaml'), 'utf8')) as Record<string, any>;
+
+    const badDigest = structuredClone(baseline);
+    badDigest.images.api.digest = 'latest';
+    expect(validateValues(badDigest).join('\n')).toContain('sha256:<64hex>');
+
+    const emptyResources = structuredClone(baseline);
+    delete emptyResources.components.worker.resources.limits;
+    expect(validateValues(emptyResources).join('\n')).toContain('invalid or empty quantity');
+
+    const sandboxWithoutRuntime = structuredClone(baseline);
+    sandboxWithoutRuntime.sandbox.enabled = true;
+    expect(validateValues(sandboxWithoutRuntime).join('\n')).toContain('runtimeClassName is required');
+
+    const unknownField = structuredClone(baseline);
+    unknownField.privileged = true;
+    expect(validateValues(unknownField).join('\n')).toContain('unknown field privileged');
   });
 });

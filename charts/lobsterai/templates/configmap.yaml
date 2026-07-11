@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-config
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  PRODUCTION_NETWORK: {{ .Values.global.productionNetwork | quote }}
+  MODEL_PROXY_URL: {{ .Values.config.modelProxyUrl | quote }}
+  OBJECT_STORE_ENDPOINT: {{ .Values.config.objectStoreEndpoint | quote }}
