@@ -9,17 +9,23 @@ import { verifyHardenedDependency } from '../scripts/harden-openclaw-runtime-dep
 const temporaryRoots: string[] = [];
 const integrity = 'sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==';
 
-const makePluginRoot = (version = '4.0.4', lockIntegrity = integrity): string => {
+const makePluginRoot = (nestedVersion = '4.0.4', nestedIntegrity = integrity): string => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-dingtalk-hardening-'));
   temporaryRoots.push(root);
-  const packageRoot = path.join(root, 'node_modules/form-data');
-  mkdirSync(packageRoot, { recursive: true });
-  writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({ name: 'form-data', version }));
+  const packageRoots = [
+    [path.join(root, 'node_modules/form-data'), '4.0.4'],
+    [path.join(root, 'node_modules/axios/node_modules/form-data'), nestedVersion],
+  ] as const;
+  for (const [packageRoot, version] of packageRoots) {
+    mkdirSync(packageRoot, { recursive: true });
+    writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({ name: 'form-data', version }));
+  }
   writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
     lockfileVersion: 3,
     packages: {
       '': { name: 'dingtalk-connector' },
-      'node_modules/form-data': { version, integrity: lockIntegrity },
+      'node_modules/form-data': { version: '4.0.4', integrity },
+      'node_modules/axios/node_modules/form-data': { version: nestedVersion, integrity: nestedIntegrity },
     },
   }));
   return root;

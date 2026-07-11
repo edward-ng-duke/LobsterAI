@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,12 +22,11 @@ export const verifyHardenedDependency = (pluginRoot) => {
   const lock = readJson(lockPath);
   const locked = Object.entries(lock.packages ?? {})
     .filter(([entryPath, entry]) => entryPath.endsWith(`node_modules/${dependencyName}`)
-      && entry?.name !== '__never__')
-    .map(([, entry]) => entry);
+      && entry?.name !== '__never__');
   if (locked.length === 0) errors.push(`${dependencyName} is missing from the DingTalk package lock`);
-  for (const entry of locked) {
-    if (entry.version !== expectedVersion) errors.push(`${dependencyName} lock version must be ${expectedVersion}`);
-    if (entry.integrity !== expectedIntegrity) errors.push(`${dependencyName} lock integrity mismatch`);
+  for (const [entryPath, entry] of locked) {
+    if (entry.version !== expectedVersion) errors.push(`${entryPath} lock version must be ${expectedVersion}`);
+    if (entry.integrity !== expectedIntegrity) errors.push(`${entryPath} lock integrity mismatch`);
   }
 
   const nodeModulesRoot = path.join(pluginRoot, 'node_modules');
@@ -35,12 +34,14 @@ export const verifyHardenedDependency = (pluginRoot) => {
     ? readdirSync(nodeModulesRoot, { recursive: true })
       .filter(entry => typeof entry === 'string' && entry.endsWith('package.json'))
       .map(entry => path.join(nodeModulesRoot, entry))
-      .map(filePath => readJson(filePath))
-      .filter(pkg => pkg.name === dependencyName)
+      .map(filePath => ({ filePath, pkg: readJson(filePath) }))
+      .filter(({ pkg }) => pkg.name === dependencyName)
     : [];
   if (installed.length === 0) errors.push(`${dependencyName} is missing from the DingTalk runtime`);
-  for (const pkg of installed) {
-    if (pkg.version !== expectedVersion) errors.push(`${dependencyName} runtime version must be ${expectedVersion}`);
+  for (const { filePath, pkg } of installed) {
+    if (pkg.version !== expectedVersion) {
+      errors.push(`${path.relative(pluginRoot, filePath)} runtime version must be ${expectedVersion}`);
+    }
   }
   return [...new Set(errors)];
 };
@@ -49,6 +50,18 @@ export const hardenOpenClawRuntimeDependencies = (pluginRoot = defaultPluginRoot
   if (!existsSync(path.join(pluginRoot, 'package.json'))) {
     throw new Error(`DingTalk plugin root is missing: ${pluginRoot}`);
   }
+  const packagePath = path.join(pluginRoot, 'package.json');
+  const pluginPackage = readJson(packagePath);
+  pluginPackage.dependencies = {
+    ...(pluginPackage.dependencies ?? {}),
+    [dependencyName]: expectedVersion,
+  };
+  pluginPackage.overrides = {
+    ...(pluginPackage.overrides ?? {}),
+    [dependencyName]: expectedVersion,
+  };
+  writeFileSync(packagePath, `${JSON.stringify(pluginPackage, null, 2)}\n`);
+  rmSync(path.join(pluginRoot, 'package-lock.json'), { force: true });
   const install = spawnSync('npm', [
     'install',
     '--omit=dev',
@@ -56,14 +69,26 @@ export const hardenOpenClawRuntimeDependencies = (pluginRoot = defaultPluginRoot
     '--no-audit',
     '--no-fund',
     '--legacy-peer-deps',
-    '--save-exact',
-    `${dependencyName}@${expectedVersion}`,
   ], {
     cwd: pluginRoot,
     encoding: 'utf8',
   });
   if (install.status !== 0) {
     throw new Error(`failed to harden DingTalk dependencies: ${install.stderr || install.stdout}`);
+  }
+  const dedupe = spawnSync('npm', [
+    'dedupe',
+    '--omit=dev',
+    '--ignore-scripts',
+    '--no-audit',
+    '--no-fund',
+    '--legacy-peer-deps',
+  ], {
+    cwd: pluginRoot,
+    encoding: 'utf8',
+  });
+  if (dedupe.status !== 0) {
+    throw new Error(`failed to dedupe DingTalk dependencies: ${dedupe.stderr || dedupe.stdout}`);
   }
   const errors = verifyHardenedDependency(pluginRoot);
   if (errors.length > 0) throw new Error(errors.join('; '));
