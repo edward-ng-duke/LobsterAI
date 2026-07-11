@@ -1,5 +1,7 @@
 # Migration policy
 
-PR-2 will create timestamped Prisma migration directories here. Production
-schema SQL must be represented by a recorded migration; ad-hoc untracked SQL is
-not permitted. P00 intentionally contains no executable migration.
+Directories use sortable UTC timestamps followed by a descriptive snake-case
+name. `prisma migrate deploy` is the only production application path; it writes
+the corresponding `_prisma_migrations` history. Published migration SQL is
+immutable. Fixes are forward-only migrations; shared or production databases
+must never be repaired by editing history or running ad-hoc down SQL.

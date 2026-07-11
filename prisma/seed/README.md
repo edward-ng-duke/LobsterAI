@@ -1,4 +1,6 @@
-# Seed boundary
+# Deterministic development/test seed
 
-Local development and test seeds will live here after PR-2. Seeds must never
-contain real tenant data, credentials, provider keys, or production endpoints.
+`index.ts` creates two synthetic tenants. Each receives a distinct internal UUID
+for the same external `logical_id = main`, proving tenant-local uniqueness. The
+seed is idempotent and refuses to run outside `NODE_ENV=development|test`. It
+contains no secrets, production endpoints, or real tenant data.
