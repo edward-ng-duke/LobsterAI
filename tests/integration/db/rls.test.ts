@@ -1,6 +1,8 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
+import { createDatabaseFactory } from '../../../libs/server/db/src/client.js';
+
 const { Client, Pool } = pg;
 const tenantA = '10000000-0000-4000-8000-000000000001';
 const tenantB = '20000000-0000-4000-8000-000000000002';
@@ -172,6 +174,15 @@ describe('P02 migration, extensions, and dual key invariants', () => {
       ),
     ).rejects.toMatchObject({ code: '23505' });
     await admin.end();
+  });
+
+  test('safe facade maps internal UUID back to the accepted AgentDto logical id', async () => {
+    const factory = createDatabaseFactory(appUrl);
+    const database = factory.createTenantDatabase({ tenantId: tenantA, userId });
+    const agent = await database.agents.find('main');
+    await factory.disconnect();
+    expect(agent).toMatchObject({ id: 'main', name: 'Main A', skillIds: [] });
+    expect(agent?.id).not.toMatch(/^[0-9a-f]{8}-/);
   });
 
   test.each(['', '\0'])('rejects empty or NUL logical IDs %j', async (logicalId) => {
