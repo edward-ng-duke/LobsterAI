@@ -1,75 +1,94 @@
-# P02 Prisma 与 RLS 脚手架 Developer 证据
+# P02 Prisma 与 RLS 脚手架证据
 
-- 状态：`REVIEW_PENDING`
+- 状态：`REVIEW_PENDING`（Reviewer Round 2）
 - Developer：`/root/p02_developer`
-- 代码证据 SHA：`dc98a77d153fd24f8f8376f10909deaa302126fa`
-- 环境：macOS arm64 / Node `v24.15.0` / npm `11.12.1` / Docker Engine `29.4.0`（OrbStack，Linux arm64）
+- codeEvidenceSha：`ec2cc92379ac754c9625614be7cd0f2c49e74435`
+- code evidence-only commit：`c80b9c2aff4ae9599942450f3628f315a1b8e4fe`
+- stageEvidenceSha：`c80b9c2aff4ae9599942450f3628f315a1b8e4fe`
+- 环境：macOS arm64 / Node `v24.15.0` / PostgreSQL `17.10 (Debian 17.10-1.pgdg12+1)`
+- 镜像：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`
 - P01 接受 SHA：`a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28`
 - P01 Tester 报告 SHA：`fc9f619fd46afe4622512c5d4168e220816f246a`
 - contract：`1.0.0` / source hash `897bd39077d409e52a88e9efe89383380564812f494efb88fe09e2af6a1ed2c8`
-- PostgreSQL：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`，实际 server `17.10 (Debian 17.10-1.pgdg12+1)`
 
-## TDD 与实现提交
+## 证据链语义
 
-| 阶段 | commit | 证据 |
-|---|---|---|
-| Red | `be95c975` | 12/12 因 scripts/image/schema/migration/RLS/context/facade/真实容器/CI 目标缺失而失败 |
-| Tooling | `ef187e60` | Prisma `6.19.3`、Testcontainers `12.0.4`、pg `8.22.0`、PG17.10 exact digest |
-| Schema | `df18fae2` | Tenant/Agent、UUID+logical ID 双键、citext、migration、ENABLE+FORCE policy、seed |
-| Safe access | `6fc5a211` | 受控 factory/facade、transaction-local tenant/user context、tenant scope extension |
-| Integration | `802360a7` | 新容器 migrate/role/seed/RLS/池泄漏套件与 BLOCKED 语义 |
-| Gate | `5dd0bba8` | Prisma PASS stage、静态 mutation checker、独立 arm64 container CI job |
-| Corners | `4b20066e` | production seed guard、AgentDto `id=logical_id` 真实往返 |
-| Fast loop | `3da264db` | 默认 Vitest 明确排除容器集成；显式 job 仍阻断 |
-| Test stability | `b7e3a6d3` | 只放宽耗时 generated-consumer mutation 的单测 timeout，不改断言 |
-| Evidence cleanup | `dc98a77d` | 所有 DB 报告绑定 HEAD；PG 容器删除失败会使报告失败 |
+报告不能把包含自身的提交 SHA 写进自身内容。本目录采用可机器验证的两段 evidence-only descendant 链：
+
+1. 四份 code report 由实现提交 `ec2cc923...` 的原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`c80b9c2a...` 只提交这些 raw report 与 manifest。
+2. 正式 `prisma:validate` stage 在 `c80b9c2a...` 上运行，stage report 的 `sourceSha` 等于该证据提交；后续提交只允许本目录和 P02 Developer 开发记录发生变化。
+3. `validate-evidence.mjs` 用严格 schema 拒绝未知字段，核对每份报告内容 SHA-256 与 runner SHA-256，并要求 code/stage SHA 位于最终 HEAD 的 first-parent 链。
+4. `git diff codeEvidenceSha..HEAD` 中出现任意代码、测试或 gate 路径都会失败。mutation 测试在临时 Git 仓库真实构造“实现 → 证据 → 任意代码提交”，确认最后一步被拒绝。
+
+因此，本记录称“最终证据是实现 SHA 的 evidence-only descendant”，不声称报告与包含该报告的 commit 字面同 SHA。
+
+## 原生报告
+
+下列 JSON 均由 runner 原子写入 `.reports/` 后由 `snapshot-evidence.mjs` 逐字节复制；不是手工摘要结构：
+
+| 文件 | 原生标识 | source SHA | 结果 |
+|---|---|---|---|
+| `contracts-preflight.json` | runId `321841b8-85e7-4491-8225-d207258d5a9c` | `ec2cc923...` | PASS |
+| `preflight.json` | runId `89b9bc85-535f-4209-94d3-17d44acde61c` | `ec2cc923...` | PASS；container removed |
+| `integration.json` | runId `2b10f3df-d7ee-470a-aea9-fb259baad214` | `ec2cc923...` | PASS；skipped=0；container removed |
+| `validation.json` | runId `3ba5ebfc-051f-4d34-b1c3-99fdffef0d88` | `ec2cc923...` | PASS；原生 `commands[]` 共 8 项 |
+| `prisma-stage-gate.json` | invocationId `5697445a-1bff-43e3-9b06-dbffb3f75cb3` | `c80b9c2a...` | PASS |
+
+`evidence-manifest.json` 保存上述文件摘要、source SHA、runner 路径和 runner 摘要。当前实现与报告中的 generated Prisma client hash 均为 `c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441`。
+
+## Reviewer Round 1 P1 修复
+
+### AC12：tenant extension 接入真实 factory
+
+- `createDatabaseFacade()` 现在把 `extendTenantClient(client, context.tenantId)` 的结果传给 facade，而不是只定义未使用的 extension。
+- extension 对 `findMany/count/aggregate/groupBy/create/createMany/upsert/update/updateMany/delete/deleteMany` 强制 tenant scope；`update`、`updateMany` 和 `upsert.update` 中伪造的 `tenantId` 会被当前上下文覆盖。
+- `tenant-extension.test.ts` 在独立 owner connection 中临时关闭 RLS，仅在该测试生命周期内验证应用层 extension；结束时恢复 `ENABLE ROW LEVEL SECURITY` 与 `FORCE ROW LEVEL SECURITY`。
+- 动态覆盖既通过实际 factory facade，也直接调用 extended Prisma client。A 上下文的所有读写分支均不能读取、修改或删除 B 行；B-only fixture 最终仍存在。
+- 显式 Testcontainers 集成套件为 21/21 PASS，`skipped=0`，cleanup `removed=true`。
+
+### AC18：原生证据与 provenance
+
+- 严格 `evidence-bundle.schema.json` 对所有嵌套对象使用 `additionalProperties: false`。
+- 原生 validation 保留 `commands[]`，不再用手工 `commandExitCodes` 摘要代替 runner 输出。
+- unknown-field、stale-source、detached-extension 和 evidence 后插入代码提交 mutation 均失败。
+- `prisma:validate:active` 同时执行实现验证与 committed evidence 校验；证据 bootstrap 与 core test 分离，避免循环依赖。
 
 ## 18 AC 证据映射
 
 | AC | 主要证据 |
 |---|---|
-| 01 | `scripts/db/p02-baseline.json` + contracts preflight；接受 SHA、Tester SHA、version/hash 四重绑定 |
-| 02 | `postgres-image.json` exact tag/platform/digest；平台不符、pull/daemon 失败均 `BLOCKED/2` |
-| 03 | clean `npm ci` 自动 generate；两次生成 hash `c74a8965...` 相等；native engine 不提交 |
-| 04 | `Tenant`/`Agent` 真模型、snake_case map、UUID/timestamptz、schema validate |
-| 05 | 两租户 `main` 分别使用 `a000...001`/`b000...002`；同租户重复 23505；facade 返回 `id=main` |
-| 06 | migration history 仅一条 completed；空库和重复 deploy 均 0 |
-| 07 | `citext` available/installed；真实 `gen_random_uuid()` 返回 UUID |
-| 08 | schema/inventory/migration/live catalog 三方核对；mutation 删除任一侧失败 |
-| 09 | live `relrowsecurity=true`、`relforcerowsecurity=true`、USING=WITH CHECK；缺上下文 42704 |
-| 10 | app role `rolsuper=false`、`rolbypassrls=false`、table owner=`p02_admin`；用 app 直连而非 SET ROLE |
-| 11 | 参数化 `$1` + `set_config(..., true)`；tenant/user 均设置；非法 UUID/注入串先拒绝 |
-| 12 | package exports 仅 safe root；apps raw client scan；全部 read/write/aggregate/upsert scope unit branches |
-| 13 | Testcontainers 每 run 新 PG，`skipped=0`，Docker 缺失/平台/拉取失败非零 BLOCKED，cleanup removed=true |
-| 14 | 不启用 Prisma extension 的 pg app client 证明跨租户 SELECT/INSERT/UPDATE/DELETE 被 RLS 拦截 |
-| 15 | commit/rollback/throw/same connection、12 轮 A/B interleaved；false mutation 确实复现泄漏 |
-| 16 | production guard、无公网址/secret/random；双次 seed 仍只有 A/B 两行 |
-| 17 | `prisma:validate` PASS 真命令；CI 独立 `db-integration`，无 skip/`|| true`/continue-on-error |
-| 18 | 42 DB unit + 16 integration + 2153 full tests；typecheck/lint/build 全绿；worktree clean |
+| 01 | contracts preflight 四重绑定 P01 accepted SHA、Tester SHA、contract version/hash |
+| 02 | exact tag/platform/digest；Docker/平台/pull 失败均 `BLOCKED/2` |
+| 03 | clean install 自动 generate；双次生成 hash 一致；native engine 不提交 |
+| 04 | Tenant/Agent 真模型、snake_case、UUID、timestamptz 与 schema validate |
+| 05 | A/B 的 tenant-local `main`、内部 UUID 不同、同租户重复 23505 |
+| 06 | 唯一 recorded migration；空库及重复 deploy 均成功 |
+| 07 | `citext` 安装与 `gen_random_uuid()` 动态检查 |
+| 08 | schema/inventory/migration/live catalog 四方核对 |
+| 09 | ENABLE+FORCE、USING=WITH CHECK、缺上下文 fail closed |
+| 10 | app role 非 superuser、非 BYPASSRLS、非 owner，使用直接 app 连接 |
+| 11 | 参数化 transaction-local tenant/user context；非法 UUID/注入串先拒绝 |
+| 12 | safe package root、raw client import scan、真实 factory extension 与全操作动态覆盖 |
+| 13 | 每次新 PostgreSQL 17 Testcontainer，`skipped=0`，cleanup failure 阻断 PASS |
+| 14 | 原生 RLS CRUD 隔离；另在 RLS 暂停时独立证明应用层 extension 隔离 |
+| 15 | commit/rollback/throw/same connection 与 A/B interleaved 池泄漏覆盖 |
+| 16 | production seed guard、确定性 A/B seed、重复 seed 幂等 |
+| 17 | `prisma:validate` 真 stage PASS；CI 独立 arm64 DB job，无软跳过 |
+| 18 | strict raw evidence schema、内容/runner hash、first-parent 与 evidence-only diff 校验 |
 
-## 稳定 HEAD 验证
+## Round 2 已执行验证
 
 | 命令 | 结果 |
 |---|---|
-| `npm ci` | exit 0；从 lockfile 安装并生成 Prisma client |
-| `npm run contracts:check` | exit 0；stage PASS，source SHA `4b20066e...`（P02 contracts 未再改） |
-| `npm run test:contract` | exit 0；15 contract checks PASS |
-| `npm run prisma:generate` | exit 0；Prisma 6.19.3 |
-| `npm run test:db:preflight` | exit 0；runId `07842da3-e55c-409d-89cb-0675973ccf08` |
-| `npm run test:db:unit` | exit 0；42/42 |
-| `npm run test:db:integration` | exit 0；16/16，runId `23213c88-868c-4bc4-9db1-a81002d47c1e` |
-| `npm run prisma:validate` | exit 0；invocation `71d983fc-0195-4646-8066-3804fb2ea360`，source SHA `dc98a77d...` |
-| `npm run typecheck` | exit 0 |
-| changed-file ESLint + `npm run lint:saas` | exit 0，0 warning |
-| `npm test` | exit 0；201 files，2153 passed，1 skipped（既有 skip） |
-| `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
-| `npm run build` | exit 0；仅既有 Vite/chunk warning |
-| `npm run compile:electron` | exit 0 |
-| `git diff --exit-code` | exit 0 |
+| `node scripts/db/validate.mjs` | exit 0；原生 validation runId `3ba5ebfc-...` |
+| `npm run test:db:unit` | exit 0；55/55 |
+| `npm run test:db:integration`（由 validation 调用） | exit 0；21/21，skipped=0 |
+| `npm run prisma:validate` | exit 0；invocationId `5697445a-...` |
+| `node scripts/db/validate-evidence.mjs` | exit 0；code/stage provenance PASS |
 
-机器报告快照见同目录 JSON。运行时权威报告由各命令原子写入 `.reports/db/` 与 `.reports/saas-gates/`；缺 Docker、平台不符、拉取失败或 cleanup 失败不会产生 PASS。
+最终全量回归结果追加在 P02 Developer 开发记录中；原生机器报告以本目录 JSON 与 manifest 为准。
 
 ## 已知非 P02 风险
 
-- `npm audit --omit=dev` 仍报告根项目既有 axios/Electron/xlsx 等供应链债务；本次新增 Prisma/pg/Testcontainers 未出现在这些 production finding 中。P02 不以破坏性 `audit fix --force` 越界升级桌面依赖，供应链处置继续归 P03/专项升级。
-- 当前可执行基线固定 `linux/arm64`；runner 对 `amd64` 或任何未登记平台 fail-closed。CI 使用 `ubuntu-24.04-arm`，未提供 amd64 digest 时不会降级使用浮动 tag。
+- 根项目既有 axios/Electron/xlsx 等供应链债务不由 P02 伪装解决；破坏性升级留给 P03/专项任务。
+- 当前批准运行基线为 `linux/arm64` exact digest；未登记 amd64 digest 时 runner fail-closed，不降级使用浮动 tag。

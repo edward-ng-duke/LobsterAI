@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "gate": "prisma:validate",
+  "stage": "P03",
+  "status": "PASS",
+  "activationTask": "P02-PR2数据库脚手架",
+  "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
+  "fixturesChecked": [
+    "prisma/schema.prisma",
+    "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
+    "prisma/rls/tenant-scoped-models.json",
+    "prisma/seed/index.ts",
+    "libs/server/db/src/tenant-context.ts",
+    "libs/server/db/src/tenant-scope.ts",
+    "scripts/db/validate.mjs",
+    "scripts/db/validate-evidence.mjs",
+    "scripts/db/evidence-provenance.mjs",
+    "scripts/db/evidence-bundle.schema.json",
+    "scripts/db/snapshot-evidence.mjs",
+    "scripts/db/validate-static.mjs",
+    "scripts/db/preflight.mjs",
+    "scripts/db/run-integration.mjs",
+    "tests/integration/db/postgres-image.json",
+    "tests/integration/db/rls.test.ts",
+    "tests/integration/db/tenant-context.test.ts",
+    "tests/integration/db/tenant-extension.test.ts"
+  ],
+  "invocationId": "5697445a-1bff-43e3-9b06-dbffb3f75cb3",
+  "generatedAt": "2026-07-11T14:36:40.881Z",
+  "sourceSha": "c80b9c2aff4ae9599942450f3628f315a1b8e4fe",
+  "runnerSha256": "652f21fdb05bc52287fd189e1d7799cc3fcccad7443e11c944b5b223dd540d05",
+  "command": [
+    "npm",
+    "run",
+    "--silent",
+    "prisma:validate:active"
+  ],
+  "commandOutputSha256": "655f1bd6bfa59ede4543a78af15ed1a4ad46c8d94621792484126e17bfb08f8b"
+}
