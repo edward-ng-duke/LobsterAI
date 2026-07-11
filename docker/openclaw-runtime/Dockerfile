@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
-FROM node:24.18.0-alpine3.24@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS build
+FROM node:24.18.0-trixie-slim@sha256:366fdef91728b1b7fa18c84fba63b6e79ed77b7e10cc206878e9705da4d7b169 AS build
 WORKDIR /src
 ARG TARGETARCH
 ENV OPENCLAW_SRC=/build/openclaw
@@ -8,7 +8,9 @@ COPY scripts ./scripts
 COPY openclaw-extensions ./openclaw-extensions
 COPY resources ./resources
 COPY SKILLs ./SKILLs
-RUN apk add --no-cache bash ca-certificates git python3 make g++ pkgconfig
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends bash ca-certificates git python3 make g++ pkg-config \
+ && rm -rf /var/lib/apt/lists/*
 RUN npm ci --ignore-scripts --no-audit --no-fund
 RUN corepack enable
 RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;; *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
@@ -26,9 +28,11 @@ RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;
  && cp "$OPENCLAW_SRC/openclaw.mjs" "$current/openclaw.mjs" \
  && cp -R "$OPENCLAW_SRC/dist" "$current/dist"
 
-FROM node:24.18.0-alpine3.24@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS production
-RUN addgroup -S -g 10001 lobster && adduser -S -D -H -u 10001 -G lobster lobster
+FROM ubuntu:26.04@sha256:b7f48194d4d8b763a478a621cdc81c27be222ba2206ca3ca6bc42b49685f3d9e AS production
+RUN groupadd --gid 10001 lobster \
+ && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin lobster
 WORKDIR /opt/openclaw
+COPY --from=build /usr/local/bin/node /usr/local/bin/node
 COPY --from=build --chown=10001:10001 /src/vendor/openclaw-runtime/current /opt/openclaw
 COPY --chown=10001:10001 docker/openclaw-runtime/entrypoint.sh docker/openclaw-runtime/healthcheck.mjs /opt/lobster/
 ENV NODE_ENV=production OPENCLAW_VERSION=v2026.6.1 OPENCLAW_GATEWAY_PORT=18789 OPENCLAW_STATE_DIR=/state

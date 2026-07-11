@@ -70,6 +70,8 @@ describe('P03 production image policy', () => {
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile'),
       'utf8',
     );
+    expect(dockerfile).toMatch(/^FROM node:24\.18\.0-trixie-slim@sha256:[a-f0-9]{64} AS build$/m);
+    expect(dockerfile).toMatch(/^FROM ubuntu:26\.04@sha256:[a-f0-9]{64} AS production$/m);
     expect(dockerfile).toMatch(/^RUN corepack enable$/m);
     expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
 
