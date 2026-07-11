@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -23,6 +23,9 @@ const createRepositoryCopy = (): string => {
     'package-lock.json',
     'package.json',
     'prisma',
+    'scripts/check-saas-scaffold.mjs',
+    'scripts/expect-saas-stage-gate.mjs',
+    'scripts/run-saas-stage-gate.mjs',
     'scripts/saas-stage-gates.json',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
@@ -50,6 +53,10 @@ afterEach(() => {
 });
 
 describe('P00 scaffold checker mutation resistance', () => {
+  test('accepts an isolated copy of the authoritative scaffold', () => {
+    expect(collectScaffoldErrors(createRepositoryCopy())).toEqual([]);
+  });
+
   test('rejects no-op wrappers plus shared manifest and TS reverse dependencies', () => {
     const root = createRepositoryCopy();
     const manifestPath = 'libs/shared/contracts/package.json';
@@ -112,5 +119,17 @@ describe('P00 scaffold checker mutation resistance', () => {
     expect(errors).toContain('prisma/schema.prisma');
     expect(errors).toContain('[SCAF-5]');
     expect(errors).toContain('codegen-policy.json');
+  });
+
+  test('maps legacy desktop command drift to SCAF-6', () => {
+    const root = createRepositoryCopy();
+    const manifest = readJson(root, 'package.json');
+    const scripts = manifest.scripts as Record<string, string>;
+    scripts.build = 'tsc';
+    writeJson(root, 'package.json', manifest);
+
+    const errors = collectScaffoldErrors(root).join('\n');
+    expect(errors).toContain('[SCAF-6]');
+    expect(errors).toContain('legacy renderer build command');
   });
 });

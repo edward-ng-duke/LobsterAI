@@ -1,6 +1,6 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
 import { describe, expect, test } from 'vitest';
 

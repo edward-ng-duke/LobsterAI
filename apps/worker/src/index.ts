@@ -8,6 +8,11 @@ export interface WorkerShell {
   stop(): void;
 }
 
+export interface WorkerSignalSource {
+  once(event: 'SIGINT' | 'SIGTERM', listener: () => void): unknown;
+  off(event: 'SIGINT' | 'SIGTERM', listener: () => void): unknown;
+}
+
 export const createWorkerShell = (): WorkerShell => {
   let status: ServiceLifecycle = ServiceLifecycle.Stopped;
   let keepAlive: NodeJS.Timeout | undefined;
@@ -28,12 +33,23 @@ export const createWorkerShell = (): WorkerShell => {
   };
 };
 
+export const installWorkerSignalHandlers = (
+  worker: WorkerShell,
+  signalSource: WorkerSignalSource,
+): (() => void) => {
+  const stop = (): void => worker.stop();
+  signalSource.once('SIGINT', stop);
+  signalSource.once('SIGTERM', stop);
+  return () => {
+    signalSource.off('SIGINT', stop);
+    signalSource.off('SIGTERM', stop);
+  };
+};
+
 const isMainModule = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMainModule) {
   const worker = createWorkerShell();
   worker.start();
   console.log('[SaaS Worker] scaffold started');
-  const stop = (): void => worker.stop();
-  process.once('SIGINT', stop);
-  process.once('SIGTERM', stop);
+  installWorkerSignalHandlers(worker, process);
 }

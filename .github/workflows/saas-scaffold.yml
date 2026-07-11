@@ -5,9 +5,18 @@ on:
     branches: [main, develop]
     paths:
       - 'apps/**'
+      - 'charts/**'
+      - 'docker/**'
+      - 'docs/poc/**'
+      - 'docs/supply-chain/**'
       - 'libs/**'
       - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/expect-saas-stage-gate.mjs'
+      - 'scripts/run-saas-stage-gate.mjs'
+      - 'scripts/saas-stage-gates.json'
       - 'tests/scaffold.test.ts'
+      - 'tests/scaffold-*.test.ts'
+      - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig*.json'
@@ -15,9 +24,18 @@ on:
   pull_request:
     paths:
       - 'apps/**'
+      - 'charts/**'
+      - 'docker/**'
+      - 'docs/poc/**'
+      - 'docs/supply-chain/**'
       - 'libs/**'
       - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/expect-saas-stage-gate.mjs'
+      - 'scripts/run-saas-stage-gate.mjs'
+      - 'scripts/saas-stage-gates.json'
       - 'tests/scaffold.test.ts'
+      - 'tests/scaffold-*.test.ts'
+      - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig*.json'
@@ -37,10 +55,24 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run scaffold:check
+      - name: Verify deferred P00 gate entry points are explicit
+        run: |
+          node scripts/expect-saas-stage-gate.mjs test:e2e
+          node scripts/expect-saas-stage-gate.mjs contracts:check
+          node scripts/expect-saas-stage-gate.mjs prisma:validate
+          node scripts/expect-saas-stage-gate.mjs supply-chain:check
+          node scripts/expect-saas-stage-gate.mjs docker:build:check
+          node scripts/expect-saas-stage-gate.mjs helm:lint
+          node scripts/expect-saas-stage-gate.mjs poc:v1:check
       - run: npm run lint:saas
       - run: npm run typecheck
       - run: npm run test:scaffold
+      - run: npm test
       - run: npm run build:saas
+      - name: Verify Web production bundle
+        run: |
+          test -f apps/web/dist/index.html
+          find apps/web/dist/assets -type f -name '*.js' -print -quit | grep -q .
       - name: Verify legacy renderer and Electron compatibility
         run: |
           npm run build
