@@ -53,6 +53,16 @@ import type {
   ShellGetBrowserAppsInput,
   ShellOpenFailureReason,
 } from '../../shared/shell/constants';
+import type { UserProfile } from '../store/slices/authSlice';
+
+interface AuthQuota {
+  planName: string;
+  subscriptionStatus: string;
+  creditsLimit: number;
+  creditsUsed: number;
+  creditsRemaining: number;
+}
+
 interface ApiResponse {
   ok: boolean;
   status: number;
@@ -1523,9 +1533,9 @@ interface IElectronAPI {
     login: (loginUrl?: string) => Promise<{ success: boolean; error?: string }>;
     exchange: (
       code: string,
-    ) => Promise<{ success: boolean; user?: any; quota?: any; error?: string }>;
-    getUser: () => Promise<{ success: boolean; user?: any; quota?: any }>;
-    getQuota: () => Promise<{ success: boolean; quota?: any }>;
+    ) => Promise<{ success: boolean; user?: UserProfile; quota?: AuthQuota; error?: string }>;
+    getUser: () => Promise<{ success: boolean; user?: UserProfile; quota?: AuthQuota }>;
+    getQuota: () => Promise<{ success: boolean; quota?: AuthQuota }>;
     logout: () => Promise<{ success: boolean }>;
     refreshToken: () => Promise<{ success: boolean; accessToken?: string }>;
     getAccessToken: () => Promise<string | null>;
@@ -1582,47 +1592,6 @@ interface IElectronAPI {
   };
   networkStatus: {
     send: (status: 'online' | 'offline') => void;
-  };
-  auth: {
-    login: (loginUrl?: string) => Promise<{ success: boolean; error?: string }>;
-    exchange: (code: string) => Promise<{
-      success: boolean;
-      user?: import('../store/slices/authSlice').UserProfile;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-      error?: string;
-    }>;
-    getUser: () => Promise<{
-      success: boolean;
-      user?: import('../store/slices/authSlice').UserProfile;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-    }>;
-    getQuota: () => Promise<{
-      success: boolean;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-    }>;
-    logout: () => Promise<{ success: boolean }>;
-    refreshToken: () => Promise<{ success: boolean; accessToken?: string }>;
-    getAccessToken: () => Promise<string | null>;
-    getPendingCallback: () => Promise<string | null>;
-    onCallback: (callback: (data: { code: string }) => void) => () => void;
   };
   qwen?: Record<string, never>;
   feishu: {

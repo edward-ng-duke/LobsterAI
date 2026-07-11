@@ -1,3 +1,5 @@
+import { IpcGaInventory } from './ipc-ga-inventory.js';
+
 export const BridgeTransport = {
   Rest: 'rest',
   Stream: 'stream',
@@ -20,12 +22,13 @@ export interface BridgeRegistryEntry {
   readonly transport: BridgeTransport;
   readonly disposition: BridgeDisposition;
   readonly target?: string;
+  readonly targets: readonly string[];
   readonly optional: boolean;
   readonly signature: string;
   readonly sourceRef: string;
 }
 
-export const BridgeRegistry = [
+const BridgeRegistryRows = [
   { propertyPath: "platform", transport: BridgeTransport.Rest, disposition: BridgeDisposition.Ga, optional: false, signature: "string", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
   { propertyPath: "arch", transport: BridgeTransport.Rest, disposition: BridgeDisposition.Ga, optional: false, signature: "string", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
   { propertyPath: "store.get", transport: BridgeTransport.Rest, disposition: BridgeDisposition.Ga, optional: false, signature: "(key: string) => Promise<any>", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
@@ -347,4 +350,38 @@ export const BridgeRegistry = [
   { propertyPath: "xaiOAuth.logout", transport: BridgeTransport.Rest, disposition: BridgeDisposition.Ga, optional: false, signature: "() => Promise<void>", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
   { propertyPath: "xaiOAuth.status", transport: BridgeTransport.Rest, disposition: BridgeDisposition.Ga, optional: false, signature: "() => Promise<{\n      loggedIn: boolean;\n      email?: string;\n      displayName?: string;\n      expiresAt?: number;\n    }>", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
   { propertyPath: "xaiOAuth.onDeviceCode", transport: BridgeTransport.Stream, disposition: BridgeDisposition.Ga, optional: false, signature: "(\n      callback: (info: {\n        userCode: string;\n        verificationUri: string;\n        verificationUriComplete?: string;\n        expiresInMs: number;\n      }) => void,\n    ) => () => void", sourceRef: 'src/renderer/types/electron.d.ts:IElectronAPI' },
-] as const satisfies readonly BridgeRegistryEntry[];
+] as const satisfies readonly Omit<BridgeRegistryEntry, 'targets'>[];
+
+const inventoryByBridgePath = new Map<string, typeof IpcGaInventory>();
+for (const inventoryEntry of IpcGaInventory) {
+  for (const propertyPath of inventoryEntry.bridgePaths) {
+    const existing = inventoryByBridgePath.get(propertyPath) ?? [];
+    inventoryByBridgePath.set(propertyPath, [...existing, inventoryEntry]);
+  }
+}
+
+export const BridgeRegistry: readonly BridgeRegistryEntry[] = BridgeRegistryRows.map((entry) => {
+  const inventoryEntries = inventoryByBridgePath.get(entry.propertyPath) ?? [];
+  const routeTargets = inventoryEntries.flatMap((inventoryEntry) => inventoryEntry.routeTargets);
+  const channelTargets = inventoryEntries.flatMap((inventoryEntry) => inventoryEntry.channelTargets);
+  const targets = [...new Set([...routeTargets, ...channelTargets])];
+
+  if (targets.length === 0) {
+    return {
+      ...entry,
+      disposition:
+        entry.disposition === BridgeDisposition.Ga
+          ? BridgeDisposition.Deferred
+          : entry.disposition,
+      targets,
+    };
+  }
+
+  return {
+    ...entry,
+    transport: routeTargets.length > 0 ? BridgeTransport.Rest : BridgeTransport.Stream,
+    disposition: BridgeDisposition.Ga,
+    target: targets[0],
+    targets,
+  };
+});
