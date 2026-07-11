@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,11 +7,20 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const manifest = JSON.parse(
   readFileSync(path.join(repositoryRoot, 'scripts/saas-stage-gates.json'), 'utf8'),
 );
+const runnerPath = fileURLToPath(import.meta.url);
+const runnerSha256 = createHash('sha256').update(readFileSync(runnerPath)).digest('hex');
 const gateName = process.argv[2];
 const gate = manifest.gates?.[gateName];
 
 if (!gateName || !gate) {
   console.error(JSON.stringify({ status: 'ERROR', gate: gateName ?? null, reason: 'unknown gate' }));
+  process.exit(1);
+}
+
+if (runnerSha256 !== manifest.runnerSha256) {
+  console.error(
+    JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'stage runner integrity mismatch' }),
+  );
   process.exit(1);
 }
 
@@ -44,9 +54,15 @@ const report = {
   activationTask: gate.activationTask,
   reason: gate.reason,
   fixturesChecked: gate.fixtures,
+  invocationId: randomUUID(),
+  generatedAt: new Date().toISOString(),
+  runnerSha256,
 };
 const reportDirectory = path.join(repositoryRoot, '.reports/saas-gates');
 mkdirSync(reportDirectory, { recursive: true });
-writeFileSync(path.join(reportDirectory, `${gateName.replaceAll(':', '-')}.json`), `${JSON.stringify(report, null, 2)}\n`);
+const reportPath = path.join(reportDirectory, `${gateName.replaceAll(':', '-')}.json`);
+const temporaryReportPath = `${reportPath}.${report.invocationId}.tmp`;
+writeFileSync(temporaryReportPath, `${JSON.stringify(report, null, 2)}\n`);
+renameSync(temporaryReportPath, reportPath);
 console.log(JSON.stringify(report));
 process.exit(exitCode);

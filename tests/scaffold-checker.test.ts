@@ -23,10 +23,12 @@ const createRepositoryCopy = (): string => {
     'package-lock.json',
     'package.json',
     'prisma',
+    'scripts/check-saas-build-artifacts.mjs',
     'scripts/check-saas-scaffold.mjs',
     'scripts/expect-saas-stage-gate.mjs',
     'scripts/run-saas-stage-gate.mjs',
     'scripts/saas-stage-gates.json',
+    'scripts/saas-workspace-registry.json',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
   ]) {

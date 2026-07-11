@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +26,7 @@ const deferredGates = [
   'poc:v1:check',
 ];
 const requiredRootScripts = {
-  'build:saas': 'npm run build --workspaces',
+  'build:saas': 'npm run build --workspaces && node scripts/check-saas-build-artifacts.mjs',
   'contracts:check': 'node scripts/run-saas-stage-gate.mjs contracts:check',
   'docker:build:check': 'node scripts/run-saas-stage-gate.mjs docker:build:check',
   'helm:lint': 'node scripts/run-saas-stage-gate.mjs helm:lint',
@@ -37,7 +38,7 @@ const requiredRootScripts = {
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':
-    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts',
+    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts',
   typecheck: 'tsc -b tsconfig.workspace.json --pretty false',
 };
 const requiredScaffoldFiles = [
@@ -65,8 +66,10 @@ const requiredScaffoldFiles = [
   'prisma/schema.prisma',
   'prisma/seed/README.md',
   'scripts/expect-saas-stage-gate.mjs',
+  'scripts/check-saas-build-artifacts.mjs',
   'scripts/run-saas-stage-gate.mjs',
   'scripts/saas-stage-gates.json',
+  'scripts/saas-workspace-registry.json',
 ];
 
 const normalizeRelativePath = (value) => value.replaceAll(path.sep, '/').replace(/^\.\//, '');
@@ -198,7 +201,7 @@ const isNoOpCommand = (repositoryRoot, command, rootScripts, seen = new Set()) =
   return false;
 };
 
-const validateDirectories = (repositoryRoot, errors) => {
+const validateDirectories = (repositoryRoot, discoveredWorkspaces, errors) => {
   for (const workspace of expectedWorkspaces) {
     for (const requiredFile of ['README.md', 'package.json', 'src/index.ts', 'tsconfig.json']) {
       const relativePath = `${workspace}/${requiredFile}`;
@@ -215,9 +218,38 @@ const validateDirectories = (repositoryRoot, errors) => {
       errors.push(taggedError('SCAF-1', `empty fixture ${relativePath}`));
     }
   }
+  const registry = readJson(
+    repositoryRoot,
+    'scripts/saas-workspace-registry.json',
+    errors,
+    'SCAF-1',
+  );
+  const registeredWorkspaces = new Set(Object.keys(registry?.workspaces ?? {}));
+  for (const workspace of discoveredWorkspaces) {
+    if (!registeredWorkspaces.has(workspace)) {
+      errors.push(
+        taggedError(
+          'SCAF-1',
+          `unapproved physical deployable ${workspace}; update the registry and authoritative plan/RFC`,
+        ),
+      );
+    }
+  }
+  for (const workspace of registeredWorkspaces) {
+    if (!discoveredWorkspaces.includes(workspace)) {
+      errors.push(taggedError('SCAF-1', `registered workspace is missing: ${workspace}`));
+    }
+  }
+  return registry;
 };
 
-const validateCommandsAndCi = (repositoryRoot, rootPackage, discoveredWorkspaces, errors) => {
+const validateCommandsAndCi = (
+  repositoryRoot,
+  rootPackage,
+  discoveredWorkspaces,
+  workspaceRegistry,
+  errors,
+) => {
   for (const [name, expectedCommand] of Object.entries(requiredRootScripts)) {
     const command = rootPackage.scripts?.[name];
     if (command !== expectedCommand) {
@@ -229,10 +261,32 @@ const validateCommandsAndCi = (repositoryRoot, rootPackage, discoveredWorkspaces
   }
   for (const workspace of discoveredWorkspaces) {
     const manifest = readJson(repositoryRoot, `${workspace}/package.json`, errors, 'SCAF-2');
+    const registered = workspaceRegistry?.workspaces?.[workspace];
+    if (!registered) {
+      errors.push(
+        taggedError(
+          'SCAF-2',
+          `${workspace} must use its registered build command, typecheck command, and artifacts`,
+        ),
+      );
+      continue;
+    }
+    if (
+      typeof registered.planReference !== 'string' ||
+      registered.planReference.length === 0 ||
+      !Array.isArray(registered.artifacts) ||
+      registered.artifacts.length === 0
+    ) {
+      errors.push(taggedError('SCAF-2', `${workspace} has an incomplete workspace registry entry`));
+    }
     for (const scriptName of ['build', 'typecheck']) {
-      const command = manifest?.scripts?.[scriptName];
-      if (isNoOpCommand(repositoryRoot, command, manifest?.scripts ?? {})) {
-        errors.push(taggedError('SCAF-2', `${workspace} must define a non-no-op ${scriptName} script`));
+      if (manifest?.scripts?.[scriptName] !== registered[scriptName]) {
+        errors.push(
+          taggedError(
+            'SCAF-2',
+            `${workspace} must use its registered ${scriptName} command: ${registered[scriptName]} (no-op wrappers are forbidden)`,
+          ),
+        );
       }
     }
   }
@@ -244,6 +298,13 @@ const validateCommandsAndCi = (repositoryRoot, rootPackage, discoveredWorkspaces
   );
   if (stageManifest?.currentStage !== 'P00' || stageManifest?.statuses?.NOT_APPLICABLE !== 78) {
     errors.push(taggedError('SCAF-2', 'stage gate manifest must freeze P00 NOT_APPLICABLE exit 78'));
+  }
+  const runnerPath = path.join(repositoryRoot, 'scripts/run-saas-stage-gate.mjs');
+  if (existsSync(runnerPath)) {
+    const runnerSha256 = createHash('sha256').update(readFileSync(runnerPath)).digest('hex');
+    if (stageManifest?.runnerSha256 !== runnerSha256) {
+      errors.push(taggedError('SCAF-2', 'stage runner integrity does not match its frozen SHA-256'));
+    }
   }
   for (const gateName of deferredGates) {
     const gate = stageManifest?.gates?.[gateName];
@@ -477,8 +538,14 @@ export const collectScaffoldErrors = (repositoryRoot = defaultRepositoryRoot) =>
   const errors = [];
   const rootPackage = readJson(repositoryRoot, 'package.json', errors, 'SCAF-3') ?? {};
   const discoveredWorkspaces = discoverWorkspaces(repositoryRoot);
-  validateDirectories(repositoryRoot, errors);
-  validateCommandsAndCi(repositoryRoot, rootPackage, discoveredWorkspaces, errors);
+  const workspaceRegistry = validateDirectories(repositoryRoot, discoveredWorkspaces, errors);
+  validateCommandsAndCi(
+    repositoryRoot,
+    rootPackage,
+    discoveredWorkspaces,
+    workspaceRegistry,
+    errors,
+  );
   const { graph, manifests } = validateWorkspaceDependencies(
     repositoryRoot,
     rootPackage,
