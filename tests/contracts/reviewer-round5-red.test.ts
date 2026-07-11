@@ -64,9 +64,14 @@ describe('Reviewer Round 5 semantic policy samples', () => {
     'get_api_v1_agents',
     'get_api_v1_plugins',
     'get_api_v1_workspaces',
-    'get_api_v1_scheduled_tasks_runs',
   ])('uses collection empty-list semantics for %s', (operationId) => {
     expect([...route(operationId).errors].sort()).toEqual([...tenantRead].sort());
+  });
+
+  test('keeps query validation but not item existence on a filtered collection', () => {
+    expect([...route('get_api_v1_scheduled_tasks_runs').errors].sort()).toEqual(
+      [...tenantRead, 'VALIDATION_FAILED'].sort(),
+    );
   });
 
   test.each([

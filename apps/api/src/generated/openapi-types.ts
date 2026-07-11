@@ -3476,15 +3476,6 @@ export interface operations {
                     "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -3496,15 +3487,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3574,15 +3556,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3860,15 +3833,6 @@ export interface operations {
                     "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -3880,15 +3844,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3934,15 +3889,6 @@ export interface operations {
                     "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -3954,15 +3900,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4275,15 +4212,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -4320,15 +4248,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillingAccountResponse"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description UNAUTHENTICATED */
@@ -4532,15 +4451,6 @@ export interface operations {
                     "application/json": components["schemas"]["BillingPlanResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -4552,15 +4462,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4606,15 +4507,6 @@ export interface operations {
                     "application/json": components["schemas"]["BillingUsageResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -4626,15 +4518,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4680,15 +4563,6 @@ export interface operations {
                     "application/json": components["schemas"]["AppInfoResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -4700,15 +4574,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4754,15 +4619,6 @@ export interface operations {
                     "application/json": components["schemas"]["EnterpriseConfigResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -4774,15 +4630,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4828,15 +4675,6 @@ export interface operations {
                     "application/json": components["schemas"]["BootstrapFileResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -4848,15 +4686,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4933,15 +4762,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -4980,15 +4800,6 @@ export interface operations {
                     "application/json": components["schemas"]["CoworkConfigSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -5000,15 +4811,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5085,15 +4887,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -5132,15 +4925,6 @@ export interface operations {
                     "application/json": components["schemas"]["DreamingDiaryResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -5152,15 +4936,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5206,15 +4981,6 @@ export interface operations {
                     "application/json": components["schemas"]["DreamingStatusResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -5226,15 +4992,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5280,15 +5037,6 @@ export interface operations {
                     "application/json": components["schemas"]["MemoryEntryListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -5300,15 +5048,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5378,15 +5117,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5588,15 +5318,6 @@ export interface operations {
                     "application/json": components["schemas"]["MemoryStatsResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -5608,15 +5329,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5692,15 +5404,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -5763,15 +5466,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6316,15 +6010,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -6363,15 +6048,6 @@ export interface operations {
                     "application/json": components["schemas"]["KitListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -6383,15 +6059,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6437,15 +6104,6 @@ export interface operations {
                     "application/json": components["schemas"]["KitListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -6457,15 +6115,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6743,15 +6392,6 @@ export interface operations {
                     "application/json": components["schemas"]["McpServerListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -6763,15 +6403,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6817,15 +6448,6 @@ export interface operations {
                     "application/json": components["schemas"]["McpServerListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -6837,15 +6459,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6915,15 +6528,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7357,15 +6961,6 @@ export interface operations {
                     "application/json": components["schemas"]["ModelConfigResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -7377,15 +6972,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7462,15 +7048,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -7533,15 +7110,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7859,15 +7427,6 @@ export interface operations {
                     "application/json": components["schemas"]["ModelListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -7879,15 +7438,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8009,15 +7559,6 @@ export interface operations {
                     "application/json": components["schemas"]["PluginListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -8029,15 +7570,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8506,15 +8038,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -8577,15 +8100,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8662,15 +8176,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -8740,15 +8245,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -8787,15 +8283,6 @@ export interface operations {
                     "application/json": components["schemas"]["PluginUpdatesResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -8807,15 +8294,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8861,15 +8339,6 @@ export interface operations {
                     "application/json": components["schemas"]["PricingCatalogResponse"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -8881,15 +8350,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8959,15 +8419,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9120,15 +8571,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9274,15 +8716,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9321,15 +8754,6 @@ export interface operations {
                     "application/json": components["schemas"]["RuntimeMigrationResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -9341,15 +8765,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9426,15 +8841,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9497,15 +8903,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9582,15 +8979,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9660,15 +9048,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9707,15 +9086,6 @@ export interface operations {
                     "application/json": components["schemas"]["RuntimeSessionPolicySchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -9727,15 +9097,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9812,15 +9173,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -9859,15 +9211,6 @@ export interface operations {
                     "application/json": components["schemas"]["RuntimeStatusResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -9879,15 +9222,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9931,15 +9265,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScheduledTaskListResponseSchema"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description UNAUTHENTICATED */
@@ -10622,15 +9947,6 @@ export interface operations {
                     "application/json": components["schemas"]["TaskChannelListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -10642,15 +9958,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10798,15 +10105,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12737,15 +12035,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12891,15 +12180,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12962,15 +12242,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13071,15 +12342,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -13118,15 +12380,6 @@ export interface operations {
                     "application/json": components["schemas"]["SkillListResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -13138,15 +12391,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13775,15 +13019,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -13822,15 +13057,6 @@ export interface operations {
                     "application/json": components["schemas"]["SkillMarketplaceResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -13842,15 +13068,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13896,15 +13113,6 @@ export interface operations {
                     "application/json": components["schemas"]["SkillRoutingPromptResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -13916,15 +13124,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13994,15 +13193,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14296,15 +13486,6 @@ export interface operations {
                     "application/json": components["schemas"]["WorkspaceListResponse"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -14316,15 +13497,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14394,15 +13566,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15137,15 +14300,6 @@ export interface operations {
                     "application/json": components["schemas"]["WorkspaceRecentResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -15157,15 +14311,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15271,15 +14416,6 @@ export interface operations {
                     "application/json": components["schemas"]["LogoutResponse"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -15327,15 +14463,6 @@ export interface operations {
                     "application/json": components["schemas"]["AuthMeResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -15347,15 +14474,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15401,15 +14519,6 @@ export interface operations {
                     "application/json": components["schemas"]["AuthProfileSummaryResponseSchema"];
                 };
             };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description UNAUTHENTICATED */
             401: {
                 headers: {
@@ -15421,15 +14530,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15473,15 +14573,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description UNAUTHENTICATED */

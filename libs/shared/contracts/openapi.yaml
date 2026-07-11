@@ -4080,12 +4080,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -4098,12 +4092,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4120,13 +4108,11 @@ paths:
         - accessToken: []
       tags:
         - agents
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
+      x-lobster-error-codes: &a1
         - RATE_LIMITED
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4166,12 +4152,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4188,13 +4168,12 @@ paths:
         - accessToken: []
       tags:
         - agents
-      x-lobster-error-codes:
+      x-lobster-error-codes: &a2
         - VALIDATION_FAILED
         - RATE_LIMITED
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4211,12 +4190,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -4229,12 +4202,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4251,13 +4218,7 @@ paths:
         - accessToken: []
       tags:
         - agents
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4274,12 +4235,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -4292,12 +4247,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4314,13 +4263,7 @@ paths:
         - accessToken: []
       tags:
         - agents
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4792,12 +4735,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4814,13 +4751,7 @@ paths:
         - accessToken: []
       tags:
         - asr
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4837,12 +4768,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/BillingAccountResponse"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -4871,12 +4796,7 @@ paths:
         - accessToken: []
       tags:
         - billing
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5022,12 +4942,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/BillingPlanResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5040,12 +4954,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5062,13 +4970,7 @@ paths:
         - accessToken: []
       tags:
         - billing
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5084,12 +4986,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/BillingUsageResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5102,12 +4998,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5124,13 +5014,7 @@ paths:
         - accessToken: []
       tags:
         - billing
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5146,12 +5030,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppInfoResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5164,12 +5042,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5186,13 +5058,7 @@ paths:
         - accessToken: []
       tags:
         - config
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5209,12 +5075,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnterpriseConfigResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5227,12 +5087,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5249,13 +5103,7 @@ paths:
         - accessToken: []
       tags:
         - config
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5272,12 +5120,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/BootstrapFileResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5290,12 +5132,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5312,13 +5148,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5358,12 +5188,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5380,13 +5204,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5403,12 +5221,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CoworkConfigSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5421,12 +5233,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5443,13 +5249,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5489,12 +5289,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5511,13 +5305,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5534,12 +5322,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/DreamingDiaryResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5552,12 +5334,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5574,13 +5350,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5597,12 +5367,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/DreamingStatusResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5615,12 +5379,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5637,13 +5395,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5660,12 +5412,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/MemoryEntryListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5678,12 +5424,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5700,13 +5440,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5746,12 +5480,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5768,13 +5496,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5934,12 +5656,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/MemoryStatsResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -5952,12 +5668,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -5974,13 +5684,7 @@ paths:
         - accessToken: []
       tags:
         - cowork
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6029,12 +5733,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -6051,13 +5749,7 @@ paths:
         - accessToken: []
       tags:
         - html-shares
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6098,12 +5790,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -6120,13 +5806,7 @@ paths:
         - accessToken: []
       tags:
         - html-shares
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6532,12 +6212,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -6554,13 +6228,7 @@ paths:
         - accessToken: []
       tags:
         - kits
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6577,12 +6245,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/KitListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -6595,12 +6257,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -6617,13 +6273,7 @@ paths:
         - accessToken: []
       tags:
         - kits
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6640,12 +6290,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/KitListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -6658,12 +6302,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -6680,13 +6318,7 @@ paths:
         - accessToken: []
       tags:
         - kits
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -6983,12 +6615,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpServerListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -7001,12 +6627,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7023,13 +6643,7 @@ paths:
         - accessToken: []
       tags:
         - mcp
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7046,12 +6660,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpServerListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -7064,12 +6672,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7086,13 +6688,7 @@ paths:
         - accessToken: []
       tags:
         - mcp
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7132,12 +6728,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7154,13 +6744,7 @@ paths:
         - accessToken: []
       tags:
         - mcp
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7534,12 +7118,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ModelConfigResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -7552,12 +7130,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7574,13 +7146,7 @@ paths:
         - accessToken: []
       tags:
         - model
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7620,12 +7186,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7642,13 +7202,7 @@ paths:
         - accessToken: []
       tags:
         - model
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7689,12 +7243,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -7711,13 +7259,7 @@ paths:
         - accessToken: []
       tags:
         - model
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7975,12 +7517,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ModelListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -7993,12 +7529,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8015,13 +7545,7 @@ paths:
         - accessToken: []
       tags:
         - models
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8107,12 +7631,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/PluginListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -8125,12 +7643,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8147,13 +7659,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8194,12 +7700,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8216,13 +7716,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8263,12 +7757,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8285,13 +7773,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8332,12 +7814,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8354,13 +7830,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8401,12 +7871,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8423,13 +7887,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8446,12 +7904,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/PluginUpdatesResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -8464,12 +7916,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8486,13 +7932,7 @@ paths:
         - accessToken: []
       tags:
         - plugins
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8871,12 +8311,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/PricingCatalogResponse"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -8889,12 +8323,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8911,13 +8339,7 @@ paths:
         - accessToken: []
       tags:
         - pricing
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8958,12 +8380,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -8980,13 +8396,7 @@ paths:
         - accessToken: []
       tags:
         - privacy
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9094,12 +8504,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9116,13 +8520,7 @@ paths:
         - accessToken: []
       tags:
         - privacy
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9230,12 +8628,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9252,13 +8644,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9275,12 +8661,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/RuntimeMigrationResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -9293,12 +8673,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9315,13 +8689,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9362,12 +8730,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9384,13 +8746,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9431,12 +8787,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9453,13 +8803,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9501,12 +8845,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9523,13 +8861,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9570,12 +8902,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9592,13 +8918,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9615,12 +8935,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/RuntimeSessionPolicySchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -9633,12 +8947,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9655,13 +8963,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9701,12 +9003,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9723,13 +9019,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9746,12 +9036,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/RuntimeStatusResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -9764,12 +9048,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9786,13 +9064,7 @@ paths:
         - accessToken: []
       tags:
         - runtime
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9809,12 +9081,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScheduledTaskListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -9843,12 +9109,7 @@ paths:
         - accessToken: []
       tags:
         - scheduled-tasks
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9927,12 +9188,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/TaskChannelListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -9945,12 +9200,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9967,13 +9216,7 @@ paths:
         - accessToken: []
       tags:
         - scheduled-tasks
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10115,12 +9358,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -10137,13 +9374,7 @@ paths:
         - accessToken: []
       tags:
         - scheduled-tasks
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10821,12 +10052,7 @@ paths:
         - accessToken: []
       tags:
         - sessions
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10936,12 +10162,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -10958,13 +10178,7 @@ paths:
         - accessToken: []
       tags:
         - sessions
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12537,12 +11751,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12559,13 +11767,7 @@ paths:
         - accessToken: []
       tags:
         - share-deployments
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12606,12 +11808,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12628,13 +11824,7 @@ paths:
         - accessToken: []
       tags:
         - share-deployments
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12703,12 +11893,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12725,13 +11909,7 @@ paths:
         - accessToken: []
       tags:
         - share-deployments
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12817,12 +11995,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SkillListResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -12835,12 +12007,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12857,13 +12023,7 @@ paths:
         - accessToken: []
       tags:
         - skills
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12904,12 +12064,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12926,13 +12080,7 @@ paths:
         - accessToken: []
       tags:
         - skills
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -12949,12 +12097,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SkillMarketplaceResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -12967,12 +12109,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -12989,13 +12125,7 @@ paths:
         - accessToken: []
       tags:
         - skills
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -13012,12 +12142,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SkillRoutingPromptResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -13030,12 +12154,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -13052,13 +12170,7 @@ paths:
         - accessToken: []
       tags:
         - skills
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -13099,12 +12211,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -13121,13 +12227,7 @@ paths:
         - accessToken: []
       tags:
         - skills
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -13879,12 +12979,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/WorkspaceListResponse"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -13897,12 +12991,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -13919,13 +13007,7 @@ paths:
         - accessToken: []
       tags:
         - workspaces
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -13964,12 +13046,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -13986,13 +13062,7 @@ paths:
         - accessToken: []
       tags:
         - workspaces
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a2
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14008,12 +13078,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/WorkspaceRecentResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -14026,12 +13090,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -14048,13 +13106,7 @@ paths:
         - accessToken: []
       tags:
         - workspaces
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14801,12 +13853,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/LogoutResponse"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -14829,8 +13875,7 @@ paths:
         - refreshCookie: []
       tags:
         - auth
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
+      x-lobster-error-codes: &a3
         - RATE_LIMITED
         - INTERNAL_ERROR
         - UNAUTHENTICATED
@@ -14850,12 +13895,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthMeResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -14868,12 +13907,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -14890,13 +13923,7 @@ paths:
         - accessToken: []
       tags:
         - auth
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14913,12 +13940,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthProfileSummaryResponseSchema"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -14931,12 +13952,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -14953,13 +13968,7 @@ paths:
         - accessToken: []
       tags:
         - auth
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
+      x-lobster-error-codes: *a1
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14976,12 +13985,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/TokenResponse"
           description: Successful response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
         "401":
           content:
             application/json:
@@ -15004,11 +14007,7 @@ paths:
         - refreshCookie: []
       tags:
         - auth
-      x-lobster-error-codes:
-        - VALIDATION_FAILED
-        - RATE_LIMITED
-        - INTERNAL_ERROR
-        - UNAUTHENTICATED
+      x-lobster-error-codes: *a3
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
