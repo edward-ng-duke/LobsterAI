@@ -37,6 +37,7 @@ const inventory = json('prisma/rls/tenant-scoped-models.json');
 const context = read('libs/server/db/src/tenant-context.ts');
 const integrationRunner = read('scripts/db/run-integration.mjs');
 const workflow = read('.github/workflows/saas-scaffold.yml');
+const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
 
 const migrationRoot = path.join(root, 'prisma/migrations');
@@ -194,6 +195,9 @@ if (
 }
 if (!workflow.includes('db-integration:') || !workflow.includes('npm run test:db:integration')) {
   errors.push('workflow lacks an independent database integration job');
+}
+if (!rootVitestConfig.includes("'tests/integration/**'")) {
+  errors.push('default Vitest fast loop must exclude explicit database integration tests');
 }
 if (/test:db:integration[^\n]*(?:\|\|\s*true|continue-on-error)/.test(workflow)) {
   errors.push('database integration CI job may not skip or continue on error');

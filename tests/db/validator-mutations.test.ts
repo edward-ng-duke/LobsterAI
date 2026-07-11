@@ -21,6 +21,7 @@ const createCopy = (): string => {
     'scripts/db/validate-static.mjs',
     'scripts/saas-stage-gates.json',
     'tests/integration/db/postgres-image.json',
+    'vitest.config.ts',
   ]) {
     cpSync(path.join(repositoryRoot, relativePath), path.join(root, relativePath), {
       recursive: true,
