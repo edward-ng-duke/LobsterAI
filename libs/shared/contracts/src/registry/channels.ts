@@ -69,6 +69,7 @@ export const ChannelRegistry = [
   event('skillsChanged'),
   event('mcpChanged'),
   event('quotaChanged'),
+  event('authCallback'),
   event('pluginsInstallLog'),
   event('openclawEngineProgress'),
   event('taskStatus'),
@@ -99,4 +100,3 @@ export const ChannelRegistry = [
     sourceRefs: ['附录A:A.2.16'],
   })),
 ] as const satisfies readonly ChannelRegistryEntry[];
-

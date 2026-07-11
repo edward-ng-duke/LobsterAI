@@ -49,8 +49,8 @@ export const IpcGaInventory = [
   {"id":"A-165","legacyIpc":"agents:presets","direction":"R→M","kind":"route","targets":["get_api_v1_agents_presets"],"sourceRef":"附录A:165","support":"ga"},
   {"id":"A-166","legacyIpc":"agents:presetTemplates","direction":"R→M","kind":"route","targets":["get_api_v1_agents_preset_templates"],"sourceRef":"附录A:166","support":"ga"},
   {"id":"A-167","legacyIpc":"agents:addPreset","direction":"R→M","kind":"route","targets":["post_api_v1_agents_presets_presetId_install"],"sourceRef":"附录A:167","support":"ga"},
-  {"id":"A-175","legacyIpc":"artifact:watchFile","direction":"R→M","kind":"channel","targets":["subscribeEvent"],"sourceRef":"附录A:175","support":"ga"},
-  {"id":"A-176","legacyIpc":"artifact:unwatchFile","direction":"R→M","kind":"channel","targets":["unsubscribeEvent"],"sourceRef":"附录A:176","support":"ga"},
+  {"id":"A-175","legacyIpc":"artifact:watchFile","direction":"R→M","kind":"channel","targets":["clientControl"],"sourceRef":"附录A:175","support":"ga"},
+  {"id":"A-176","legacyIpc":"artifact:unwatchFile","direction":"R→M","kind":"channel","targets":["clientControl"],"sourceRef":"附录A:176","support":"ga"},
   {"id":"A-177","legacyIpc":"artifact:createPreviewSession","direction":"R→M","kind":"route","targets":["post_api_v1_artifacts_artifactId_preview"],"sourceRef":"附录A:177","support":"ga"},
   {"id":"A-178","legacyIpc":"artifact:createOfficePreviewSession","direction":"R→M","kind":"route","targets":["post_api_v1_artifacts_artifactId_preview"],"sourceRef":"附录A:178","support":"ga"},
   {"id":"A-179","legacyIpc":"artifact:destroyPreviewSession","direction":"R→M","kind":"route","targets":["delete_api_v1_artifacts_preview_sessions_previewSessionId"],"sourceRef":"附录A:179","support":"ga"},
@@ -78,7 +78,7 @@ export const IpcGaInventory = [
   {"id":"A-224","legacyIpc":"generate-session-title","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_title_generation","post_api_v1_sessions_id"],"sourceRef":"附录A:224","support":"ga"},
   {"id":"A-232","legacyIpc":"auth:login","direction":"R→M","kind":"route","targets":["post_auth_login","post_oauth_authorize"],"sourceRef":"附录A:232","support":"ga"},
   {"id":"A-233","legacyIpc":"auth:exchange","direction":"R→M","kind":"route","targets":["post_oauth_token","post_auth_callback"],"sourceRef":"附录A:233","support":"ga"},
-  {"id":"A-234","legacyIpc":"auth:callback","direction":"M→R","kind":"channel","targets":[],"sourceRef":"附录A:234","support":"ga"},
+  {"id":"A-234","legacyIpc":"auth:callback","direction":"M→R","kind":"channel","targets":["authCallback"],"sourceRef":"附录A:234","support":"ga"},
   {"id":"A-236","legacyIpc":"auth:getUser","direction":"R→M","kind":"route","targets":["get_auth_me"],"sourceRef":"附录A:236","support":"ga"},
   {"id":"A-237","legacyIpc":"auth:getProfileSummary","direction":"R→M","kind":"route","targets":["get_auth_profile_summary"],"sourceRef":"附录A:237","support":"ga"},
   {"id":"A-238","legacyIpc":"auth:getQuota","direction":"R→M","kind":"route","targets":["get_api_v1_billing_account"],"sourceRef":"附录A:238","support":"ga"},
@@ -185,6 +185,5 @@ export const IpcGaInventory = [
   {"id":"A-483","legacyIpc":"scheduledTask:statusUpdate","direction":"M→R","kind":"channel","targets":["taskStatus"],"sourceRef":"附录A:483","support":"ga"},
   {"id":"A-484","legacyIpc":"scheduledTask:runUpdate","direction":"M→R","kind":"channel","targets":["taskRun"],"sourceRef":"附录A:484","support":"ga"},
   {"id":"A-485","legacyIpc":"scheduledTask:refresh","direction":"M→R","kind":"channel","targets":["taskRefresh"],"sourceRef":"附录A:485","support":"ga"},
-  {"id":"A-514","legacyIpc":"app:getVersion / getSystemLocale / getKeyfromAttribution","direction":"应用信息","kind":"channel","targets":[],"sourceRef":"附录A:514","support":"ga"},
+  {"id":"A-514","legacyIpc":"app:getVersion / getSystemLocale / getKeyfromAttribution","direction":"R→M","kind":"route","targets":["get_api_v1_config_app_info"],"sourceRef":"附录A:514","support":"ga"},
 ] as const satisfies readonly IpcGaInventoryEntry[];
-

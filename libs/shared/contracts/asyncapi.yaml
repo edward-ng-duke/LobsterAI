@@ -1,0 +1,1664 @@
+# Generated file. Do not edit.
+asyncapi: 2.6.0
+channels:
+  /api/v1/asr/sessions/{asrSessionId}/stream:
+    publish:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/asrAudioChunk"
+      operationId: publish__api_v1_asr_sessions__asrSessionId__stream
+    subscribe:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/asrPartial"
+          - $ref: "#/components/messages/asrFinal"
+          - $ref: "#/components/messages/asrError"
+      operationId: subscribe__api_v1_asr_sessions__asrSessionId__stream
+  /api/v1/stream:
+    publish:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/clientControl"
+      operationId: publish__api_v1_stream
+    subscribe:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/message"
+          - $ref: "#/components/messages/messageUpdate"
+          - $ref: "#/components/messages/sessionStatus"
+          - $ref: "#/components/messages/contextUsage"
+          - $ref: "#/components/messages/goal"
+          - $ref: "#/components/messages/contextMaintenance"
+          - $ref: "#/components/messages/permission"
+          - $ref: "#/components/messages/permissionDismiss"
+          - $ref: "#/components/messages/complete"
+          - $ref: "#/components/messages/error"
+          - $ref: "#/components/messages/apiStreamChunk"
+          - $ref: "#/components/messages/apiStreamDone"
+          - $ref: "#/components/messages/apiStreamError"
+          - $ref: "#/components/messages/apiStreamAbort"
+          - $ref: "#/components/messages/sessionsChanged"
+          - $ref: "#/components/messages/mediaStatusPollUpdate"
+          - $ref: "#/components/messages/openSessionFromNotification"
+          - $ref: "#/components/messages/filesChanged"
+          - $ref: "#/components/messages/skillsChanged"
+          - $ref: "#/components/messages/mcpChanged"
+          - $ref: "#/components/messages/quotaChanged"
+          - $ref: "#/components/messages/authCallback"
+          - $ref: "#/components/messages/pluginsInstallLog"
+          - $ref: "#/components/messages/openclawEngineProgress"
+          - $ref: "#/components/messages/taskStatus"
+          - $ref: "#/components/messages/taskRun"
+          - $ref: "#/components/messages/taskRefresh"
+      operationId: subscribe__api_v1_stream
+components:
+  messages:
+    apiStreamAbort:
+      name: apiStreamAbort
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              aborted:
+                const: true
+                type: boolean
+              requestId:
+                minLength: 1
+                type: string
+            required:
+              - requestId
+              - aborted
+            title: apiStreamAbortData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: apiStreamAbort
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: apiStreamAbort
+    apiStreamChunk:
+      name: apiStreamChunk
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              chunk: {}
+              requestId:
+                minLength: 1
+                type: string
+            required:
+              - requestId
+              - chunk
+            title: apiStreamChunkData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: apiStreamChunk
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: apiStreamChunk
+    apiStreamDone:
+      name: apiStreamDone
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              done:
+                const: true
+                type: boolean
+              requestId:
+                minLength: 1
+                type: string
+            required:
+              - requestId
+              - done
+            title: apiStreamDoneData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: apiStreamDone
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: apiStreamDone
+    apiStreamError:
+      name: apiStreamError
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              error: {}
+              requestId:
+                minLength: 1
+                type: string
+            required:
+              - requestId
+              - error
+            title: apiStreamErrorData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: apiStreamError
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: apiStreamError
+    asrAudioChunk:
+      name: asrAudioChunk
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              audioBase64:
+                minLength: 1
+                type: string
+              sequence:
+                maximum: 9007199254740991
+                minimum: 0
+                type: integer
+            required:
+              - sequence
+              - audioBase64
+            title: asrAudioChunkData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: asrAudioChunk
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: asrAudioChunk
+    asrError:
+      name: asrError
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              code:
+                minLength: 1
+                type: string
+              message:
+                type: string
+            required:
+              - code
+              - message
+            title: asrErrorData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: asrError
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: asrError
+    asrFinal:
+      name: asrFinal
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              isFinal:
+                const: true
+                type: boolean
+              text:
+                type: string
+            required:
+              - text
+              - isFinal
+            title: asrFinalData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: asrFinal
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: asrFinal
+    asrPartial:
+      name: asrPartial
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              isFinal:
+                const: false
+                type: boolean
+              text:
+                type: string
+            required:
+              - text
+              - isFinal
+            title: asrPartialData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: asrPartial
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: asrPartial
+    authCallback:
+      name: authCallback
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: authCallbackData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: authCallback
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: authCallback
+    clientControl:
+      name: clientControl
+      payload:
+        oneOf:
+          - additionalProperties: false
+            properties:
+              ticket:
+                minLength: 1
+                type: string
+              type:
+                const: auth
+                type: string
+            required:
+              - type
+              - ticket
+            type: object
+          - additionalProperties: false
+            properties:
+              sessionId:
+                minLength: 1
+                type: string
+              sinceSeq:
+                minLength: 1
+                type: string
+              type:
+                const: subscribe
+                type: string
+            required:
+              - type
+              - sessionId
+            type: object
+          - additionalProperties: false
+            properties:
+              sessionId:
+                minLength: 1
+                type: string
+              type:
+                const: unsubscribe
+                type: string
+            required:
+              - type
+              - sessionId
+            type: object
+          - additionalProperties: false
+            properties:
+              channel:
+                const: files:changed
+                type: string
+              params:
+                additionalProperties: false
+                properties:
+                  path:
+                    minLength: 1
+                    type: string
+                  workspaceId:
+                    minLength: 1
+                    type: string
+                required:
+                  - workspaceId
+                type: object
+              sinceSeq:
+                minLength: 1
+                type: string
+              type:
+                const: subscribeEvent
+                type: string
+            required:
+              - type
+              - channel
+              - params
+            type: object
+          - additionalProperties: false
+            properties:
+              channel:
+                const: files:changed
+                type: string
+              params:
+                additionalProperties: false
+                properties:
+                  path:
+                    minLength: 1
+                    type: string
+                  workspaceId:
+                    minLength: 1
+                    type: string
+                required:
+                  - workspaceId
+                type: object
+              type:
+                const: unsubscribeEvent
+                type: string
+            required:
+              - type
+              - channel
+              - params
+            type: object
+          - additionalProperties: false
+            properties:
+              ts:
+                maximum: 9007199254740991
+                minimum: -9007199254740991
+                type: integer
+              type:
+                const: ping
+                type: string
+            required:
+              - type
+              - ts
+            type: object
+          - additionalProperties: false
+            properties:
+              channel:
+                minLength: 1
+                type: string
+              seq:
+                minLength: 1
+                type: string
+              sessionId:
+                minLength: 1
+                type: string
+              type:
+                const: ack
+                type: string
+            required:
+              - type
+              - seq
+            type: object
+        title: clientControl
+      title: clientControl
+    complete:
+      name: complete
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              claudeSessionId:
+                minLength: 1
+                type: string
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+            title: completeData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: complete
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: complete
+    contextMaintenance:
+      name: contextMaintenance
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              active:
+                type: boolean
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - active
+            title: contextMaintenanceData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: contextMaintenance
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: contextMaintenance
+    contextUsage:
+      name: contextUsage
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              sessionId:
+                minLength: 1
+                type: string
+              usage:
+                additionalProperties: {}
+                propertyNames:
+                  type: string
+                type: object
+            required:
+              - sessionId
+              - usage
+            title: contextUsageData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: contextUsage
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: contextUsage
+    error:
+      name: error
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              error:
+                additionalProperties: false
+                properties:
+                  code:
+                    minLength: 1
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - error
+            title: errorData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: error
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: error
+    filesChanged:
+      name: filesChanged
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              kind:
+                enum:
+                  - created
+                  - changed
+                  - deleted
+                type: string
+              relPath:
+                minLength: 1
+                type: string
+              workspaceId:
+                minLength: 1
+                type: string
+            required:
+              - workspaceId
+              - relPath
+              - kind
+            title: filesChangedData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: filesChanged
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: filesChanged
+    goal:
+      name: goal
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              goal: {}
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - goal
+            title: goalData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: goal
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: goal
+    mcpChanged:
+      name: mcpChanged
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: mcpChangedData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: mcpChanged
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: mcpChanged
+    mediaStatusPollUpdate:
+      name: mediaStatusPollUpdate
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              resultKey:
+                minLength: 1
+                type: string
+              resultUrl:
+                format: uri
+                type: string
+              status:
+                enum:
+                  - pending
+                  - running
+                  - succeeded
+                  - failed
+                  - canceled
+                type: string
+              taskId:
+                minLength: 1
+                type: string
+            required:
+              - taskId
+              - status
+            title: mediaStatusPollUpdateData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: mediaStatusPollUpdate
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: mediaStatusPollUpdate
+    message:
+      name: message
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              beforeMessageId:
+                minLength: 1
+                type: string
+              message:
+                additionalProperties: {}
+                propertyNames:
+                  type: string
+                type: object
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - message
+            title: messageData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: message
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: message
+    messageUpdate:
+      name: messageUpdate
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              content:
+                type: string
+              messageId:
+                minLength: 1
+                type: string
+              metadata:
+                additionalProperties: {}
+                propertyNames:
+                  type: string
+                type: object
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - messageId
+              - content
+            title: messageUpdateData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: messageUpdate
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: messageUpdate
+    openSessionFromNotification:
+      name: openSessionFromNotification
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: openSessionFromNotificationData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: openSessionFromNotification
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: openSessionFromNotification
+    openclawEngineProgress:
+      name: openclawEngineProgress
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: openclawEngineProgressData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: openclawEngineProgress
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: openclawEngineProgress
+    permission:
+      name: permission
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              request:
+                anyOf:
+                  - additionalProperties: false
+                    properties:
+                      choices:
+                        items:
+                          minLength: 1
+                          type: string
+                        type: array
+                      question:
+                        minLength: 1
+                        type: string
+                      requestId:
+                        minLength: 1
+                        type: string
+                    required:
+                      - requestId
+                      - question
+                    type: object
+                  - additionalProperties: {}
+                    propertyNames:
+                      type: string
+                    type: object
+              sessionId:
+                minLength: 1
+                type: string
+            required:
+              - sessionId
+              - request
+            title: permissionData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: permission
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: permission
+    permissionDismiss:
+      name: permissionDismiss
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              requestId:
+                minLength: 1
+                type: string
+            required:
+              - requestId
+            title: permissionDismissData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: permissionDismiss
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: permissionDismiss
+    pluginsInstallLog:
+      name: pluginsInstallLog
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: pluginsInstallLogData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: pluginsInstallLog
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: pluginsInstallLog
+    quotaChanged:
+      name: quotaChanged
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: quotaChangedData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: quotaChanged
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: quotaChanged
+    sessionStatus:
+      name: sessionStatus
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: false
+            properties:
+              sessionId:
+                minLength: 1
+                type: string
+              status:
+                enum:
+                  - idle
+                  - running
+                  - completed
+                  - error
+                type: string
+            required:
+              - sessionId
+              - status
+            title: sessionStatusData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: sessionStatus
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: sessionStatus
+    sessionsChanged:
+      name: sessionsChanged
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: sessionsChangedData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: sessionsChanged
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: sessionsChanged
+    skillsChanged:
+      name: skillsChanged
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: skillsChangedData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: skillsChanged
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: skillsChanged
+    taskRefresh:
+      name: taskRefresh
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: taskRefreshData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: taskRefresh
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: taskRefresh
+    taskRun:
+      name: taskRun
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: taskRunData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: taskRun
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: taskRun
+    taskStatus:
+      name: taskStatus
+      payload:
+        additionalProperties: true
+        properties:
+          data:
+            additionalProperties: {}
+            properties: {}
+            title: taskStatusData
+            type: object
+          emittedAt:
+            format: date-time
+            type: string
+          idempotencyKey:
+            minLength: 1
+            type: string
+          requestId:
+            minLength: 1
+            type: string
+          seq:
+            minLength: 1
+            type: string
+          sessionId:
+            minLength: 1
+            type: string
+          tenantId:
+            minLength: 1
+            type: string
+          type:
+            const: taskStatus
+          version:
+            const: 1
+        required:
+          - type
+          - version
+          - tenantId
+          - emittedAt
+          - data
+        type: object
+      title: taskStatus
+info:
+  title: LobsterAI Streams
+  version: 1.0.0
+servers:
+  production:
+    protocol: wss
+    url: /
+x-lobster-contract-version: 1.0.0

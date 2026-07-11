@@ -1,0 +1,34 @@
+// Generated file. Do not edit.
+export type StreamEvent =
+  | { type: 'clientControl'; data: unknown }
+  | { type: 'message'; data: unknown }
+  | { type: 'messageUpdate'; data: unknown }
+  | { type: 'sessionStatus'; data: unknown }
+  | { type: 'contextUsage'; data: unknown }
+  | { type: 'goal'; data: unknown }
+  | { type: 'contextMaintenance'; data: unknown }
+  | { type: 'permission'; data: unknown }
+  | { type: 'permissionDismiss'; data: unknown }
+  | { type: 'complete'; data: unknown }
+  | { type: 'error'; data: unknown }
+  | { type: 'apiStreamChunk'; data: unknown }
+  | { type: 'apiStreamDone'; data: unknown }
+  | { type: 'apiStreamError'; data: unknown }
+  | { type: 'apiStreamAbort'; data: unknown }
+  | { type: 'sessionsChanged'; data: unknown }
+  | { type: 'mediaStatusPollUpdate'; data: unknown }
+  | { type: 'openSessionFromNotification'; data: unknown }
+  | { type: 'filesChanged'; data: unknown }
+  | { type: 'skillsChanged'; data: unknown }
+  | { type: 'mcpChanged'; data: unknown }
+  | { type: 'quotaChanged'; data: unknown }
+  | { type: 'authCallback'; data: unknown }
+  | { type: 'pluginsInstallLog'; data: unknown }
+  | { type: 'openclawEngineProgress'; data: unknown }
+  | { type: 'taskStatus'; data: unknown }
+  | { type: 'taskRun'; data: unknown }
+  | { type: 'taskRefresh'; data: unknown }
+  | { type: 'asrAudioChunk'; data: unknown }
+  | { type: 'asrPartial'; data: unknown }
+  | { type: 'asrFinal'; data: unknown }
+  | { type: 'asrError'; data: unknown };
