@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 import { repositoryRoot as defaultRepositoryRoot } from './common.mjs';
 import { validateEvidenceOnlyDescendant } from './evidence-provenance.mjs';
@@ -12,6 +13,14 @@ const argument = (name) => {
 const root = path.resolve(argument('--root') ?? defaultRepositoryRoot);
 const gitRoot = path.resolve(argument('--git-root') ?? root);
 const schemaPath = path.join(root, 'scripts/db/evidence-bundle.schema.json');
+
+if (!/^[a-f0-9]{40}$/.test(process.env.P02_EVIDENCE_BOOTSTRAPPED ?? '')) {
+  console.error(JSON.stringify({
+    status: 'FAILED',
+    errors: ['evidence validator must run through the trusted bootstrap'],
+  }));
+  process.exit(1);
+}
 
 if (process.argv.includes('--print-schema')) {
   process.stdout.write(readFileSync(schemaPath, 'utf8'));
@@ -90,6 +99,9 @@ validate(bundle, schema, '$');
 
 const sha256File = (target) => createHash('sha256').update(readFileSync(target)).digest('hex');
 const manifest = bundle.manifest;
+if (process.env.P02_EVIDENCE_BOOTSTRAPPED !== manifest.codeEvidenceSha) {
+  errors.push('trusted bootstrap source SHA does not match codeEvidenceSha');
+}
 const codeReports = ['contracts-preflight.json', 'preflight.json', 'integration.json', 'validation.json'];
 for (const file of codeReports) {
   const report = readJson(path.join(evidenceDirectory, file));
@@ -122,9 +134,67 @@ for (const [file, entry] of Object.entries(manifest.reports ?? {})) {
   }
 }
 
+const evidenceRelativeDirectory = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
+for (const file of codeReports) {
+  const relativePath = `${evidenceRelativeDirectory}/${file}`;
+  const history = spawnSync(
+    'git',
+    [
+      'log',
+      '--first-parent',
+      '--reverse',
+      '--format=%H',
+      `${manifest.codeEvidenceSha}..HEAD`,
+      '--',
+      relativePath,
+    ],
+    { cwd: gitRoot, encoding: 'utf8' },
+  );
+  const commits = history.stdout.trim().split(/\r?\n/).filter(Boolean);
+  if (history.status !== 0 || commits.length !== 1) {
+    errors.push(`${file}: raw report must be written exactly once after codeEvidenceSha`);
+    continue;
+  }
+  const anchored = spawnSync('git', ['show', `${commits[0]}:${relativePath}`], { cwd: gitRoot });
+  if (
+    anchored.status !== 0 ||
+    createHash('sha256').update(anchored.stdout).digest('hex') !==
+      sha256File(path.join(evidenceDirectory, file))
+  ) {
+    errors.push(`${file}: current report differs from its first evidence commit`);
+  }
+}
+
+const expectedValidationCommands = [
+  ['node', 'scripts/db/validate-static.mjs'],
+  ['node', 'scripts/db/preflight.mjs', '--contracts'],
+  ['npx', 'prisma', 'validate', '--schema', 'prisma/schema.prisma'],
+  ['npm', 'run', '--silent', 'prisma:generate'],
+  ['npm', 'run', '--silent', 'prisma:generate'],
+  ['npm', 'run', '--silent', 'test:db:core'],
+  ['npm', 'run', '--silent', 'test:db:preflight'],
+  ['npm', 'run', '--silent', 'test:db:integration'],
+];
+const validationCommands = bundle.validation.commands ?? [];
+const normalizedCommands = validationCommands.map((entry) => {
+  const [executable, ...arguments_] = entry.command ?? [];
+  const executableName = path.basename(executable ?? '').replace(/\.exe$/i, '');
+  return [executableName, ...arguments_];
+});
+if (JSON.stringify(normalizedCommands) !== JSON.stringify(expectedValidationCommands)) {
+  errors.push('validation.json: command sequence does not match the trusted eight-command gate');
+}
+const outputHashes = validationCommands.map((entry) => entry.outputSha256);
+if (
+  outputHashes.some((hash) => hash === '0'.repeat(64)) ||
+  new Set(outputHashes).size !== outputHashes.length
+) {
+  errors.push('validation.json: command output hashes must be nonzero and run-specific');
+}
+
 const allowedEvidencePath = (file) =>
   file.startsWith('docs/db/20260711_P02_Prisma与RLS脚手架证据/') ||
-  file === '改造计划/20260711_V2单租户Web闭环开发/任务/P02-PR2数据库脚手架/开发记录.md';
+  /^改造计划\/20260711_V2单租户Web闭环开发\/任务\/[^/]+\/(?:开发记录|审核意见|审核记录|测试记录|测试报告)\.md$/.test(file);
 for (const provenanceError of validateEvidenceOnlyDescendant({
   gitRoot,
   sourceSha: manifest.codeEvidenceSha,

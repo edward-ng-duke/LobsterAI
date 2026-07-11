@@ -41,6 +41,7 @@
         "libs/server/db/src/tenant-scope.ts",
         "scripts/db/validate.mjs",
         "scripts/db/validate-evidence.mjs",
+        "scripts/db/evidence-bootstrap.mjs",
         "scripts/db/evidence-provenance.mjs",
         "scripts/db/evidence-bundle.schema.json",
         "scripts/db/snapshot-evidence.mjs",

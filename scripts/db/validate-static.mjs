@@ -43,6 +43,7 @@ const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
 const evidenceValidator = read('scripts/db/validate-evidence.mjs');
+const evidenceBootstrap = read('scripts/db/evidence-bootstrap.mjs');
 const evidenceProvenance = read('scripts/db/evidence-provenance.mjs');
 const evidenceSchema = read('scripts/db/evidence-bundle.schema.json');
 const evidenceSnapshot = read('scripts/db/snapshot-evidence.mjs');
@@ -83,6 +84,20 @@ for (const required of ['additionalProperties', 'codeEvidenceSha', 'stageEvidenc
 }
 for (const required of ['unknown property', 'source SHA', 'runner SHA mismatch']) {
   if (!evidenceValidator.includes(required)) errors.push(`evidence validator lacks ${required}`);
+}
+for (const required of [
+  'P02 evidence bootstrap: trusted file mismatch',
+  'P02_EVIDENCE_BOOTSTRAPPED',
+  "['show', `${sourceSha}:${relativePath}`]",
+]) {
+  if (!evidenceBootstrap.includes(required)) errors.push(`evidence bootstrap lacks ${required}`);
+}
+for (const required of [
+  'node --import ./scripts/db/evidence-bootstrap.mjs scripts/db/validate-evidence.mjs',
+]) {
+  if (!packageJson.scripts?.['prisma:validate:active']?.includes(required)) {
+    errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
+  }
 }
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {
   if (!evidenceProvenance.includes(required)) errors.push(`evidence provenance lacks ${required}`);
