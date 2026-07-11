@@ -1,9 +1,14 @@
 import { spawnSync } from 'node:child_process';
+import { EventEmitter, once } from 'node:events';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import {
+  installRuntimeOrchestratorSignalHandlers,
+  startRuntimeOrchestratorShell,
+} from '../apps/runtime-orchestrator/src/index.js';
 import { validateDockerfile } from '../scripts/check-docker-build.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
@@ -84,9 +89,15 @@ describe('P03 production image policy', () => {
 
     const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
     expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
-    expect(checker).toContain('--tmpfs=/state');
-    expect(checker).toContain('--tmpfs=/workspace');
+    expect(checker).toContain('/state:rw,noexec,nosuid');
+    expect(checker).toContain('/workspace:rw,noexec,nosuid');
     expect(checker).toContain('waitForHealthy(containerId');
+    expect(checker).toContain("readOnlyRootFilesystem: true");
+    expect(checker).toContain("networkMode: 'none'");
+    expect(checker).toContain("capDrop: ['ALL']");
+    expect(checker).toContain('imageHistoryScan');
+    expect(checker).toContain('![0, 143].includes(state.ExitCode)');
+    expect(checker).toContain('completedWithinTimeout');
 
     const negative = spawnSync(process.execPath, [
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),
@@ -95,5 +106,32 @@ describe('P03 production image policy', () => {
       env: { ...process.env, OPENCLAW_GATEWAY_PORT: '9' },
     });
     expect(negative.status).not.toBe(0);
+  });
+
+  test('runtime orchestrator closes its real server on SIGTERM', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+
+    await closed;
+    expect(server.listening).toBe(false);
+  });
+
+  test('runtime orchestrator handles repeated termination signals idempotently', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+    signals.emit('SIGINT');
+
+    await closed;
+    expect(server.listening).toBe(false);
+    expect(signals.listenerCount('SIGTERM')).toBe(0);
+    expect(signals.listenerCount('SIGINT')).toBe(0);
   });
 });

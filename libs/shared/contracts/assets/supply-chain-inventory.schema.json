@@ -92,6 +92,9 @@
         "imageName",
         "digest",
         "sourceSha",
+        "buildEvidence",
+        "runtimeEvidence",
+        "imageHistoryScan",
         "sbom",
         "vulnerabilityScan",
         "criticalFindings"
@@ -103,9 +106,109 @@
         },
         "digest": { "$ref": "#/$defs/digest" },
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "buildEvidence": { "$ref": "#/$defs/buildEvidence" },
+        "runtimeEvidence": { "$ref": "#/$defs/runtimeEvidence" },
+        "imageHistoryScan": { "$ref": "#/$defs/imageHistoryScan" },
         "sbom": { "$ref": "#/$defs/sbom" },
         "vulnerabilityScan": { "$ref": "#/$defs/vulnerabilityScan" },
-        "criticalFindings": { "type": "integer", "minimum": 0 }
+        "criticalFindings": { "type": "integer", "minimum": 0 },
+        "pluginInstallations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/pluginInstallation" }
+        }
+      },
+      "allOf": [{
+        "if": { "properties": { "imageName": { "const": "openclaw-runtime" } } },
+        "then": {
+          "properties": { "pluginInstallations": {} },
+          "required": ["pluginInstallations"]
+        },
+        "else": { "not": { "required": ["pluginInstallations"] } }
+      }]
+    },
+    "pluginInstallation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "optional", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "optional": { "type": "boolean" },
+        "status": { "enum": ["installed", "skipped"] }
+      }
+    },
+    "buildEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dockerfile", "noCache", "pull", "platform"],
+      "properties": {
+        "dockerfile": { "type": "string", "pattern": "^docker/[^/]+/Dockerfile$" },
+        "noCache": { "const": true },
+        "pull": { "const": false },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] }
+      }
+    },
+    "runtimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "effectiveUser",
+        "platform",
+        "networkMode",
+        "readOnlyRootFilesystem",
+        "capDrop",
+        "noNewPrivileges",
+        "tmpfs",
+        "health",
+        "gracefulStop",
+        "logsSha256"
+      ],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "effectiveUser": { "type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$" },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] },
+        "networkMode": { "const": "none" },
+        "readOnlyRootFilesystem": { "const": true },
+        "capDrop": {
+          "type": "array",
+          "minItems": 1,
+          "contains": { "const": "ALL" }
+        },
+        "noNewPrivileges": { "const": true },
+        "tmpfs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "health": { "const": "healthy" },
+        "gatewayReady": { "type": "boolean" },
+        "gracefulStop": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "timeoutSeconds",
+            "durationMs",
+            "completedWithinTimeout",
+            "exitCode",
+            "oomKilled"
+          ],
+          "properties": {
+            "required": { "type": "boolean" },
+            "timeoutSeconds": { "type": "integer", "minimum": 1 },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "completedWithinTimeout": { "type": "boolean" },
+            "exitCode": { "enum": [0, 137, 143] },
+            "oomKilled": { "const": false }
+          }
+        },
+        "logsSha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "imageHistoryScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "secretLikeFindings", "sha256"],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "secretLikeFindings": { "const": 0 },
+        "sha256": { "$ref": "#/$defs/digest" }
       }
     },
     "vulnerabilityScan": {
@@ -131,16 +234,63 @@
           "type": "array",
           "items": {
             "type": "object",
-            "additionalProperties": true,
-            "required": ["id", "severity"],
+            "additionalProperties": false,
+            "required": ["id", "severity", "artifactId", "package", "version"],
             "properties": {
               "id": { "type": "string", "minLength": 1 },
               "severity": {
                 "enum": ["Unknown", "Negligible", "Low", "Medium", "High", "Critical"]
-              }
+              },
+              "artifactId": { "type": "string", "minLength": 1 },
+              "package": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 }
             }
           }
         }
+      }
+    },
+    "dockerBuildSignature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "enum": ["ACTIVE", "BLOCKED"] },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "dockerBuildReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "status",
+        "invocationId",
+        "generatedAt",
+        "sourceSha",
+        "dockerVersion",
+        "syftVersion",
+        "grypeVersion",
+        "productionNetwork",
+        "images",
+        "signature"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "status": { "const": "PASSED" },
+        "invocationId": { "type": "string", "format": "uuid" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "dockerVersion": { "type": "string", "minLength": 1 },
+        "syftVersion": { "type": "string", "minLength": 1 },
+        "grypeVersion": { "type": "string", "minLength": 1 },
+        "productionNetwork": { "const": "offline" },
+        "images": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/imageEvidence" }
+        },
+        "signature": { "$ref": "#/$defs/dockerBuildSignature" }
       }
     },
     "signaturePolicy": {

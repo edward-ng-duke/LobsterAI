@@ -11,7 +11,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateVulnerabilityReport } from './check-supply-chain.mjs';
+import { resolveProductSourceSha, validateVulnerabilityReport } from './check-supply-chain.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const productionImages = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'];
@@ -153,7 +153,109 @@ const waitForHealthy = (containerId, timeoutMs = 45_000) => {
   throw new Error(`container did not become healthy within ${timeoutMs}ms`);
 };
 
-const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers) => {
+const smokeImage = (imageName, tag, metadata) => {
+  const isOpenClaw = imageName === 'openclaw-runtime';
+  const gracefulStopRequired = ['worker', 'runtime-orchestrator', 'openclaw-runtime'].includes(imageName);
+  const stopTimeoutSeconds = isOpenClaw ? 15 : 10;
+  const tmpfs = isOpenClaw
+    ? ['/tmp:rw,noexec,nosuid,size=16m', '/state:rw,noexec,nosuid,size=256m', '/workspace:rw,noexec,nosuid,size=1g']
+    : ['/tmp:rw,noexec,nosuid,size=16m'];
+  const args = [
+    'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
+    '--security-opt=no-new-privileges', '--user=10001:10001',
+    ...tmpfs.map(mount => `--tmpfs=${mount}`),
+  ];
+  if (isOpenClaw) {
+    args.push('--env=OPENCLAW_GATEWAY_TOKEN=p03-offline-smoke-token', '--env=OPENCLAW_GATEWAY_PORT=18789');
+  }
+  args.push(tag);
+  const started = run('docker', args);
+  if (started.status !== 0) throw new Error(`${imageName}: offline production entrypoint failed: ${started.stderr}`);
+  const containerId = started.stdout.trim();
+  try {
+    waitForHealthy(containerId, isOpenClaw ? 90_000 : 45_000);
+    const logs = run('docker', ['logs', containerId]);
+    if (logs.status !== 0) throw new Error(`${imageName}: unable to capture healthy-container logs`);
+    const combinedLogs = `${logs.stdout}\n${logs.stderr}`;
+    if (isOpenClaw && !/\[gateway\] ready/.test(combinedLogs)) {
+      throw new Error(`${imageName}: healthy container logs do not contain gateway ready`);
+    }
+    const stopStartedAt = Date.now();
+    const stopped = run('docker', ['stop', `--time=${stopTimeoutSeconds}`, containerId]);
+    const stopDurationMs = Date.now() - stopStartedAt;
+    if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
+    const stateInspect = run('docker', ['inspect', '--format', '{{json .State}}', containerId]);
+    if (stateInspect.status !== 0) throw new Error(`${imageName}: stopped container state inspect failed`);
+    const state = JSON.parse(stateInspect.stdout);
+    const completedWithinTimeout = stopDurationMs <= (stopTimeoutSeconds + 2) * 1000;
+    if (state.Status !== 'exited' || state.OOMKilled !== false
+      || (gracefulStopRequired
+        && (!completedWithinTimeout || ![0, 143].includes(state.ExitCode)))) {
+      throw new Error(`${imageName}: unhealthy stop state ${stateInspect.stdout.trim()}`);
+    }
+    return {
+      status: 'PASSED',
+      effectiveUser: metadata.Config.User,
+      platform: `${metadata.Os}/${metadata.Architecture}`,
+      networkMode: 'none',
+      readOnlyRootFilesystem: true,
+      capDrop: ['ALL'],
+      noNewPrivileges: true,
+      tmpfs,
+      health: 'healthy',
+      gatewayReady: isOpenClaw ? true : undefined,
+      gracefulStop: {
+        required: gracefulStopRequired,
+        timeoutSeconds: stopTimeoutSeconds,
+        durationMs: stopDurationMs,
+        completedWithinTimeout,
+        exitCode: state.ExitCode,
+        oomKilled: state.OOMKilled,
+      },
+      logsSha256: `sha256:${createHash('sha256').update(combinedLogs).digest('hex')}`,
+    };
+  } finally {
+    run('docker', ['rm', '--force', containerId]);
+  }
+};
+
+const inspectPluginInstallations = (imageName, tag, declaredPlugins) => {
+  if (imageName !== 'openclaw-runtime') return undefined;
+  const ids = declaredPlugins.map(plugin => plugin.id);
+  const script = [
+    "const fs = require('node:fs');",
+    "const root = '/opt/openclaw/third-party-extensions';",
+    'const ids = JSON.parse(process.argv[1]);',
+    'process.stdout.write(JSON.stringify(ids.filter(id => fs.existsSync(`${root}/${id}/package.json`))));',
+  ].join(' ');
+  const inspected = run('docker', [
+    'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+    '--security-opt=no-new-privileges', '--user=10001:10001',
+    '--entrypoint=/usr/local/bin/node', tag, '-e', script, JSON.stringify(ids),
+  ]);
+  if (inspected.status !== 0) {
+    throw new Error(`${imageName}: unable to inspect final-image plugin installations: ${inspected.stderr}`);
+  }
+  let installedIds;
+  try {
+    installedIds = JSON.parse(inspected.stdout);
+  } catch {
+    throw new Error(`${imageName}: plugin installation inspection returned invalid JSON`);
+  }
+  const installedSet = new Set(installedIds);
+  const evidence = declaredPlugins.map(plugin => ({
+    id: plugin.id,
+    optional: Boolean(plugin.optional),
+    status: installedSet.has(plugin.id) ? 'installed' : 'skipped',
+  }));
+  const missingRequired = evidence.filter(plugin => !plugin.optional && plugin.status !== 'installed');
+  if (missingRequired.length > 0) {
+    throw new Error(`${imageName}: required plugins missing from final image: ${missingRequired.map(plugin => plugin.id).join(', ')}`);
+  }
+  return evidence;
+};
+
+const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers, declaredPlugins) => {
   const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
   const dockerfile = `docker/${imageName}/Dockerfile`;
   const build = run('docker', ['build', '--no-cache', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
@@ -168,43 +270,10 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
     throw new Error(`${imageName}: image must contain Linux amd64/arm64 content`);
   }
   const history = run('docker', ['history', '--no-trunc', '--format', '{{.CreatedBy}}', tag]);
+  if (history.status !== 0) throw new Error(`${imageName}: image history scan failed`);
   if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
-
-  if (imageName === 'openclaw-runtime') {
-    const started = run('docker', [
-      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
-      '--security-opt=no-new-privileges', '--user=10001:10001',
-      '--tmpfs=/tmp:rw,noexec,nosuid,size=16m', '--tmpfs=/state:rw,noexec,nosuid,size=256m',
-      '--tmpfs=/workspace:rw,noexec,nosuid,size=1g',
-      '--env=OPENCLAW_GATEWAY_TOKEN=p03-offline-smoke-token', '--env=OPENCLAW_GATEWAY_PORT=18789',
-      tag,
-    ]);
-    if (started.status !== 0) throw new Error(`${imageName}: production entrypoint failed: ${started.stderr}`);
-    const containerId = started.stdout.trim();
-    try {
-      waitForHealthy(containerId, 90_000);
-      const stopped = run('docker', ['stop', '--time=15', containerId]);
-      if (stopped.status !== 0) throw new Error(`${imageName}: graceful gateway stop failed`);
-    } finally {
-      run('docker', ['rm', '--force', containerId]);
-    }
-  } else {
-    const args = [
-      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
-      '--security-opt=no-new-privileges', '--user=10001:10001', '--tmpfs=/tmp:rw,noexec,nosuid,size=16m',
-      tag,
-    ];
-    const started = run('docker', args);
-    if (started.status !== 0) throw new Error(`${imageName}: offline start smoke failed: ${started.stderr}`);
-    const containerId = started.stdout.trim();
-    try {
-      waitForHealthy(containerId);
-      const stopped = run('docker', ['stop', '--time=10', containerId]);
-      if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
-    } finally {
-      run('docker', ['rm', '--force', containerId]);
-    }
-  }
+  const runtimeEvidence = smokeImage(imageName, tag, metadata);
+  const pluginInstallations = inspectPluginInstallations(imageName, tag, declaredPlugins);
 
   const imageDigest = metadata.Id;
   const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
@@ -227,6 +296,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   const findings = (scanDocument.matches ?? []).map(match => ({
     id: match.vulnerability?.id ?? '<unknown>',
     severity: match.vulnerability?.severity ?? 'Unknown',
+    artifactId: match.artifact?.id ?? '<unknown>',
     package: match.artifact?.name ?? '<unknown>',
     version: match.artifact?.version ?? '<unknown>',
   }));
@@ -236,25 +306,43 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   return {
     imageName,
     image: `${tag}@${imageDigest}`,
-    tag,
     digest: imageDigest,
     sourceSha,
-    sbom: { format: 'spdx-json', path: sbomPath, sha256: sbomSha256, imageDigest, sourceSha },
+    buildEvidence: {
+      dockerfile,
+      noCache: true,
+      pull: false,
+      platform: `${metadata.Os}/${metadata.Architecture}`,
+    },
+    runtimeEvidence,
+    imageHistoryScan: {
+      status: 'PASSED',
+      secretLikeFindings: 0,
+      sha256: `sha256:${createHash('sha256').update(history.stdout).digest('hex')}`,
+    },
+    sbom: {
+      format: 'spdx-json',
+      path: path.basename(sbomPath),
+      sha256: sbomSha256,
+      imageDigest,
+      sourceSha,
+    },
     vulnerabilityScan: {
       scanner: scannerPolicy.scanner,
       scannerVersion: scannerPolicy.version,
-      path: scanPath,
+      path: path.basename(scanPath),
       sha256: scanSha256,
       imageDigest,
       sourceSha,
       findings,
     },
     criticalFindings: findings.filter(finding => String(finding.severity).toLowerCase() === 'critical').length,
+    ...(pluginInstallations ? { pluginInstallations } : {}),
   };
 };
 
 const writeReport = (report) => {
-  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据');
+  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260712_PR3部署供应链证据');
   mkdirSync(reportDirectory, { recursive: true });
   const reportPath = path.join(reportDirectory, 'docker-build-check.json');
   const temporaryPath = `${reportPath}.${report.invocationId}.tmp`;
@@ -285,13 +373,12 @@ const main = () => {
     path.join(repositoryRoot, 'docs/supply-chain/skills-and-plugins.manifest.json'),
     'utf8',
   ));
-  const git = run('git', ['rev-parse', 'HEAD']);
-  if (git.status !== 0 || !/^[a-f0-9]{40}\s*$/.test(git.stdout)) throw new Error('unable to bind build to source SHA');
+  const sourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!/^[a-f0-9]{40}$/.test(sourceSha ?? '')) throw new Error('unable to bind build to product source SHA');
   const worktree = run('git', ['status', '--porcelain', '--untracked-files=all']);
   if (worktree.status !== 0 || worktree.stdout.trim()) {
     throw new Error('Docker evidence requires a clean checkout with no tracked or untracked changes');
   }
-  const sourceSha = git.stdout.trim();
   const invocationId = randomUUID();
   const { reportDirectory } = writeReport({
     schemaVersion: 1,
@@ -307,7 +394,16 @@ const main = () => {
   const images = [];
   try {
     for (const imageName of productionImages) {
-      images.push(buildAndSmoke(imageName, sourceSha, reportDirectory, scannerPolicy, inventoryManifest.waivers ?? []));
+      images.push(buildAndSmoke(
+        imageName,
+        sourceSha,
+        reportDirectory,
+        scannerPolicy,
+        inventoryManifest.waivers ?? [],
+        inventoryManifest.assets
+          .filter(asset => asset.kind === 'openclaw-plugin')
+          .map(asset => ({ id: asset.id.replace(/^openclaw-plugin:/, ''), optional: asset.optional })),
+      ));
     }
     const report = {
       schemaVersion: 1,

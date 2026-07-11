@@ -10,15 +10,51 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestRelativePath = 'docs/supply-chain/skills-and-plugins.manifest.json';
+const schemaRelativePath = 'libs/shared/contracts/assets/supply-chain-inventory.schema.json';
+const evidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
 const digestPattern = /^sha256:[a-f0-9]{64}$/;
 const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
 export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
+const allowedImageEvidenceFields = new Set([
+  'image', 'imageName', 'digest', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
+  'imageHistoryScan', 'sbom', 'vulnerabilityScan', 'criticalFindings', 'pluginInstallations',
+]);
 
 const sha256 = (content) => `sha256:${createHash('sha256').update(content).digest('hex')}`;
+
+const formatSchemaErrors = (label, validation) => (validation.errors ?? [])
+  .map(error => `${label}${error.instancePath || '/'}: ${error.message}`);
+
+const loadSchemaValidators = (root) => {
+  const schema = readJson(root, schemaRelativePath);
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  addFormats(ajv);
+  ajv.addSchema(schema);
+  return {
+    manifest: ajv.getSchema(schema.$id),
+    report: ajv.getSchema(`${schema.$id}#/$defs/dockerBuildReport`),
+  };
+};
+
+const gitOutput = (root, args) => {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : undefined;
+};
+
+export const resolveProductSourceSha = (root = repositoryRoot) => gitOutput(root, [
+  'log', '-1', '--format=%H', 'HEAD', '--', '.',
+  ':(exclude,glob)tests/**',
+  ':(exclude,glob)**/开发记录.md',
+  ':(exclude,glob)**/审核意见.md',
+  ':(exclude,glob)**/测试报告.md',
+]);
 
 const readJson = (root, relativePath) =>
   JSON.parse(readFileSync(path.join(root, relativePath), 'utf8'));
@@ -238,7 +274,270 @@ export const validateVulnerabilityReport = (report, waivers = [], now = new Date
   return errors;
 };
 
-export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) => {
+const readEvidenceDocument = (evidenceDirectory, declaration, label, errors) => {
+  const declaredPath = declaration?.path;
+  if (typeof declaredPath !== 'string' || path.isAbsolute(declaredPath)
+    || path.dirname(declaredPath) !== '.' || path.basename(declaredPath) !== declaredPath) {
+    errors.push(`${label}: evidence path must be a filename relative to the evidence directory`);
+    return undefined;
+  }
+  const absolutePath = path.join(evidenceDirectory, declaredPath);
+  try {
+    const stat = lstatSync(absolutePath);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      errors.push(`${label}: evidence must be a regular non-symlink file`);
+      return undefined;
+    }
+    const directoryRealPath = realpathSync(evidenceDirectory);
+    const fileRealPath = realpathSync(absolutePath);
+    if (path.dirname(fileRealPath) !== directoryRealPath) {
+      errors.push(`${label}: evidence file escapes the evidence directory`);
+      return undefined;
+    }
+    const content = readFileSync(fileRealPath);
+    if (sha256(content) !== declaration.sha256) {
+      errors.push(`${label}: evidence file SHA-256 mismatch`);
+      return undefined;
+    }
+    try {
+      const document = JSON.parse(content.toString('utf8'));
+      if (!document || typeof document !== 'object' || Array.isArray(document)) {
+        errors.push(`${label}: evidence JSON root must be an object`);
+        return undefined;
+      }
+      return document;
+    } catch {
+      errors.push(`${label}: evidence file is not valid JSON`);
+      return undefined;
+    }
+  } catch {
+    errors.push(`${label}: evidence file is missing or unreadable`);
+    return undefined;
+  }
+};
+
+const validateSpdxDocument = (document, evidence, errors) => {
+  const label = `${evidence.image}: SPDX`;
+  const expectedName = `lobsterai-p03-${evidence.imageName}`;
+  const packages = Array.isArray(document?.packages) ? document.packages : [];
+  const packageIds = packages.map(candidate => candidate?.SPDXID);
+  const packageIdsUnique = packageIds.every(id => typeof id === 'string' && id.length > 0)
+    && new Set(packageIds).size === packageIds.length;
+  const describes = Array.isArray(document?.relationships)
+    ? document.relationships.filter(relationship => relationship?.spdxElementId === 'SPDXRef-DOCUMENT'
+      && relationship?.relationshipType === 'DESCRIBES')
+    : [];
+  const rootPackages = describes.length === 1
+    ? packages.filter(candidate => candidate?.SPDXID === describes[0].relatedSpdxElement)
+    : [];
+  const rootPackage = rootPackages.length === 1 ? rootPackages[0] : undefined;
+  if (document?.spdxVersion !== 'SPDX-2.3' || document?.SPDXID !== 'SPDXRef-DOCUMENT'
+    || document?.name !== expectedName || !Array.isArray(document?.creationInfo?.creators)
+    || !document.creationInfo.creators.some(creator => /^Tool: syft-1\.44\./.test(creator))
+    || describes.length !== 1 || !packageIdsUnique || rootPackages.length !== 1
+    || !rootPackage || rootPackage.name !== expectedName
+    || rootPackage.versionInfo !== evidence.sourceSha.slice(0, 12)) {
+    errors.push(`${label}: subject/source structure does not match image evidence`);
+    return undefined;
+  }
+  const checksum = Array.isArray(rootPackage.checksums)
+    ? rootPackage.checksums.find(candidate => candidate?.algorithm === 'SHA256')?.checksumValue
+    : undefined;
+  const manifestDigest = checksum ? `sha256:${checksum}` : undefined;
+  const purl = Array.isArray(rootPackage.externalRefs)
+    ? rootPackage.externalRefs.find(reference => reference?.referenceType === 'purl')?.referenceLocator
+    : undefined;
+  if (!digestPattern.test(manifestDigest ?? '') || typeof purl !== 'string'
+    || !purl.includes(`lobsterai-p03-${evidence.imageName}`)
+    || !purl.includes(`tag=${evidence.sourceSha.slice(0, 12)}`)
+    || !purl.includes(encodeURIComponent(manifestDigest))) {
+    errors.push(`${label}: root package digest/tag identity is incomplete`);
+    return undefined;
+  }
+  return manifestDigest;
+};
+
+const findingIdentity = finding => JSON.stringify([
+  finding.id,
+  finding.artifactId,
+  finding.package,
+  finding.version,
+]);
+
+const findingRecord = finding => JSON.stringify([
+  finding.id,
+  finding.severity,
+  finding.artifactId,
+  finding.package,
+  finding.version,
+]);
+
+const multiset = (values, key) => {
+  const counts = new Map();
+  for (const value of values) {
+    const identity = key(value);
+    counts.set(identity, (counts.get(identity) ?? 0) + 1);
+  }
+  return counts;
+};
+
+const sameMultiset = (left, right, key) => {
+  const leftCounts = multiset(left, key);
+  const rightCounts = multiset(right, key);
+  return leftCounts.size === rightCounts.size
+    && [...leftCounts].every(([identity, count]) => rightCounts.get(identity) === count);
+};
+
+const findingsFromGrype = (document, evidence, spdxManifestDigest, errors) => {
+  const label = `${evidence.image}: Grype`;
+  const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
+  const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
+  const target = document?.source?.target;
+  if (document?.source?.type !== 'image' || !target || target.userInput !== expectedTag
+    || !Array.isArray(target.tags) || target.tags.length !== 1 || target.tags[0] !== expectedTag
+    || !Array.isArray(target.repoDigests) || target.repoDigests.length !== 1
+    || target.repoDigests[0] !== expectedRepoDigest
+    || target.manifestDigest !== spdxManifestDigest
+    || document?.descriptor?.name !== 'grype'
+    || document?.descriptor?.version !== evidence.vulnerabilityScan.scannerVersion
+    || !Array.isArray(document?.matches)) {
+    errors.push(`${label}: source/digest/scanner structure does not match image evidence`);
+    return undefined;
+  }
+  const findings = [];
+  for (const match of document.matches) {
+    const finding = {
+      id: match?.vulnerability?.id ?? '<unknown>',
+      severity: match?.vulnerability?.severity ?? 'Unknown',
+      artifactId: match?.artifact?.id ?? '<unknown>',
+      package: match?.artifact?.name ?? '<unknown>',
+      version: match?.artifact?.version ?? '<unknown>',
+    };
+    if (!finding.id || !finding.artifactId || !finding.package || !finding.version) {
+      errors.push(`${label}: match is missing vulnerability or package identity`);
+      return undefined;
+    }
+    findings.push(finding);
+  }
+  if (multiset(findings, findingIdentity).size !== findings.length) {
+    errors.push(`${label}: raw matches contain duplicate vulnerability/package identity`);
+  }
+  return findings;
+};
+
+const validateLocalImage = (root, evidence, errors) => {
+  const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
+  if (evidence.image !== `${expectedTag}@${evidence.digest}`) {
+    errors.push(`${evidence.image}: image tag/digest identity mismatch`);
+    return;
+  }
+  const inspect = spawnSync('docker', ['image', 'inspect', expectedTag, '--format', '{{json .}}'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  if (inspect.status !== 0) {
+    errors.push(`${evidence.image}: bound local Docker image is unavailable`);
+    return;
+  }
+  try {
+    const metadata = JSON.parse(inspect.stdout);
+    const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
+    if (metadata.Id !== evidence.digest || !metadata.RepoDigests?.includes(expectedRepoDigest)) {
+      errors.push(`${evidence.image}: local Docker image digest does not match evidence`);
+    }
+  } catch {
+    errors.push(`${evidence.image}: local Docker image metadata is invalid`);
+  }
+};
+
+const validatePluginInstallations = (root, evidence, errors) => {
+  if (evidence.imageName !== 'openclaw-runtime') return;
+  const declared = readJson(root, 'package.json').openclaw?.plugins ?? [];
+  const actual = evidence.pluginInstallations ?? [];
+  if (actual.length !== declared.length || new Set(actual.map(plugin => plugin.id)).size !== actual.length) {
+    errors.push(`${evidence.image}: plugin installation evidence must contain every declared plugin exactly once`);
+    return;
+  }
+  const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
+  const inspectionScript = [
+    "const fs = require('node:fs');",
+    "const root = '/opt/openclaw/third-party-extensions';",
+    'const ids = JSON.parse(process.argv[1]);',
+    'const rootReal = fs.realpathSync(root);',
+    'const installed = ids.filter(id => {',
+    '  try {',
+    '    const candidate = `${root}/${id}/package.json`;',
+    '    const stat = fs.lstatSync(candidate);',
+    '    const real = fs.realpathSync(candidate);',
+    "    return stat.isFile() && !stat.isSymbolicLink() && real.startsWith(`${rootReal}/`);",
+    '  } catch { return false; }',
+    '});',
+    'process.stdout.write(JSON.stringify(installed));',
+  ].join(' ');
+  const inspection = spawnSync('docker', [
+    'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+    '--security-opt=no-new-privileges', '--user=10001:10001',
+    '--entrypoint=/usr/local/bin/node', expectedTag,
+    '-e', inspectionScript, JSON.stringify(declared.map(plugin => plugin.id)),
+  ], { cwd: root, encoding: 'utf8' });
+  let installedIds;
+  try {
+    installedIds = inspection.status === 0 ? JSON.parse(inspection.stdout) : undefined;
+  } catch {
+    installedIds = undefined;
+  }
+  if (!Array.isArray(installedIds)
+    || installedIds.some(id => typeof id !== 'string')
+    || new Set(installedIds).size !== installedIds.length) {
+    errors.push(`${evidence.image}: unable to inspect plugin directories in the bound final image`);
+    return;
+  }
+  const installedSet = new Set(installedIds);
+  for (const plugin of declared) {
+    const installation = actual.find(candidate => candidate.id === plugin.id);
+    if (!installation || installation.optional !== Boolean(plugin.optional)
+      || (!plugin.optional && installation.status !== 'installed')) {
+      errors.push(`${evidence.image}: invalid plugin installation evidence for ${plugin.id}`);
+    }
+    const expectedStatus = installedSet.has(plugin.id) ? 'installed' : 'skipped';
+    if (installation?.status !== expectedStatus) {
+      errors.push(`${evidence.image}: plugin directory/status mismatch for ${plugin.id}`);
+    }
+  }
+};
+
+const validateDiskEvidence = (root, manifest, evidence, errors, now) => {
+  const evidenceDirectory = path.join(root, evidenceRelativeDirectory);
+  const spdx = readEvidenceDocument(evidenceDirectory, evidence.sbom, `${evidence.image}: SBOM`, errors);
+  const grype = readEvidenceDocument(
+    evidenceDirectory,
+    evidence.vulnerabilityScan,
+    `${evidence.image}: vulnerability scan`,
+    errors,
+  );
+  const spdxManifestDigest = spdx ? validateSpdxDocument(spdx, evidence, errors) : undefined;
+  const findings = grype && spdxManifestDigest
+    ? findingsFromGrype(grype, evidence, spdxManifestDigest, errors)
+    : undefined;
+  if (findings) {
+    const wrapperFindings = evidence.vulnerabilityScan.findings;
+    if (multiset(wrapperFindings, findingIdentity).size !== wrapperFindings.length) {
+      errors.push(`${evidence.image}: wrapper findings contain duplicate vulnerability/package identity`);
+    }
+    if (!sameMultiset(findings, wrapperFindings, findingRecord)) {
+      errors.push(`${evidence.image}: wrapper findings do not match raw Grype matches`);
+    }
+    const criticalFindings = findings.filter(finding => finding.severity === 'Critical').length;
+    if (criticalFindings !== evidence.criticalFindings) {
+      errors.push(`${evidence.image}: Critical finding count does not match raw Grype matches`);
+    }
+    errors.push(...validateVulnerabilityReport({ imageDigest: evidence.digest, findings }, manifest.waivers ?? [], now));
+  }
+  validatePluginInstallations(root, evidence, errors);
+  validateLocalImage(root, evidence, errors);
+};
+
+export const validateEvidence = (manifest, now = new Date(), expectedSourceSha, root) => {
   const errors = [];
   for (const waiver of manifest.waivers ?? []) {
     if (!waiver.owner || !waiver.reason || !waiver.expiresAt) {
@@ -257,8 +556,62 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
     if (!requiredProductionImages.includes(actual)) errors.push(`unexpected image evidence: ${actual}`);
   }
   for (const evidence of manifest.imageEvidence ?? []) {
+    for (const field of Object.keys(evidence)) {
+      if (!allowedImageEvidenceFields.has(field)) {
+        errors.push(`${evidence.image}: unexpected evidence field ${field}`);
+      }
+    }
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
+    const buildEvidence = evidence.buildEvidence ?? {};
+    if (buildEvidence.noCache !== true || buildEvidence.pull !== false) {
+      errors.push(`${evidence.image}: build must record --no-cache and --pull=false`);
+    }
+    if (buildEvidence.dockerfile !== `docker/${evidence.imageName}/Dockerfile`) {
+      errors.push(`${evidence.image}: Dockerfile evidence mismatch`);
+    }
+    if (!['linux/amd64', 'linux/arm64'].includes(buildEvidence.platform)) {
+      errors.push(`${evidence.image}: invalid build platform evidence`);
+    }
+    const runtimeEvidence = evidence.runtimeEvidence ?? {};
+    if (runtimeEvidence.status !== 'PASSED'
+      || !/^[1-9][0-9]*:[1-9][0-9]*$/.test(runtimeEvidence.effectiveUser ?? '')
+      || runtimeEvidence.platform !== buildEvidence.platform
+      || runtimeEvidence.networkMode !== 'none'
+      || runtimeEvidence.readOnlyRootFilesystem !== true
+      || !(runtimeEvidence.capDrop ?? []).includes('ALL')
+      || runtimeEvidence.noNewPrivileges !== true
+      || runtimeEvidence.health !== 'healthy') {
+      errors.push(`${evidence.image}: incomplete hardened runtime smoke evidence`);
+    }
+    if (!(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/tmp:'))) {
+      errors.push(`${evidence.image}: runtime smoke must record a restricted /tmp tmpfs`);
+    }
+    if (evidence.imageName === 'openclaw-runtime'
+      && (runtimeEvidence.gatewayReady !== true
+        || !(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/state:'))
+        || !(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/workspace:')))) {
+      errors.push(`${evidence.image}: OpenClaw gateway/state/workspace runtime evidence is incomplete`);
+    }
+    const gracefulStopRequired = ['worker', 'runtime-orchestrator', 'openclaw-runtime']
+      .includes(evidence.imageName);
+    if (runtimeEvidence.gracefulStop?.required !== gracefulStopRequired
+      || (gracefulStopRequired
+        && (runtimeEvidence.gracefulStop?.completedWithinTimeout !== true
+          || ![0, 143].includes(runtimeEvidence.gracefulStop?.exitCode)))
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.exitCode)
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.durationMs)
+      || runtimeEvidence.gracefulStop?.oomKilled !== false
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.timeoutSeconds)
+      || !digestPattern.test(runtimeEvidence.logsSha256 ?? '')) {
+      errors.push(`${evidence.image}: graceful stop/log evidence is incomplete`);
+    }
+    const historyScan = evidence.imageHistoryScan ?? {};
+    if (historyScan.status !== 'PASSED'
+      || historyScan.secretLikeFindings !== 0
+      || !digestPattern.test(historyScan.sha256 ?? '')) {
+      errors.push(`${evidence.image}: image history secret-scan evidence is incomplete`);
+    }
     if (evidence.sbom?.imageDigest !== evidence.digest) errors.push(`${evidence.image}: SBOM digest mismatch`);
     if (evidence.sbom?.sourceSha !== evidence.sourceSha) errors.push(`${evidence.image}: SBOM source SHA mismatch`);
     if (expectedSourceSha && evidence.sourceSha !== expectedSourceSha) errors.push(`${evidence.image}: source SHA mismatch`);
@@ -267,16 +620,13 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
       if (evidence.vulnerabilityScan.imageDigest !== evidence.digest) errors.push(`${evidence.image}: vulnerability scan digest mismatch`);
       if (evidence.vulnerabilityScan.sourceSha !== evidence.sourceSha) errors.push(`${evidence.image}: vulnerability scan source SHA mismatch`);
       if (!digestPattern.test(evidence.vulnerabilityScan.sha256 ?? '')) errors.push(`${evidence.image}: invalid vulnerability scan hash`);
-      errors.push(...validateVulnerabilityReport({
-        imageDigest: evidence.digest,
-        findings: evidence.vulnerabilityScan.findings ?? [],
-      }, manifest.waivers ?? [], now));
     }
     if ((evidence.criticalFindings ?? 0) > 0
       && !(manifest.waivers ?? []).some(waiver => waiver.imageDigest === evidence.digest)) {
       errors.push(`${evidence.image}: critical findings are not allowed`);
     }
     if (/:latest(?:$|@)/.test(evidence.image ?? '')) errors.push(`${evidence.image}: latest tag is forbidden`);
+    if (root) validateDiskEvidence(root, manifest, evidence, errors, now);
   }
   if (manifest.signature?.status === 'ACTIVE' && (manifest.signature.trustedIdentities?.length ?? 0) === 0) {
     errors.push('signature policy cannot be ACTIVE without trusted identities');
@@ -297,6 +647,9 @@ export const validateScanReport = (report) => {
 
 export const validateInventory = (root, manifest, options = {}) => {
   const { assets: discovered, errors } = discoverAssets(root);
+  if (options.schemaValidator && !options.schemaValidator(manifest)) {
+    errors.push(...formatSchemaErrors('inventory schema', options.schemaValidator));
+  }
   if (manifest.schemaVersion !== 2) errors.push('manifest schemaVersion must be 2');
   if (manifest.status !== 'ACTIVE') errors.push('manifest status must be ACTIVE');
   if (manifest.productionNetwork !== 'offline') errors.push('productionNetwork must be offline');
@@ -319,7 +672,9 @@ export const validateInventory = (root, manifest, options = {}) => {
   for (const asset of declared) {
     if (!discoveredById.has(asset.id)) errors.push(`manifest contains ghost asset: ${asset.id}`);
   }
-  if (options.requireEvidence) errors.push(...validateEvidence(manifest, new Date(), options.expectedSourceSha));
+  if (options.requireEvidence) {
+    errors.push(...validateEvidence(manifest, new Date(), options.expectedSourceSha, root));
+  }
   return errors;
 };
 
@@ -345,19 +700,44 @@ export const buildManifest = (root = repositoryRoot) => {
 };
 
 const run = () => {
-  const manifest = readJson(repositoryRoot, manifestRelativePath);
-  const git = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' });
-  const expectedSourceSha = git.status === 0 ? git.stdout.trim() : undefined;
-  const evidencePath = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据/docker-build-check.json');
-  let evidence = [];
-  if (existsSync(evidencePath)) {
-    const report = JSON.parse(readFileSync(evidencePath, 'utf8'));
-    if (report.status === 'PASSED') evidence = report.images ?? [];
+  const errors = [];
+  let manifest;
+  let report;
+  let validators;
+  try {
+    manifest = readJson(repositoryRoot, manifestRelativePath);
+    validators = loadSchemaValidators(repositoryRoot);
+  } catch (error) {
+    errors.push(`unable to load inventory/schema: ${error.message}`);
   }
-  const errors = validateInventory(repositoryRoot, { ...manifest, imageEvidence: evidence }, {
-    requireEvidence: true,
-    expectedSourceSha,
-  });
+  const evidencePath = path.join(repositoryRoot, evidenceRelativeDirectory, 'docker-build-check.json');
+  try {
+    report = JSON.parse(readFileSync(evidencePath, 'utf8'));
+  } catch (error) {
+    errors.push(`unable to read Docker build report: ${error.message}`);
+  }
+  if (report && validators?.report && !validators.report(report)) {
+    errors.push(...formatSchemaErrors('Docker build report schema', validators.report));
+  }
+  const expectedSourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!expectedSourceSha) errors.push('unable to resolve latest product source commit');
+  if (report?.sourceSha && expectedSourceSha && report.sourceSha !== expectedSourceSha) {
+    errors.push(`Docker build report source SHA mismatch: expected ${expectedSourceSha}, received ${report.sourceSha}`);
+  }
+  if (report?.sourceSha) {
+    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', report.sourceSha, 'HEAD'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    });
+    if (ancestor.status !== 0) errors.push('Docker build report source is not an ancestor of HEAD');
+  }
+  if (manifest && report) {
+    errors.push(...validateInventory(repositoryRoot, { ...manifest, imageEvidence: report.images ?? [] }, {
+      requireEvidence: true,
+      expectedSourceSha,
+      schemaValidator: validators?.manifest,
+    }));
+  }
   if (errors.length > 0) {
     console.error(JSON.stringify({ status: 'FAILED', check: 'supply-chain', errors }, null, 2));
     process.exitCode = 1;
@@ -367,7 +747,7 @@ const run = () => {
     status: 'PASSED',
     check: 'supply-chain',
     assetsChecked: manifest.assets.length,
-    imageEvidenceChecked: evidence.length,
+    imageEvidenceChecked: report.images.length,
     publishStatus: manifest.signature.status,
   }));
 };

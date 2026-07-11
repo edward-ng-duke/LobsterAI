@@ -58,7 +58,18 @@ describe('P03 supply-chain inventory and evidence policy', () => {
 
   test('schema and policy fixtures cover digest, SBOM, signature, waiver and critical findings', () => {
     const schema = readFileSync(schemaPath, 'utf8');
-    for (const field of ['assets', 'integrity', 'scanStatus', 'imageEvidence', 'sbom', 'signature', 'waivers']) {
+    for (const field of [
+      'assets',
+      'integrity',
+      'scanStatus',
+      'imageEvidence',
+      'buildEvidence',
+      'runtimeEvidence',
+      'imageHistoryScan',
+      'sbom',
+      'signature',
+      'waivers',
+    ]) {
       expect(schema).toContain(`"${field}"`);
     }
     for (const fixture of [
@@ -165,6 +176,40 @@ describe('P03 supply-chain inventory and evidence policy', () => {
       imageName,
       digest: `sha256:${'a'.repeat(64)}`,
       sourceSha,
+      buildEvidence: {
+        dockerfile: `docker/${imageName}/Dockerfile`,
+        noCache: true,
+        pull: false,
+        platform: 'linux/arm64',
+      },
+      runtimeEvidence: {
+        status: 'PASSED',
+        effectiveUser: '10001:10001',
+        platform: 'linux/arm64',
+        networkMode: 'none',
+        readOnlyRootFilesystem: true,
+        capDrop: ['ALL'],
+        noNewPrivileges: true,
+        tmpfs: imageName === 'openclaw-runtime'
+          ? ['/tmp:rw,noexec', '/state:rw,noexec', '/workspace:rw,noexec']
+          : ['/tmp:rw,noexec'],
+        health: 'healthy',
+        gatewayReady: imageName === 'openclaw-runtime' ? true : undefined,
+        gracefulStop: {
+          required: ['worker', 'runtime-orchestrator', 'openclaw-runtime'].includes(imageName),
+          timeoutSeconds: 10,
+          durationMs: 250,
+          completedWithinTimeout: true,
+          exitCode: 0,
+          oomKilled: false,
+        },
+        logsSha256: `sha256:${'d'.repeat(64)}`,
+      },
+      imageHistoryScan: {
+        status: 'PASSED',
+        secretLikeFindings: 0,
+        sha256: `sha256:${'e'.repeat(64)}`,
+      },
       sbom: {
         format: 'spdx-json',
         path: `${imageName}.spdx.json`,
@@ -197,6 +242,29 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     const stale = structuredClone(exact);
     stale.imageEvidence[0].sourceSha = 'f'.repeat(40);
     expect(validateEvidence(stale, new Date(), expectedSourceSha).join('\n')).toContain('source SHA mismatch');
+    const cached = structuredClone(exact);
+    cached.imageEvidence[0].buildEvidence.noCache = false;
+    expect(validateEvidence(cached, new Date(), expectedSourceSha).join('\n')).toContain('--no-cache');
+    const writable = structuredClone(exact);
+    writable.imageEvidence[0].runtimeEvidence.readOnlyRootFilesystem = false;
+    expect(validateEvidence(writable, new Date(), expectedSourceSha).join('\n'))
+      .toContain('hardened runtime smoke evidence');
+    const leakedHistory = structuredClone(exact);
+    leakedHistory.imageEvidence[0].imageHistoryScan.secretLikeFindings = 1;
+    expect(validateEvidence(leakedHistory, new Date(), expectedSourceSha).join('\n'))
+      .toContain('history secret-scan evidence');
+    const unknownField = structuredClone(exact) as typeof exact & {
+      imageEvidence: Array<(typeof exact.imageEvidence)[number] & { tag?: string }>;
+    };
+    unknownField.imageEvidence[0].tag = 'internal-only:latest';
+    expect(validateEvidence(unknownField, new Date(), expectedSourceSha).join('\n'))
+      .toContain('unexpected evidence field tag');
+    const swallowedSignal = structuredClone(exact);
+    const worker = swallowedSignal.imageEvidence.find(evidence => evidence.imageName === 'worker')!;
+    worker.runtimeEvidence.gracefulStop.completedWithinTimeout = false;
+    worker.runtimeEvidence.gracefulStop.exitCode = 137;
+    expect(validateEvidence(swallowedSignal, new Date(), expectedSourceSha).join('\n'))
+      .toContain('graceful stop/log evidence');
   });
 
   test('critical vulnerability waivers must match image digest and finding and remain unexpired', async () => {
