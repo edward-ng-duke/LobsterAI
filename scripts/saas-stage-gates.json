@@ -28,14 +28,24 @@
       ]
     },
     "prisma:validate": {
-      "status": "NOT_APPLICABLE",
+      "status": "PASS",
       "activationTask": "P02-PR2数据库脚手架",
-      "reason": "P00 freezes Prisma/RLS locations; PR-2 installs and activates Prisma validation.",
+      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
+      "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "fixtures": [
         "prisma/schema.prisma",
-        "prisma/migrations/README.md",
-        "prisma/rls/README.md",
-        "prisma/seed/README.md"
+        "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
+        "prisma/rls/tenant-scoped-models.json",
+        "prisma/seed/index.ts",
+        "libs/server/db/src/tenant-context.ts",
+        "libs/server/db/src/tenant-scope.ts",
+        "scripts/db/validate.mjs",
+        "scripts/db/validate-static.mjs",
+        "scripts/db/preflight.mjs",
+        "scripts/db/run-integration.mjs",
+        "tests/integration/db/postgres-image.json",
+        "tests/integration/db/rls.test.ts",
+        "tests/integration/db/tenant-context.test.ts"
       ]
     },
     "supply-chain:check": {

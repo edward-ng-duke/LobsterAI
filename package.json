@@ -94,7 +94,7 @@
     "prisma:validate:active": "node scripts/db/validate.mjs",
     "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate",
     "test:db:preflight": "node scripts/db/preflight.mjs",
-    "test:db:unit": "vitest run tests/db/**/*.test.ts",
+    "test:db:unit": "vitest run tests/db",
     "test:db:integration": "node scripts/db/run-integration.mjs",
     "supply-chain:validate": "node scripts/check-supply-chain.mjs",
     "supply-chain:check": "node scripts/run-saas-stage-gate.mjs supply-chain:check",

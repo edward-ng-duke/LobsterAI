@@ -57,6 +57,7 @@ const createRepositoryCopy = (): string => {
     'scripts/check-supply-chain.mjs',
     'scripts/harden-openclaw-runtime-dependencies.mjs',
     'scripts/contracts',
+    'scripts/db',
     'scripts/expect-saas-stage-gate.mjs',
     'scripts/json-without-duplicate-keys.mjs',
     'scripts/run-saas-stage-gate.mjs',
@@ -92,6 +93,11 @@ const createRepositoryCopy = (): string => {
     process.execPath,
     '-e',
     "console.log(JSON.stringify({ status: 'PASSED', check: 'supply-chain-test-double' }))",
+  ];
+  manifest.gates['prisma:validate'].command = [
+    process.execPath,
+    '-e',
+    "console.log(JSON.stringify({ status: 'PASSED', check: 'prisma-test-double' }))",
   ];
   manifest.gates['docker:build:check'].command = ['node', 'scripts/check-docker-build.mjs', '--static'];
   manifest.gates['helm:lint'].command = ['node', 'scripts/check-helm.mjs', '--static'];

@@ -25,6 +25,7 @@ const createRepositoryCopy = (): string => {
     'prisma',
     'scripts/check-saas-build-artifacts.mjs',
     'scripts/clean-saas-build.mjs',
+    'scripts/db',
     'scripts/check-saas-scaffold.mjs',
     'scripts/check-docker-build.mjs',
     'scripts/check-helm.mjs',

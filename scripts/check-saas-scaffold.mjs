@@ -30,7 +30,13 @@ const allStageGates = [
   'helm:lint',
   'poc:v1:check',
 ];
-const activeGates = new Set(['contracts:check', 'supply-chain:check', 'docker:build:check', 'helm:lint']);
+const activeGates = new Set([
+  'contracts:check',
+  'prisma:validate',
+  'supply-chain:check',
+  'docker:build:check',
+  'helm:lint',
+]);
 const deferredGates = allStageGates.filter(gate => !activeGates.has(gate));
 const requiredRootScripts = {
   'build:saas':
@@ -43,12 +49,16 @@ const requiredRootScripts = {
   'helm:static': 'node scripts/check-helm.mjs --static',
   'helm:validate': 'node scripts/check-helm.mjs',
   'lint:saas':
-    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts" "tests/deploy-*.test.ts"',
+    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts" "tests/db/**/*.test.ts" "tests/integration/db/**/*.ts" "tests/deploy-*.test.ts"',
   'poc:v1:check': 'node scripts/run-saas-stage-gate.mjs poc:v1:check',
   'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate',
+  'prisma:validate:active': 'node scripts/db/validate.mjs',
   'scaffold:check': 'node scripts/check-saas-scaffold.mjs',
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
   'supply-chain:validate': 'node scripts/check-supply-chain.mjs',
+  'test:db:integration': 'node scripts/db/run-integration.mjs',
+  'test:db:preflight': 'node scripts/db/preflight.mjs',
+  'test:db:unit': 'vitest run tests/db',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':
     'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts tests/scaffold-tester-corners.test.ts tests/scaffold-json-duplicate-keys.test.ts',
@@ -320,7 +330,7 @@ const validateCommandsAndCi = (
     stageManifest?.statuses?.NOT_APPLICABLE !== 78 ||
     stageManifest?.statuses?.PASS !== 0
   ) {
-    errors.push(taggedError('SCAF-2', 'stage gate manifest must activate P01/P03 PASS while preserving deferred exit 78'));
+    errors.push(taggedError('SCAF-2', 'stage gate manifest must activate P01/P02/P03 PASS while preserving deferred exit 78'));
   }
   const runnerPath = path.join(repositoryRoot, 'scripts/run-saas-stage-gate.mjs');
   if (existsSync(runnerPath)) {
@@ -355,6 +365,8 @@ const validateCommandsAndCi = (
     'npm run scaffold:check',
     'npm run contracts:generate',
     'npm run contracts:check',
+    'npm run prisma:validate',
+    'npm run test:db:integration',
     'npm run supply-chain:check',
     'npm run docker:build:check',
     'npm run helm:lint',

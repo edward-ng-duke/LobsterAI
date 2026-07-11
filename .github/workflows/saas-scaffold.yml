@@ -11,6 +11,7 @@ on:
       - 'docs/supply-chain/**'
       - 'libs/**'
       - 'scripts/check-saas-build-artifacts.mjs'
+      - 'scripts/db/**'
       - 'scripts/clean-saas-build.mjs'
       - 'scripts/check-saas-scaffold.mjs'
       - 'scripts/check-docker-build.mjs'
@@ -26,6 +27,9 @@ on:
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
       - 'tests/deploy-*.test.ts'
+      - 'tests/db/**'
+      - 'tests/integration/db/**'
+      - 'vitest.db.config.ts'
       - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
@@ -40,6 +44,7 @@ on:
       - 'docs/supply-chain/**'
       - 'libs/**'
       - 'scripts/check-saas-build-artifacts.mjs'
+      - 'scripts/db/**'
       - 'scripts/clean-saas-build.mjs'
       - 'scripts/check-saas-scaffold.mjs'
       - 'scripts/check-docker-build.mjs'
@@ -55,6 +60,9 @@ on:
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
       - 'tests/deploy-*.test.ts'
+      - 'tests/db/**'
+      - 'tests/integration/db/**'
+      - 'vitest.db.config.ts'
       - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
@@ -95,7 +103,6 @@ jobs:
       - name: Verify active and deferred stage gate entry points are explicit
         run: |
           node scripts/expect-saas-stage-gate.mjs test:e2e
-          node scripts/expect-saas-stage-gate.mjs prisma:validate
           node scripts/expect-saas-stage-gate.mjs poc:v1:check
       - run: npm run lint:saas
       - run: npm run typecheck
@@ -112,3 +119,18 @@ jobs:
           npm run compile:electron
       - name: Verify tracked sources remain reproducible
         run: git diff --exit-code
+
+  db-integration:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run contracts:check
+      - run: npm run test:db:integration
+      - run: npm run prisma:validate
+      - run: git diff --exit-code
