@@ -208,7 +208,11 @@ const checkOpenapi = async () => {
     const route = routesByOperation.get(operation.operationId);
     assert('openapi', route !== undefined, `unknown operation ${operation.operationId}`);
     if (route) {
-      const expectedSecurity = route.auth === 'access-token' ? [{ accessToken: [] }] : [];
+      const expectedSecurity = route.auth === 'access-token'
+        ? [{ accessToken: [] }]
+        : route.auth === 'refresh-cookie'
+          ? [{ refreshCookie: [] }]
+          : [];
       assert('openapi', JSON.stringify(operation.security ?? []) === JSON.stringify(expectedSecurity), `security mismatch ${operation.operationId}`);
       assert('openapi', operation.responses[String(route.successStatus)] !== undefined, `success status mismatch ${operation.operationId}`);
       equalSets('openapi', new Set(operation['x-lobster-error-codes'] ?? []), new Set(route.errors), `error policy mismatch ${operation.operationId}`);

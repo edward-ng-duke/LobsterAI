@@ -16,11 +16,16 @@ export const OperationResponseSchema = z.strictObject({
   data: OperationValueSchema.optional(),
 });
 
-export const LoginRequestSchema = z.strictObject({
+const PkceLoginRequestSchema = z.strictObject({
   codeChallenge: z.string().min(43),
   redirectUri: z.url(),
   state: z.string().min(16),
 });
+const PasswordLoginRequestSchema = z.strictObject({
+  email: z.email(),
+  password: z.string().min(8),
+});
+export const LoginRequestSchema = z.union([PkceLoginRequestSchema, PasswordLoginRequestSchema]);
 export const LoginResponseSchema = z.strictObject({ code: z.string().min(1) });
 export const OAuthTokenRequestSchema = z.strictObject({
   code: z.string().min(1),

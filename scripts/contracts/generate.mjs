@@ -140,7 +140,12 @@ for (const route of RouteRegistry) {
     'x-lobster-support': route.support,
     'x-lobster-error-codes': route.errors,
     parameters: pathParameters,
-    security: route.auth === 'access-token' ? [{ accessToken: [] }] : [],
+    security:
+      route.auth === 'access-token'
+        ? [{ accessToken: [] }]
+        : route.auth === 'refresh-cookie'
+          ? [{ refreshCookie: [] }]
+          : [],
     responses: {
       [String(route.successStatus)]: {
         description: route.support === 'unsupported' ? 'UNSUPPORTED_FEATURE' : 'Successful response',
@@ -172,7 +177,10 @@ const openapi = {
   servers: [{ url: '/' }],
   paths: openapiPaths,
   components: {
-    securitySchemes: { accessToken: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
+    securitySchemes: {
+      accessToken: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      refreshCookie: { type: 'apiKey', in: 'cookie', name: 'refresh_token' },
+    },
     schemas: componentSchemas,
   },
 };

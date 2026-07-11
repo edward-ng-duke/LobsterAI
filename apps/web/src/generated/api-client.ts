@@ -2677,6 +2677,10 @@ export interface components {
             /** Format: uri */
             redirectUri: string;
             state: string;
+        } | {
+            /** Format: email */
+            email: string;
+            password: string;
         };
         LoginResponse: {
             code: string;
@@ -4594,7 +4598,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4631,15 +4635,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7968,7 +7963,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8055,7 +8050,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8249,7 +8244,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9765,7 +9760,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9917,7 +9912,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11117,6 +11112,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -11491,15 +11495,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -11663,15 +11658,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -11741,15 +11727,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11830,15 +11807,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12011,15 +11979,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12100,15 +12059,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12182,15 +12132,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12363,15 +12304,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12441,15 +12373,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12538,15 +12461,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12616,15 +12530,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12712,15 +12617,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -12794,15 +12690,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12901,15 +12788,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13082,15 +12960,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -13164,15 +13033,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13349,15 +13209,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -13429,15 +13280,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description SESSION_BUSY */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15999,6 +15841,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -16052,24 +15903,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description PERMISSION_DENIED */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16278,24 +16111,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description PERMISSION_DENIED */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

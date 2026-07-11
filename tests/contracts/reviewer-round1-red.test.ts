@@ -5,12 +5,12 @@ import path from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 
-import { analyzeBreakingDiff } from '../../scripts/contracts/breaking-diff.mjs';
 import { BridgeRegistry } from '../../libs/shared/contracts/src/registry/bridge.js';
 import { ChannelRegistry } from '../../libs/shared/contracts/src/registry/channels.js';
 import { CoworkStreamRegistry } from '../../libs/shared/contracts/src/registry/cowork-stream.js';
 import { IpcGaInventory } from '../../libs/shared/contracts/src/registry/ipc-ga-inventory.js';
 import { RouteRegistry } from '../../libs/shared/contracts/src/registry/routes.js';
+import { analyzeBreakingDiff } from '../../scripts/contracts/breaking-diff.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const staleOutput = path.join(
@@ -40,7 +40,11 @@ describe('Reviewer Round 1 route and schema mutations', () => {
       const operation = openapi.paths[route.path][route.method.toLowerCase()];
       expect(operation.responses[String(route.successStatus)]).toBeDefined();
       expect(operation.security ?? []).toEqual(
-        route.auth === 'access-token' ? [{ accessToken: [] }] : [],
+        route.auth === 'access-token'
+          ? [{ accessToken: [] }]
+          : route.auth === 'refresh-cookie'
+            ? [{ refreshCookie: [] }]
+            : [],
       );
     }
   });

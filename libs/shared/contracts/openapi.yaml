@@ -2493,22 +2493,35 @@ components:
         - sessionId
       type: object
     LoginRequest:
-      additionalProperties: false
-      properties:
-        codeChallenge:
-          minLength: 43
-          type: string
-        redirectUri:
-          format: uri
-          type: string
-        state:
-          minLength: 16
-          type: string
-      required:
-        - codeChallenge
-        - redirectUri
-        - state
-      type: object
+      anyOf:
+        - additionalProperties: false
+          properties:
+            codeChallenge:
+              minLength: 43
+              type: string
+            redirectUri:
+              format: uri
+              type: string
+            state:
+              minLength: 16
+              type: string
+          required:
+            - codeChallenge
+            - redirectUri
+            - state
+          type: object
+        - additionalProperties: false
+          properties:
+            email:
+              format: email
+              type: string
+            password:
+              minLength: 8
+              type: string
+          required:
+            - email
+            - password
+          type: object
     LoginResponse:
       additionalProperties: false
       properties:
@@ -7329,6 +7342,10 @@ components:
       bearerFormat: JWT
       scheme: bearer
       type: http
+    refreshCookie:
+      in: cookie
+      name: refresh_token
+      type: apiKey
 info:
   title: LobsterAI API
   version: 1.0.0
@@ -8033,7 +8050,7 @@ paths:
               $ref: "#/components/schemas/AsrSessionCreateRequest"
         required: true
       responses:
-        "202":
+        "201":
           content:
             application/json:
               schema:
@@ -8063,12 +8080,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -8092,8 +8103,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -11007,7 +11016,7 @@ paths:
               $ref: "#/components/schemas/PostApiV1ModelConfigCheckRequest"
         required: true
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
@@ -11083,7 +11092,7 @@ paths:
               $ref: "#/components/schemas/PostApiV1ModelProxyRequest"
         required: true
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
@@ -11255,7 +11264,7 @@ paths:
               $ref: "#/components/schemas/PostApiV1ModelStreamRequestIdAbortRequest"
         required: true
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
@@ -12597,7 +12606,7 @@ paths:
               $ref: "#/components/schemas/PostApiV1RuntimeMigrationBackupsRequest"
         required: true
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
@@ -12729,7 +12738,7 @@ paths:
               $ref: "#/components/schemas/PostApiV1RuntimeMigrationRestoresRequest"
         required: true
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
@@ -14067,6 +14076,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14090,6 +14105,8 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
+        - SESSION_BUSY
+        - IN_PROGRESS
         - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
@@ -14131,12 +14148,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14160,8 +14171,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14284,12 +14293,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14313,8 +14316,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14361,12 +14362,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14390,8 +14385,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14437,12 +14430,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14466,8 +14453,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14519,12 +14504,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14548,8 +14527,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14680,12 +14657,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14709,8 +14680,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14763,12 +14732,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14792,8 +14755,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14846,12 +14807,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -14875,8 +14830,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15006,12 +14959,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15035,8 +14982,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15083,12 +15028,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15112,8 +15051,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15172,12 +15109,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15201,8 +15132,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15249,12 +15178,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15278,8 +15201,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15332,12 +15253,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15361,8 +15276,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15415,12 +15328,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "413":
           content:
             application/json:
@@ -15456,8 +15363,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
         - PAYLOAD_TOO_LARGE
         - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
@@ -15512,12 +15417,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15541,8 +15440,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15672,12 +15569,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15701,8 +15592,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15755,12 +15644,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15784,8 +15667,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -15921,12 +15802,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
         "429":
           content:
             application/json:
@@ -15950,8 +15825,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -18225,6 +18098,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: VALIDATION_FAILED
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: UNAUTHENTICATED
         "429":
           content:
             application/json:
@@ -18244,6 +18123,7 @@ paths:
         - VALIDATION_FAILED
         - RATE_LIMITED
         - INTERNAL_ERROR
+        - UNAUTHENTICATED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -18278,18 +18158,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -18303,7 +18171,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
       security:
-        - accessToken: []
+        - refreshCookie: []
       tags:
         - auth
       x-lobster-error-codes:
@@ -18311,8 +18179,6 @@ paths:
         - RATE_LIMITED
         - INTERNAL_ERROR
         - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -18473,18 +18339,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -18498,7 +18352,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
       security:
-        - accessToken: []
+        - refreshCookie: []
       tags:
         - auth
       x-lobster-error-codes:
@@ -18506,8 +18360,6 @@ paths:
         - RATE_LIMITED
         - INTERNAL_ERROR
         - UNAUTHENTICATED
-        - PERMISSION_DENIED
-        - NOT_FOUND
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
