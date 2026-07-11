@@ -116,3 +116,11 @@ exit 1; 5 tests failed
 - task stop 精确含 `NO_RUNNING_TASK_RUN/CANCEL_NOT_OWNED/CANCEL_FAILED`，不含 `TASK_LIMIT_EXCEEDED/SESSION_BUSY/IN_PROGRESS`。
 - 最新 counts/hash：schema `216`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `a7672b976c10ea78a8b18518ddb4ab98f02c417d62e7182937acacbb6f47fe39`；output `99a3b2a1ad3927447330925bab2ee87887952678f290d757ee5a933298a6e9bb`。
 - 最终总门：`contracts:check`、15/15 `test:contract`、typecheck、changed-file ESLint、193-file Vitest（2076 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、renderer build、Electron compile 均 exit 0。Gate invocationId `7f64369b-88f4-41aa-a24a-2dadb6849fe0`；本地无 CI runId。
+
+## Round 6 Reviewer 退回修复（2026-07-11 17:22 +0800）
+
+- Red `53a2383f`：15 tests 中 10 failed / 5 passed；Green 后 15/15 PASS。禁止 default/nullish profile，覆盖 no-input global/status、collection empty-list、item existence 与 domain action 语义。
+- expectation 中 158 个 operation 均显式 `operationId -> PolicyProfile`，无 fallback；Actual `routes.ts` 保持独立分配，不导入 expectation；checker 逐 operation 双向 exact equality。
+- 全量语义结果：35 个无 path GET 的 item-only `NOT_FOUND` 已清零；37 个无输入路由的 `VALIDATION_FAILED` 已清零；parameterized item GET 保留 `NOT_FOUND`；query collection 保留 validation 但无 `NOT_FOUND`。
+- 最新 counts/hash：schema `216`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `897bd39077d409e52a88e9efe89383380564812f494efb88fe09e2af6a1ed2c8`；output `583f7b819dd84131362d6d8190ce3ea34ae68b82cc8524ab15e1c9a04937e748`。
+- 最终总门：`contracts:check`、15/15 `test:contract`、typecheck、changed-file ESLint、80/80 targeted、194-file Vitest（2091 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、Renderer build、Electron compile 均 exit 0。Gate invocationId `8f620cb0-bde6-4d41-8eb9-96d56798f560`；本地无 CI runId。
