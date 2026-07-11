@@ -236,6 +236,29 @@ const validateCommandsAndCi = (repositoryRoot, rootPackage, discoveredWorkspaces
       }
     }
   }
+  const stageManifest = readJson(
+    repositoryRoot,
+    'scripts/saas-stage-gates.json',
+    errors,
+    'SCAF-2',
+  );
+  if (stageManifest?.currentStage !== 'P00' || stageManifest?.statuses?.NOT_APPLICABLE !== 78) {
+    errors.push(taggedError('SCAF-2', 'stage gate manifest must freeze P00 NOT_APPLICABLE exit 78'));
+  }
+  for (const gateName of deferredGates) {
+    const gate = stageManifest?.gates?.[gateName];
+    if (
+      gate?.status !== 'NOT_APPLICABLE' ||
+      typeof gate?.activationTask !== 'string' ||
+      gate.activationTask.length === 0 ||
+      typeof gate?.reason !== 'string' ||
+      gate.reason.length === 0 ||
+      !Array.isArray(gate?.fixtures) ||
+      gate.fixtures.length === 0
+    ) {
+      errors.push(taggedError('SCAF-2', `${gateName} lacks an honest P00 stage declaration`));
+    }
+  }
   const workflowPath = '.github/workflows/saas-scaffold.yml';
   if (!existsSync(path.join(repositoryRoot, workflowPath))) {
     errors.push(taggedError('SCAF-2', `missing ${workflowPath}`));
@@ -429,6 +452,13 @@ const validateGenerationPolicy = (repositoryRoot, errors) => {
       }
     }
   }
+  const workflowPath = '.github/workflows/saas-scaffold.yml';
+  if (
+    !existsSync(path.join(repositoryRoot, workflowPath)) ||
+    !readFileSync(path.join(repositoryRoot, workflowPath), 'utf8').includes('git diff --exit-code')
+  ) {
+    errors.push(taggedError('SCAF-5', `${workflowPath} must enforce a clean generated-output diff`));
+  }
 };
 
 const validateLegacyCompatibility = (rootPackage, errors) => {
@@ -474,7 +504,7 @@ if (isMainModule) {
     console.log('[SaaS Scaffold] SCAF-2 executable commands, stage gates, and CI: passed');
     console.log('[SaaS Scaffold] SCAF-3 npm workspace, lockfile, and reference graph: passed');
     console.log('[SaaS Scaffold] SCAF-4 single contract source and dependency direction: passed');
-    console.log('[SaaS Scaffold] SCAF-5 codegen policy, targets, headers, and clean-output contract: passed');
+    console.log('[SaaS Scaffold] SCAF-5 codegen policy, headers, and CI clean-output enforcement: passed');
     console.log('[SaaS Scaffold] SCAF-6 legacy build commands retained: passed');
   }
 }

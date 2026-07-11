@@ -10,3 +10,6 @@ datasource db {
 
 // PR-2 owns the first real model and migration. Every tenant-owned model must
 // use a mapped `tenant_id` column and participate in ENABLE + FORCE RLS.
+// Naming/constraint example (documentation only, not a P00 database table):
+//   tenantId String @map("tenant_id") @db.Uuid
+//   @@unique([tenantId, id])
