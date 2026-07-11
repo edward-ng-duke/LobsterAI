@@ -85,10 +85,18 @@
 | `npm run test:db:integration`（由 validation 调用） | exit 0；21/21，skipped=0 |
 | `npm run prisma:validate` | exit 0；invocationId `5697445a-...` |
 | `node scripts/db/validate-evidence.mjs` | exit 0；code/stage provenance PASS |
+| `npm ci` | exit 0；lockfile clean install 与 Prisma postinstall generate 成功 |
+| `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
+| `npm run typecheck` | exit 0 |
+| changed-file ESLint / `npm run lint:saas` | exit 0；0 warning |
+| `npm test` | exit 0；202 files，2166 passed，1 个既有 skip |
+| `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
+| `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-最终全量回归结果追加在 P02 Developer 开发记录中；原生机器报告以本目录 JSON 与 manifest 为准。
+原生机器报告以本目录 JSON 与 manifest 为准。交付前再次运行 `prisma:validate` 产生了绑定最终文档 HEAD 的临时 `.reports`，但没有覆盖上述冻结 raw snapshot；冻结证据链仍由 manifest 指向 `ec2cc923...` 与 `c80b9c2a...`。
 
 ## 已知非 P02 风险
 
 - 根项目既有 axios/Electron/xlsx 等供应链债务不由 P02 伪装解决；破坏性升级留给 P03/专项任务。
+- `npm ci` 显示根依赖树既有 22 项 audit finding（12 moderate、10 high）；本任务未越界执行破坏性 `audit fix --force`。
 - 当前批准运行基线为 `linux/arm64` exact digest；未登记 amd64 digest 时 runner fail-closed，不降级使用浮动 tag。
