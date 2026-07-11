@@ -22,6 +22,7 @@ import { BridgeRegistry } from '../../libs/shared/contracts/dist/registry/bridge
 import { ChannelRegistry } from '../../libs/shared/contracts/dist/registry/channels.js';
 import { CoworkStreamRegistry } from '../../libs/shared/contracts/dist/registry/cowork-stream.js';
 import { IpcGaInventory } from '../../libs/shared/contracts/dist/registry/ipc-ga-inventory.js';
+import { RoutePolicyExpectations } from '../../libs/shared/contracts/dist/registry/route-policy-expectations.js';
 import { RouteRegistry } from '../../libs/shared/contracts/dist/registry/routes.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -99,6 +100,12 @@ const checkRoutes = () => {
   assert('routes', byOperation.get('post_api_v1_model_config_check')?.successStatus === 200, 'model config check status drifted');
   assert('routes', byOperation.get('post_api_v1_model_stream')?.successStatus === 202, 'model stream status drifted');
   assert('routes', !byOperation.get('get_api_v1_sessions_id')?.errors.includes('SESSION_BUSY'), 'session read inherited mutation errors');
+  for (const [operationId, expectation] of Object.entries(RoutePolicyExpectations)) {
+    const actual = byOperation.get(operationId);
+    assert('routes', actual?.auth === expectation.auth, `authoritative auth mismatch ${operationId}`);
+    assert('routes', actual?.successStatus === expectation.successStatus, `authoritative status mismatch ${operationId}`);
+    equalSets('routes', new Set(actual?.errors ?? []), new Set(expectation.errors), `authoritative errors mismatch ${operationId}`);
+  }
   summaries.routeCount = RouteRegistry.length;
 };
 
@@ -236,6 +243,14 @@ const checkOpenapi = async () => {
       assert('openapi', JSON.stringify(operation.security ?? []) === JSON.stringify(expectedSecurity), `security mismatch ${operation.operationId}`);
       assert('openapi', operation.responses[String(route.successStatus)] !== undefined, `success status mismatch ${operation.operationId}`);
       equalSets('openapi', new Set(operation['x-lobster-error-codes'] ?? []), new Set(route.errors), `error policy mismatch ${operation.operationId}`);
+      const actualPathParameters = new Set((operation.parameters ?? []).filter((parameter) => parameter.in === 'path').map((parameter) => parameter.name));
+      const actualQueryParameters = new Set((operation.parameters ?? []).filter((parameter) => parameter.in === 'query').map((parameter) => parameter.name));
+      const expectedPathParameters = new Set(Object.keys(z.toJSONSchema(route.pathSchema).properties ?? {}));
+      const expectedQueryParameters = new Set(Object.keys(route.querySchema ? z.toJSONSchema(route.querySchema).properties ?? {} : {}));
+      equalSets('openapi', actualPathParameters, expectedPathParameters, `path parameter mismatch ${operation.operationId}`);
+      equalSets('openapi', actualQueryParameters, expectedQueryParameters, `query parameter mismatch ${operation.operationId}`);
+      assert('openapi', Boolean(operation.requestBody) === Boolean(route.bodySchema), `body presence mismatch ${operation.operationId}`);
+      assert('openapi', canonicalJson(operation['x-lobster-path-body-equality'] ?? []) === canonicalJson(route.pathBodyEquality), `path/body invariant mismatch ${operation.operationId}`);
     }
     for (const name of [...routePath.matchAll(/\{([^}]+)\}/g)].map((match) => match[1])) {
       assert('openapi', operation.parameters?.some((parameter) => parameter.name === name && parameter.in === 'path' && parameter.required === true), `${operation.operationId} missing required path parameter ${name}`);

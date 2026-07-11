@@ -127,19 +127,29 @@ componentSchemas.ErrorEnvelope = {
 
 const openapiPaths = {};
 for (const route of RouteRegistry) {
-  const pathParameters = [...route.path.matchAll(/\{([^}]+)\}/g)].map((match) => ({
-    name: match[1],
-    in: 'path',
-    required: true,
-    schema: { type: 'string', minLength: 1 },
-  }));
+  const parametersFromSchema = (schema, location, forceRequired = false) => {
+    if (!schema) return [];
+    const json = schemaJson(schema, `${route.operationId}${location}`);
+    const required = new Set(json.required ?? []);
+    return Object.entries(json.properties ?? {}).map(([name, propertySchema]) => ({
+      name,
+      in: location,
+      required: forceRequired || required.has(name),
+      schema: propertySchema,
+    }));
+  };
+  const pathParameters = parametersFromSchema(route.pathSchema, 'path', true);
+  const queryParameters = parametersFromSchema(route.querySchema, 'query');
   const operation = {
     operationId: route.operationId,
     tags: [route.domain],
     'x-lobster-source-refs': route.sourceRefs,
     'x-lobster-support': route.support,
     'x-lobster-error-codes': route.errors,
-    parameters: pathParameters,
+    parameters: [...pathParameters, ...queryParameters],
+    ...(route.pathBodyEquality.length > 0
+      ? { 'x-lobster-path-body-equality': route.pathBodyEquality }
+      : {}),
     security:
       route.auth === 'access-token'
         ? [{ accessToken: [] }]
@@ -153,10 +163,10 @@ for (const route of RouteRegistry) {
       },
     },
   };
-  if (!['GET', 'DELETE'].includes(route.method)) {
+  if (route.bodySchema && route.bodyName) {
     operation.requestBody = {
       required: true,
-      content: { 'application/json': { schema: { $ref: `#/components/schemas/${route.requestName}` } } },
+      content: { 'application/json': { schema: { $ref: `#/components/schemas/${route.bodyName}` } } },
     };
   }
   for (const code of route.errors) {

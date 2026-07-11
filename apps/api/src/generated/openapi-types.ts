@@ -2368,10 +2368,18 @@ export interface components {
             /** @enum {boolean} */
             deleted: true;
         };
+        FileDownloadQuerySchema: {
+            /** @enum {string} */
+            as?: "text" | "url";
+            path: string;
+        };
         FileDownloadResponseSchema: {
             text?: string;
             /** Format: uri */
             url?: string;
+        };
+        FilePathQuerySchema: {
+            path: string;
         };
         FileStatResponseSchema: {
             /** Format: date-time */
@@ -2434,6 +2442,11 @@ export interface components {
                 /** Format: uri */
                 url: string;
             }[];
+        };
+        HtmlShareLookupQuerySchema: {
+            clientSourceKey?: string;
+            /** @enum {string} */
+            source?: "html" | "artifact";
         };
         HtmlSharePatchAccessRequestSchema: {
             /** @enum {string} */
@@ -2591,6 +2604,12 @@ export interface components {
             /** @enum {string} */
             role: "user" | "assistant" | "tool" | "system";
             sequence: number;
+        };
+        MessageListQuerySchema: {
+            cursor?: string;
+            /** @enum {string} */
+            direction?: "before" | "after";
+            limit?: number;
         };
         MessageListResponse: {
             messages: {
@@ -3025,6 +3044,11 @@ export interface components {
         SessionForkResponseSchema: {
             sessionId: string;
         };
+        SessionListQuerySchema: {
+            cursor?: string;
+            limit?: number;
+            pinned?: boolean;
+        };
         SessionListResponseSchema: {
             sessions: {
                 id: string;
@@ -3293,6 +3317,12 @@ export interface components {
                 taskId: string;
             }[];
         };
+        TaskRunQuerySchema: {
+            cursor?: string;
+            limit?: number;
+            /** @enum {string} */
+            status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
+        };
         TaskSchedule: {
             /** Format: date-time */
             at: string;
@@ -3393,6 +3423,8 @@ export interface components {
             cursor?: string;
             depth?: number;
             path?: string;
+            /** @enum {string} */
+            sort?: "type" | "name" | "id";
         };
         WorkspaceTreeResponse: {
             entries: {
@@ -4294,26 +4326,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4381,26 +4395,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5663,7 +5659,10 @@ export interface operations {
     };
     get_api_v1_html_shares: {
         parameters: {
-            query?: never;
+            query?: {
+                clientSourceKey?: string;
+                source?: "html" | "artifact";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7295,11 +7294,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmptyRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful response */
             200: {
@@ -10077,15 +10072,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -10148,15 +10134,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10501,11 +10478,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmptyRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful response */
             200: {
@@ -10889,7 +10862,11 @@ export interface operations {
     };
     get_api_v1_scheduled_tasks_runs: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11039,7 +11016,11 @@ export interface operations {
     };
     get_api_v1_sessions: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+                pinned?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11075,15 +11056,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11153,15 +11125,6 @@ export interface operations {
             };
             /** @description PERMISSION_DENIED */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11922,7 +11885,11 @@ export interface operations {
     };
     get_api_v1_sessions_id_messages: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                direction?: "before" | "after";
+                limit?: number;
+            };
             header?: never;
             path: {
                 id: string;
@@ -14569,7 +14536,9 @@ export interface operations {
     };
     delete_api_v1_workspaces_wid_files: {
         parameters: {
-            query?: never;
+            query: {
+                path: string;
+            };
             header?: never;
             path: {
                 wid: string;
@@ -14663,7 +14632,10 @@ export interface operations {
     };
     get_api_v1_workspaces_wid_files_download: {
         parameters: {
-            query?: never;
+            query: {
+                as?: "text" | "url";
+                path: string;
+            };
             header?: never;
             path: {
                 wid: string;
@@ -14717,15 +14689,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description PAYLOAD_TOO_LARGE */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -14744,20 +14707,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description STORAGE_QUOTA_EXCEEDED */
-            507: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
         };
     };
     get_api_v1_workspaces_wid_files_stat: {
         parameters: {
-            query?: never;
+            query: {
+                path: string;
+            };
             header?: never;
             path: {
                 wid: string;
@@ -14811,15 +14767,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description PAYLOAD_TOO_LARGE */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -14838,20 +14785,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description STORAGE_QUOTA_EXCEEDED */
-            507: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
         };
     };
     get_api_v1_workspaces_wid_files_thumbnail: {
         parameters: {
-            query?: never;
+            query: {
+                path: string;
+            };
             header?: never;
             path: {
                 wid: string;
@@ -14945,7 +14885,12 @@ export interface operations {
     };
     get_api_v1_workspaces_wid_files_tree: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                depth?: number;
+                path?: string;
+                sort?: "type" | "name" | "id";
+            };
             header?: never;
             path: {
                 wid: string;
@@ -15473,11 +15418,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmptyRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful response */
             200: {
@@ -15809,6 +15750,15 @@ export interface operations {
             };
             /** @description VALIDATION_FAILED */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

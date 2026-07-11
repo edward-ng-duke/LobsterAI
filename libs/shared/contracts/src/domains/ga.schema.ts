@@ -38,6 +38,7 @@ export const HtmlSharePatchAccessRequestSchema = z.strictObject({ accessMode: z.
 export const HtmlSharePatchStatusRequestSchema = z.strictObject({ status: z.enum(['active', 'disabled']) });
 export const HtmlShareDtoSchema = z.strictObject({ id: z.string().min(1), url: z.url(), status: z.enum(['active', 'disabled']), accessMode: z.enum(['public', 'code']) });
 export const HtmlShareListResponseSchema = z.strictObject({ shares: z.array(HtmlShareDtoSchema) });
+export const HtmlShareLookupQuerySchema = z.strictObject({ source: z.enum(['html', 'artifact']).optional(), clientSourceKey: z.string().min(1).optional() });
 
 export const InstalledKitSchema = z.strictObject({ id: z.string().min(1), version: z.string().min(1), skillIds: z.array(z.string().min(1)) });
 export const KitInstallRequestSchema = z.strictObject({ kitId: z.string().min(1), bundleUrl: z.url(), version: z.string().min(1), skillListIds: z.array(z.string().min(1)) });
@@ -84,8 +85,11 @@ export const TaskStopRequestSchema = z.strictObject({ reason: z.string().optiona
 export const TaskChannelListResponseSchema = z.strictObject({ channels: z.array(z.string().min(1)) });
 export const TaskConversationListResponseSchema = z.strictObject({ conversations: z.array(z.strictObject({ id: z.string().min(1), title: z.string() })) });
 export const TaskSessionResponseSchema = z.strictObject({ sessionId: z.string().min(1) });
+export const TaskRunQuerySchema = z.strictObject({ status: z.enum(['queued', 'running', 'succeeded', 'failed', 'stopped']).optional(), limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).optional() });
 
 export const SessionListResponseSchema = z.strictObject({ sessions: z.array(z.strictObject({ id: z.string().min(1), title: z.string(), status: z.enum(['idle', 'running', 'completed', 'error']) })) });
+export const SessionListQuerySchema = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).optional(), pinned: z.boolean().optional() });
+export const MessageListQuerySchema = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).optional(), direction: z.enum(['before', 'after']).optional() });
 export const SessionCompactRequestSchema = z.strictObject({ reason: z.string().optional() });
 export const SessionContextUsageResponseSchema = z.strictObject({ usedTokens: z.number().int().nonnegative(), contextTokens: z.number().int().positive(), percent: z.number().min(0).max(100) });
 export const SessionExportRequestSchema = z.strictObject({ format: z.string().min(1).optional() });
@@ -122,6 +126,8 @@ export const SkillSyncRequestSchema = z.strictObject({ force: z.boolean().option
 
 export const WorkspaceRecentResponseSchema = z.strictObject({ workspaces: z.array(z.strictObject({ path: z.string().min(1), lastUsedAt: z.iso.datetime() })) });
 export const FileDownloadResponseSchema = z.strictObject({ url: z.url().optional(), text: z.string().optional() });
+export const FileDownloadQuerySchema = z.strictObject({ path: z.string().min(1), as: z.enum(['text', 'url']).optional() });
+export const FilePathQuerySchema = z.strictObject({ path: z.string().min(1) });
 export const FileStatResponseSchema = z.strictObject({ path: z.string().min(1), sizeBytes: z.number().int().nonnegative(), modifiedAt: z.iso.datetime() });
 export const FileThumbnailResponseSchema = z.strictObject({ dataUrl: z.string().min(1) });
 export const AuthMeResponseSchema = z.strictObject({ userId: z.string().min(1), email: z.email() });

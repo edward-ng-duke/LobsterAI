@@ -145,7 +145,7 @@ export const BillingLedgerEntrySchema = z.strictObject({
 export const WorkspaceCreateRequestSchema = z.strictObject({ name: z.string().min(1) });
 export const WorkspaceListResponseSchema = z.strictObject({ workspaces: z.array(z.strictObject({ id: z.string().min(1), name: z.string().min(1) })) });
 export const WorkspaceCreateResponseSchema = z.strictObject({ workspaceId: z.string().min(1), name: z.string().min(1) });
-export const WorkspaceTreeRequestSchema = z.strictObject({ path: z.string().optional(), cursor: z.string().min(1).optional(), depth: z.number().int().nonnegative().optional() });
+export const WorkspaceTreeRequestSchema = z.strictObject({ path: z.string().optional(), cursor: z.string().min(1).optional(), depth: z.number().int().nonnegative().optional(), sort: z.enum(['type', 'name', 'id']).optional() });
 export const WorkspaceTreeResponseSchema = z.strictObject({ entries: z.array(z.strictObject({ id: z.string().min(1), name: z.string(), type: z.enum(['file', 'directory']) })), nextCursor: z.string().min(1).optional() });
 export const FileUploadIntentSchema = z.strictObject({
   path: z.string().min(1),

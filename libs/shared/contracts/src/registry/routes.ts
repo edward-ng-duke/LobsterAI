@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod';
+import { z,type ZodType } from 'zod';
 
 import type { ErrorCode } from '../errors.js';
 import * as Schemas from '../index.schemas.js';
@@ -11,6 +11,8 @@ export const RouteSupport = { Ga: 'ga', Unsupported: 'unsupported' } as const;
 export interface RouteRegistryEntry {
   readonly operationId: string; readonly method: HttpMethod; readonly path: string; readonly domain: string;
   readonly requestName: string; readonly request: ZodType; readonly responseName: string; readonly response: ZodType;
+  readonly pathSchema: ZodType; readonly queryName?: string; readonly querySchema?: ZodType; readonly bodyName?: string; readonly bodySchema?: ZodType;
+  readonly pathBodyEquality: readonly string[];
   readonly successStatus: number; readonly errors: readonly ErrorCode[]; readonly auth: 'public' | 'access-token' | 'refresh-cookie'; readonly legacyBridgePaths: readonly string[];
   readonly sourceRefs: readonly string[]; readonly support: 'ga' | 'unsupported';
 }
@@ -19,10 +21,20 @@ interface RoutePolicy {
   readonly auth: RouteRegistryEntry['auth'];
   readonly successStatus: number;
   readonly errors: readonly ErrorCode[];
+  readonly queryName?: keyof typeof Schemas;
+  readonly pathBodyEquality?: readonly string[];
 }
 
 const route = (method: HttpMethod, path: string, operationId: string, requestName: keyof typeof Schemas, responseName: keyof typeof Schemas, policy: RoutePolicy): RouteRegistryEntry => {
   const support = method === 'POST' && path === '/api/v1/share-deployments/node' ? 'unsupported' : 'ga';
+  const pathShape = Object.fromEntries(
+    [...path.matchAll(/\{([^}]+)\}/g)].map((match) => [match[1], z.string().min(1)]),
+  ) as Record<string, z.ZodString>;
+  const queryName = policy.queryName ??
+    (['GET', 'DELETE'].includes(method) && requestName !== 'EmptyRequest' ? requestName : undefined);
+  const bodyName = !['GET', 'DELETE'].includes(method) && requestName !== 'EmptyRequest'
+    ? requestName
+    : undefined;
   return {
     operationId,
     method,
@@ -30,6 +42,12 @@ const route = (method: HttpMethod, path: string, operationId: string, requestNam
     domain: path.split('/').filter(Boolean)[2] ?? 'auth',
     requestName,
     request: Schemas[requestName],
+    pathSchema: z.strictObject(pathShape),
+    queryName,
+    querySchema: queryName ? Schemas[queryName] : undefined,
+    bodyName,
+    bodySchema: bodyName ? Schemas[bodyName] : undefined,
+    pathBodyEquality: policy.pathBodyEquality ?? [],
     responseName: support === 'unsupported'
       ? 'ErrorEnvelope'
       : responseName,
@@ -55,8 +73,8 @@ const RouteDefinitions = [
   route('POST', '/api/v1/artifacts/{artifactId}/preview', 'post_api_v1_artifacts_artifactId_preview', 'PreviewTokenRequest', 'PreviewTokenResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('DELETE', '/api/v1/artifacts/preview-sessions/{previewSessionId}', 'delete_api_v1_artifacts_preview_sessions_previewSessionId', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/api/v1/asr/sessions', 'post_api_v1_asr_sessions', 'AsrSessionCreateRequest', 'AsrSessionCreateResponse', { auth: 'access-token', successStatus: 201, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('GET', '/api/v1/billing/account', 'get_api_v1_billing_account', 'EmptyRequest', 'BillingAccountResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'QUOTA_EXCEEDED'] }),
-  route('POST', '/api/v1/billing/byok', 'post_api_v1_billing_byok', 'ByokUpsertRequestSchema', 'ByokResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'QUOTA_EXCEEDED'] }),
+  route('GET', '/api/v1/billing/account', 'get_api_v1_billing_account', 'EmptyRequest', 'BillingAccountResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED'] }),
+  route('POST', '/api/v1/billing/byok', 'post_api_v1_billing_byok', 'ByokUpsertRequestSchema', 'ByokResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED'] }),
   route('DELETE', '/api/v1/billing/byok/{provider}', 'delete_api_v1_billing_byok_provider', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'QUOTA_EXCEEDED'] }),
   route('GET', '/api/v1/billing/plan', 'get_api_v1_billing_plan', 'EmptyRequest', 'BillingPlanResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'QUOTA_EXCEEDED'] }),
   route('GET', '/api/v1/billing/usage', 'get_api_v1_billing_usage', 'EmptyRequest', 'BillingUsageResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'QUOTA_EXCEEDED'] }),
@@ -73,7 +91,7 @@ const RouteDefinitions = [
   route('DELETE', '/api/v1/cowork/memory/entries/{id}', 'delete_api_v1_cowork_memory_entries_id', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('PATCH', '/api/v1/cowork/memory/entries/{id}', 'patch_api_v1_cowork_memory_entries_id', 'MemoryEntryUpdateRequestSchema', 'MemoryEntrySchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/api/v1/cowork/memory/stats', 'get_api_v1_cowork_memory_stats', 'EmptyRequest', 'MemoryStatsResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('GET', '/api/v1/html-shares', 'get_api_v1_html_shares', 'EmptyRequest', 'HtmlShareListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
+  route('GET', '/api/v1/html-shares', 'get_api_v1_html_shares', 'EmptyRequest', 'HtmlShareListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'], queryName: 'HtmlShareLookupQuerySchema' }),
   route('POST', '/api/v1/html-shares', 'post_api_v1_html_shares', 'HtmlShareCreateRequestSchema', 'HtmlShareDtoSchema', { auth: 'access-token', successStatus: 201, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/api/v1/html-shares/{id}', 'get_api_v1_html_shares_id', 'EmptyRequest', 'HtmlShareDtoSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('PUT', '/api/v1/html-shares/{id}', 'put_api_v1_html_shares_id', 'HtmlShareUpdateRequestSchema', 'HtmlShareDtoSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
@@ -128,8 +146,8 @@ const RouteDefinitions = [
   route('GET', '/api/v1/runtime/session-policy', 'get_api_v1_runtime_session_policy', 'EmptyRequest', 'RuntimeSessionPolicySchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('PUT', '/api/v1/runtime/session-policy', 'put_api_v1_runtime_session_policy', 'RuntimeSessionPolicySchema', 'RuntimeSessionPolicySchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/api/v1/runtime/status', 'get_api_v1_runtime_status', 'EmptyRequest', 'RuntimeStatusResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('GET', '/api/v1/scheduled-tasks', 'get_api_v1_scheduled_tasks', 'EmptyRequest', 'ScheduledTaskListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
-  route('POST', '/api/v1/scheduled-tasks', 'post_api_v1_scheduled_tasks', 'TaskCreateRequest', 'ScheduledTaskDto', { auth: 'access-token', successStatus: 201, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
+  route('GET', '/api/v1/scheduled-tasks', 'get_api_v1_scheduled_tasks', 'EmptyRequest', 'ScheduledTaskListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED'] }),
+  route('POST', '/api/v1/scheduled-tasks', 'post_api_v1_scheduled_tasks', 'TaskCreateRequest', 'ScheduledTaskDto', { auth: 'access-token', successStatus: 201, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'TASK_LIMIT_EXCEEDED'] }),
   route('DELETE', '/api/v1/scheduled-tasks/{id}', 'delete_api_v1_scheduled_tasks_id', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
   route('GET', '/api/v1/scheduled-tasks/{id}', 'get_api_v1_scheduled_tasks_id', 'EmptyRequest', 'ScheduledTaskDto', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
   route('PATCH', '/api/v1/scheduled-tasks/{id}', 'patch_api_v1_scheduled_tasks_id', 'TaskUpdateRequest', 'ScheduledTaskDto', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
@@ -139,10 +157,10 @@ const RouteDefinitions = [
   route('POST', '/api/v1/scheduled-tasks/{id}/stop', 'post_api_v1_scheduled_tasks_id_stop', 'TaskStopRequestSchema', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'SESSION_BUSY', 'IN_PROGRESS', 'TASK_LIMIT_EXCEEDED'] }),
   route('GET', '/api/v1/scheduled-tasks/channels', 'get_api_v1_scheduled_tasks_channels', 'EmptyRequest', 'TaskChannelListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
   route('GET', '/api/v1/scheduled-tasks/channels/{ch}/conversations', 'get_api_v1_scheduled_tasks_channels_ch_conversations', 'EmptyRequest', 'TaskConversationListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
-  route('GET', '/api/v1/scheduled-tasks/runs', 'get_api_v1_scheduled_tasks_runs', 'EmptyRequest', 'TaskRunListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
+  route('GET', '/api/v1/scheduled-tasks/runs', 'get_api_v1_scheduled_tasks_runs', 'EmptyRequest', 'TaskRunListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'], queryName: 'TaskRunQuerySchema' }),
   route('GET', '/api/v1/scheduled-tasks/runs/{runId}/session', 'get_api_v1_scheduled_tasks_runs_runId_session', 'EmptyRequest', 'TaskSessionResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'TASK_LIMIT_EXCEEDED'] }),
-  route('GET', '/api/v1/sessions', 'get_api_v1_sessions', 'EmptyRequest', 'SessionListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('POST', '/api/v1/sessions', 'post_api_v1_sessions', 'StartSessionRequest', 'StartSessionResponse', { auth: 'access-token', successStatus: 202, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'SESSION_BUSY', 'IN_PROGRESS'] }),
+  route('GET', '/api/v1/sessions', 'get_api_v1_sessions', 'EmptyRequest', 'SessionListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED'], queryName: 'SessionListQuerySchema' }),
+  route('POST', '/api/v1/sessions', 'post_api_v1_sessions', 'StartSessionRequest', 'StartSessionResponse', { auth: 'access-token', successStatus: 202, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'SESSION_BUSY', 'IN_PROGRESS'] }),
   route('DELETE', '/api/v1/sessions/{id}', 'delete_api_v1_sessions_id', 'EmptyRequest', 'DeleteSessionResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/api/v1/sessions/{id}', 'get_api_v1_sessions_id', 'EmptyRequest', 'SessionDetail', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('PATCH', '/api/v1/sessions/{id}', 'patch_api_v1_sessions_id', 'SessionPatchRequest', 'SessionDetail', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
@@ -152,8 +170,8 @@ const RouteDefinitions = [
   route('POST', '/api/v1/sessions/{id}/exports/text', 'post_api_v1_sessions_id_exports_text', 'SessionExportRequestSchema', 'SessionExportResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/api/v1/sessions/{id}/fork', 'post_api_v1_sessions_id_fork', 'SessionForkRequestSchema', 'SessionForkResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'SESSION_BUSY', 'IN_PROGRESS'] }),
   route('GET', '/api/v1/sessions/{id}/managed', 'get_api_v1_sessions_id_managed', 'EmptyRequest', 'SessionManagedResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('GET', '/api/v1/sessions/{id}/messages', 'get_api_v1_sessions_id_messages', 'EmptyRequest', 'MessageListResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('POST', '/api/v1/sessions/{id}/permissions/{requestId}/respond', 'post_api_v1_sessions_id_permissions_requestId_respond', 'PermissionRespondRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
+  route('GET', '/api/v1/sessions/{id}/messages', 'get_api_v1_sessions_id_messages', 'EmptyRequest', 'MessageListResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'], queryName: 'MessageListQuerySchema' }),
+  route('POST', '/api/v1/sessions/{id}/permissions/{requestId}/respond', 'post_api_v1_sessions_id_permissions_requestId_respond', 'PermissionRespondRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'], pathBodyEquality: ['requestId'] }),
   route('GET', '/api/v1/sessions/{id}/rail-index', 'get_api_v1_sessions_id_rail_index', 'EmptyRequest', 'SessionRailIndexResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/api/v1/sessions/{id}/result-image/chunks', 'post_api_v1_sessions_id_result_image_chunks', 'ResultImageChunkRequestSchema', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/api/v1/sessions/{id}/result-image/files', 'post_api_v1_sessions_id_result_image_files', 'ResultImageFileRequestSchema', 'SessionExportResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
@@ -186,10 +204,10 @@ const RouteDefinitions = [
   route('GET', '/api/v1/subagents/{runId}/messages', 'get_api_v1_subagents_runId_messages', 'EmptyRequest', 'MemoryEntryListResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/api/v1/workspaces', 'get_api_v1_workspaces', 'EmptyRequest', 'WorkspaceListResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/api/v1/workspaces', 'post_api_v1_workspaces', 'WorkspaceCreateRequest', 'WorkspaceCreateResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('DELETE', '/api/v1/workspaces/{wid}/files', 'delete_api_v1_workspaces_wid_files', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
-  route('GET', '/api/v1/workspaces/{wid}/files/download', 'get_api_v1_workspaces_wid_files_download', 'EmptyRequest', 'FileDownloadResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
-  route('GET', '/api/v1/workspaces/{wid}/files/stat', 'get_api_v1_workspaces_wid_files_stat', 'EmptyRequest', 'FileStatResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
-  route('GET', '/api/v1/workspaces/{wid}/files/thumbnail', 'get_api_v1_workspaces_wid_files_thumbnail', 'EmptyRequest', 'FileThumbnailResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
+  route('DELETE', '/api/v1/workspaces/{wid}/files', 'delete_api_v1_workspaces_wid_files', 'EmptyRequest', 'ActionSuccessResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'], queryName: 'FilePathQuerySchema' }),
+  route('GET', '/api/v1/workspaces/{wid}/files/download', 'get_api_v1_workspaces_wid_files_download', 'EmptyRequest', 'FileDownloadResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'], queryName: 'FileDownloadQuerySchema' }),
+  route('GET', '/api/v1/workspaces/{wid}/files/stat', 'get_api_v1_workspaces_wid_files_stat', 'EmptyRequest', 'FileStatResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'], queryName: 'FilePathQuerySchema' }),
+  route('GET', '/api/v1/workspaces/{wid}/files/thumbnail', 'get_api_v1_workspaces_wid_files_thumbnail', 'EmptyRequest', 'FileThumbnailResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'], queryName: 'FilePathQuerySchema' }),
   route('GET', '/api/v1/workspaces/{wid}/files/tree', 'get_api_v1_workspaces_wid_files_tree', 'WorkspaceTreeRequest', 'WorkspaceTreeResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
   route('POST', '/api/v1/workspaces/{wid}/files/upload', 'post_api_v1_workspaces_wid_files_upload', 'SaveInlineFileRequest', 'SaveInlineFileResponse', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
   route('POST', '/api/v1/workspaces/{wid}/uploads', 'post_api_v1_workspaces_wid_uploads', 'FileUploadIntent', 'FileUploadIntent', { auth: 'access-token', successStatus: 201, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED'] }),
@@ -201,7 +219,7 @@ const RouteDefinitions = [
   route('GET', '/auth/profile-summary', 'get_auth_profile_summary', 'EmptyRequest', 'AuthProfileSummaryResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('POST', '/auth/refresh', 'post_auth_refresh', 'RefreshRequest', 'TokenResponse', { auth: 'refresh-cookie', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
   route('POST', '/oauth/authorize', 'post_oauth_authorize', 'LoginRequest', 'LoginResponse', { auth: 'public', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR'] }),
-  route('POST', '/oauth/token', 'post_oauth_token', 'OAuthTokenRequest', 'TokenResponse', { auth: 'public', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR'] }),
+  route('POST', '/oauth/token', 'post_oauth_token', 'OAuthTokenRequest', 'TokenResponse', { auth: 'public', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
 ] as const satisfies readonly RouteRegistryEntry[];
 
 export const RouteRegistry = RouteDefinitions.map((definition) => {

@@ -775,6 +775,20 @@ components:
       required:
         - deleted
       type: object
+    FileDownloadQuerySchema:
+      additionalProperties: false
+      properties:
+        as:
+          enum:
+            - text
+            - url
+          type: string
+        path:
+          minLength: 1
+          type: string
+      required:
+        - path
+      type: object
     FileDownloadResponseSchema:
       additionalProperties: false
       properties:
@@ -783,6 +797,15 @@ components:
         url:
           format: uri
           type: string
+      type: object
+    FilePathQuerySchema:
+      additionalProperties: false
+      properties:
+        path:
+          minLength: 1
+          type: string
+      required:
+        - path
       type: object
     FileStatResponseSchema:
       additionalProperties: false
@@ -958,6 +981,18 @@ components:
           type: array
       required:
         - shares
+      type: object
+    HtmlShareLookupQuerySchema:
+      additionalProperties: false
+      properties:
+        clientSourceKey:
+          minLength: 1
+          type: string
+        source:
+          enum:
+            - html
+            - artifact
+          type: string
       type: object
     HtmlSharePatchAccessRequestSchema:
       additionalProperties: false
@@ -1442,6 +1477,22 @@ components:
         - content
         - sequence
         - createdAt
+      type: object
+    MessageListQuerySchema:
+      additionalProperties: false
+      properties:
+        cursor:
+          minLength: 1
+          type: string
+        direction:
+          enum:
+            - before
+            - after
+          type: string
+        limit:
+          maximum: 100
+          minimum: 1
+          type: integer
       type: object
     MessageListResponse:
       additionalProperties: false
@@ -2775,6 +2826,19 @@ components:
       required:
         - sessionId
       type: object
+    SessionListQuerySchema:
+      additionalProperties: false
+      properties:
+        cursor:
+          minLength: 1
+          type: string
+        limit:
+          maximum: 100
+          minimum: 1
+          type: integer
+        pinned:
+          type: boolean
+      type: object
     SessionListResponseSchema:
       additionalProperties: false
       properties:
@@ -3595,6 +3659,25 @@ components:
       required:
         - runs
       type: object
+    TaskRunQuerySchema:
+      additionalProperties: false
+      properties:
+        cursor:
+          minLength: 1
+          type: string
+        limit:
+          maximum: 100
+          minimum: 1
+          type: integer
+        status:
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+            - stopped
+          type: string
+      type: object
     TaskSchedule:
       oneOf:
         - additionalProperties: false
@@ -3895,6 +3978,12 @@ components:
           minimum: 0
           type: integer
         path:
+          type: string
+        sort:
+          enum:
+            - type
+            - name
+            - id
           type: string
       type: object
     WorkspaceTreeResponse:
@@ -4720,24 +4809,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4760,8 +4837,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -4796,24 +4871,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -4836,8 +4899,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5909,7 +5970,21 @@ paths:
   /api/v1/html-shares:
     get:
       operationId: get_api_v1_html_shares
-      parameters: []
+      parameters:
+        - in: query
+          name: source
+          required: false
+          schema:
+            enum:
+              - html
+              - artifact
+            type: string
+        - in: query
+          name: clientSourceKey
+          required: false
+          schema:
+            minLength: 1
+            type: string
       responses:
         "200":
           content:
@@ -7377,12 +7452,6 @@ paths:
           schema:
             minLength: 1
             type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EmptyRequest"
-        required: true
       responses:
         "200":
           content:
@@ -9816,12 +9885,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9844,8 +9907,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -9885,12 +9946,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -9913,7 +9968,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
         - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
@@ -10057,7 +10111,31 @@ paths:
   /api/v1/scheduled-tasks/runs:
     get:
       operationId: get_api_v1_scheduled_tasks_runs
-      parameters: []
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            enum:
+              - queued
+              - running
+              - succeeded
+              - failed
+              - stopped
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 100
+            minimum: 1
+            type: integer
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            minLength: 1
+            type: string
       responses:
         "200":
           content:
@@ -10482,12 +10560,6 @@ paths:
           schema:
             minLength: 1
             type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EmptyRequest"
-        required: true
       responses:
         "200":
           content:
@@ -10705,7 +10777,25 @@ paths:
   /api/v1/sessions:
     get:
       operationId: get_api_v1_sessions
-      parameters: []
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 100
+            minimum: 1
+            type: integer
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: pinned
+          required: false
+          schema:
+            type: boolean
       responses:
         "200":
           content:
@@ -10731,12 +10821,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "429":
           content:
             application/json:
@@ -10759,7 +10843,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10799,12 +10882,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: PERMISSION_DENIED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
         "409":
           content:
             application/json:
@@ -10833,7 +10910,6 @@ paths:
         - INTERNAL_ERROR
         - UNAUTHENTICATED
         - PERMISSION_DENIED
-        - NOT_FOUND
         - SESSION_BUSY
         - IN_PROGRESS
       x-lobster-source-refs:
@@ -11586,6 +11662,27 @@ paths:
           schema:
             minLength: 1
             type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 100
+            minimum: 1
+            type: integer
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: direction
+          required: false
+          schema:
+            enum:
+              - before
+              - after
+            type: string
       responses:
         "200":
           content:
@@ -11721,6 +11818,8 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
+      x-lobster-path-body-equality:
+        - requestId
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -13987,6 +14086,12 @@ paths:
           schema:
             minLength: 1
             type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            minLength: 1
+            type: string
       responses:
         "200":
           content:
@@ -14069,6 +14174,20 @@ paths:
           schema:
             minLength: 1
             type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: as
+          required: false
+          schema:
+            enum:
+              - text
+              - url
+            type: string
       responses:
         "200":
           content:
@@ -14100,12 +14219,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "413":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PAYLOAD_TOO_LARGE
         "429":
           content:
             application/json:
@@ -14118,12 +14231,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
-        "507":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STORAGE_QUOTA_EXCEEDED
       security:
         - accessToken: []
       tags:
@@ -14135,8 +14242,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - PAYLOAD_TOO_LARGE
-        - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14149,6 +14254,12 @@ paths:
       parameters:
         - in: path
           name: wid
+          required: true
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: path
           required: true
           schema:
             minLength: 1
@@ -14184,12 +14295,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "413":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PAYLOAD_TOO_LARGE
         "429":
           content:
             application/json:
@@ -14202,12 +14307,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
-        "507":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STORAGE_QUOTA_EXCEEDED
       security:
         - accessToken: []
       tags:
@@ -14219,8 +14318,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - PAYLOAD_TOO_LARGE
-        - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14232,6 +14329,12 @@ paths:
       parameters:
         - in: path
           name: wid
+          required: true
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: path
           required: true
           schema:
             minLength: 1
@@ -14318,6 +14421,33 @@ paths:
           required: true
           schema:
             minLength: 1
+            type: string
+        - in: query
+          name: path
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: depth
+          required: false
+          schema:
+            maximum: 9007199254740991
+            minimum: 0
+            type: integer
+        - in: query
+          name: sort
+          required: false
+          schema:
+            enum:
+              - type
+              - name
+              - id
             type: string
       responses:
         "200":
@@ -14722,12 +14852,6 @@ paths:
     post:
       operationId: post_auth_logout
       parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EmptyRequest"
-        required: true
       responses:
         "200":
           content:
@@ -15024,6 +15148,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: VALIDATION_FAILED
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+          description: UNAUTHENTICATED
         "429":
           content:
             application/json:
@@ -15043,6 +15173,7 @@ paths:
         - VALIDATION_FAILED
         - RATE_LIMITED
         - INTERNAL_ERROR
+        - UNAUTHENTICATED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
