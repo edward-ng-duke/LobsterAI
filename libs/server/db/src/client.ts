@@ -2,13 +2,14 @@ import { AgentDtoSchema } from '@lobsterai/shared-contracts';
 
 import {
   type Agent as AgentRow,
-  type Prisma,
   PrismaClient,
 } from '../generated/index.js';
 import {
   type TenantContext,
+  type TenantTransactionClient,
   withTenantTransaction,
 } from './tenant-context.js';
+import { extendTenantClient } from './tenant-scope.js';
 
 export type AgentDto = (typeof AgentDtoSchema)['_output'];
 export type AgentCreateInput = Omit<AgentDto, 'id'>;
@@ -41,11 +42,18 @@ const toAgentDto = (row: AgentRow): AgentDto =>
   });
 
 const createTenantDatabase = (
-  client: PrismaClient,
+  client: ReturnType<typeof extendTenantClient>,
   context: TenantContext,
 ): TenantDatabase => {
-  const run = <Result>(callback: (transaction: Prisma.TransactionClient) => Promise<Result>) =>
-    withTenantTransaction(client, context, callback);
+  const run = <Result>(callback: (transaction: TenantTransactionClient) => Promise<Result>) =>
+    withTenantTransaction(
+      (transactionCallback) =>
+        client.$transaction((transaction) =>
+          transactionCallback(transaction as TenantTransactionClient),
+        ),
+      context,
+      callback,
+    );
 
   return {
     agents: {
@@ -106,7 +114,10 @@ export const createDatabaseFactory = (databaseUrl = process.env.DATABASE_URL): D
   if (!databaseUrl) throw new Error('DATABASE_URL is required');
   const client = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   return {
-    createTenantDatabase: (context) => createTenantDatabase(client, context),
+    createTenantDatabase: (context) => {
+      const scopedClient = extendTenantClient(client, context.tenantId);
+      return createTenantDatabase(scopedClient, context);
+    },
     disconnect: () => client.$disconnect(),
   };
 };

@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '../generated/index.js';
+import { Prisma } from '../generated/index.js';
 
 export const TenantContextSql = {
   Tenant: "SELECT set_config('app.tenant_id', $1, true)",
@@ -11,7 +11,11 @@ export interface TenantContext {
   readonly requestId?: string;
 }
 
-type TransactionClient = Prisma.TransactionClient;
+export type TenantTransactionClient = Prisma.TransactionClient;
+
+export type TenantTransactionRunner = <Result>(
+  callback: (transaction: TenantTransactionClient) => Promise<Result>,
+) => Promise<Result>;
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -25,7 +29,7 @@ export const assertTenantContext = (context: TenantContext): void => {
 };
 
 export const applyTenantContext = async (
-  transaction: TransactionClient,
+  transaction: TenantTransactionClient,
   context: TenantContext,
 ): Promise<void> => {
   assertTenantContext(context);
@@ -38,12 +42,12 @@ export const applyTenantContext = async (
 };
 
 export const withTenantTransaction = async <Result>(
-  client: PrismaClient,
+  runTransaction: TenantTransactionRunner,
   context: TenantContext,
-  callback: (transaction: TransactionClient) => Promise<Result>,
+  callback: (transaction: TenantTransactionClient) => Promise<Result>,
 ): Promise<Result> => {
   assertTenantContext(context);
-  return client.$transaction(async (transaction) => {
+  return runTransaction(async (transaction) => {
     await applyTenantContext(transaction, context);
     return callback(transaction);
   });

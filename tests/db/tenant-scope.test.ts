@@ -57,7 +57,24 @@ describe('P02 application-layer tenant scope', () => {
     ).toEqual({
       where: { tenantId },
       create: { tenantId, name: 'new' },
-      update: { name: 'updated' },
+      update: { tenantId, name: 'updated' },
+    });
+  });
+
+  test.each([
+    TenantDatabaseOperation.Update,
+    TenantDatabaseOperation.UpdateMany,
+  ])('%s overrides a spoofed tenant migration in data', (operation) => {
+    expect(
+      scopeTenantOperation(
+        'Agent',
+        operation,
+        { where: { tenantId: 'spoofed' }, data: { tenantId: 'spoofed', name: 'safe' } },
+        tenantId,
+      ),
+    ).toEqual({
+      where: { tenantId },
+      data: { tenantId, name: 'safe' },
     });
   });
 

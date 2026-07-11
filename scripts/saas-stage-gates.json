@@ -45,7 +45,8 @@
         "scripts/db/run-integration.mjs",
         "tests/integration/db/postgres-image.json",
         "tests/integration/db/rls.test.ts",
-        "tests/integration/db/tenant-context.test.ts"
+        "tests/integration/db/tenant-context.test.ts",
+        "tests/integration/db/tenant-extension.test.ts"
       ]
     },
     "supply-chain:check": {

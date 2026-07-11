@@ -5,6 +5,7 @@ export default defineConfig({
     include: [
       'tests/integration/db/rls.test.ts',
       'tests/integration/db/tenant-context.test.ts',
+      'tests/integration/db/tenant-extension.test.ts',
     ],
     environment: 'node',
     fileParallelism: false,

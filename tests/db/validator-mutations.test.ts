@@ -21,6 +21,7 @@ const createCopy = (): string => {
     'scripts/db/validate-static.mjs',
     'scripts/saas-stage-gates.json',
     'tests/integration/db/postgres-image.json',
+    'tests/integration/db/tenant-extension.test.ts',
     'vitest.config.ts',
   ]) {
     cpSync(path.join(repositoryRoot, relativePath), path.join(root, relativePath), {
@@ -63,6 +64,7 @@ describe('P02 static gate mutation resistance', () => {
     ['BYPASSRLS app role', 'scripts/db/run-integration.mjs', 'NOBYPASSRLS', 'BYPASSRLS'],
     ['floating image', 'tests/integration/db/postgres-image.json', 'postgres:17.10-bookworm', 'postgres:17'],
     ['deferred gate', 'scripts/saas-stage-gates.json', '"status": "PASS",\n      "activationTask": "P02-PR2数据库脚手架"', '"status": "NOT_APPLICABLE",\n      "activationTask": "P02-PR2数据库脚手架"'],
+    ['detached extension', 'libs/server/db/src/client.ts', 'const scopedClient = extendTenantClient(client, context.tenantId);', 'const scopedClient = client;'],
   ] as const)('rejects the %s mutation', (_label, relativePath, from, to) => {
     const root = createCopy();
     mutate(root, relativePath, from, to);

@@ -35,6 +35,9 @@ const image = json('tests/integration/db/postgres-image.json');
 const schema = read('prisma/schema.prisma');
 const inventory = json('prisma/rls/tenant-scoped-models.json');
 const context = read('libs/server/db/src/tenant-context.ts');
+const dbClient = read('libs/server/db/src/client.ts');
+const tenantScope = read('libs/server/db/src/tenant-scope.ts');
+const extensionIntegration = read('tests/integration/db/tenant-extension.test.ts');
 const integrationRunner = read('scripts/db/run-integration.mjs');
 const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
@@ -161,6 +164,34 @@ if (/\$executeRawUnsafe|\$queryRawUnsafe|\bSET\s+(?:LOCAL\s+)?app\./.test(contex
 }
 if (/set_config\('app\.(?:tenant_id|user_id)', \$1, false\)/.test(context)) {
   errors.push('tenant context set_config must not use session scope');
+}
+for (const required of [
+  /import \{ extendTenantClient \} from '\.\/tenant-scope\.js'/,
+  /const scopedClient = extendTenantClient\(client, context\.tenantId\)/,
+  /createTenantDatabase\(scopedClient, context\)/,
+]) {
+  requirePattern(dbClient, required, `safe database factory does not install tenant extension: ${required}`);
+}
+for (const required of [
+  /Prisma\.defineExtension/,
+  /operation === TenantDatabaseOperation\.Update/,
+  /operation === TenantDatabaseOperation\.UpdateMany/,
+  /args\.update = withTenant\(args\.update, tenantId\)/,
+]) {
+  requirePattern(tenantScope, required, `tenant extension invariant missing: ${required}`);
+}
+for (const required of [
+  /DISABLE ROW LEVEL SECURITY/,
+  /findMany/,
+  /count/,
+  /aggregate/,
+  /groupBy/,
+  /createMany/,
+  /upsert/,
+  /updateMany/,
+  /deleteMany/,
+]) {
+  requirePattern(extensionIntegration, required, `RLS-disabled extension integration lacks ${required}`);
 }
 for (const required of ['NOSUPERUSER', 'NOBYPASSRLS', 'table_owner', 'rolsuper', 'rolbypassrls']) {
   if (!integrationRunner.includes(required)) errors.push(`integration role proof missing ${required}`);

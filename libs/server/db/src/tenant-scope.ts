@@ -69,7 +69,13 @@ export const scopeTenantOperation = (
   if (operation === TenantDatabaseOperation.Upsert) {
     args.where = withTenant(args.where, tenantId);
     args.create = withTenant(args.create, tenantId);
-    args.update = asArguments(args.update);
+    args.update = withTenant(args.update, tenantId);
+  }
+  if (
+    operation === TenantDatabaseOperation.Update ||
+    operation === TenantDatabaseOperation.UpdateMany
+  ) {
+    args.data = withTenant(args.data, tenantId);
   }
   return args;
 };
