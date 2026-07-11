@@ -2103,6 +2103,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:160
       x-lobster-support: ga
     post:
       operationId: post_api_v1_agents
@@ -2149,6 +2150,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:162
       x-lobster-support: ga
   /api/v1/agents/preset-templates:
     get:
@@ -2190,6 +2192,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:166
       x-lobster-support: ga
   /api/v1/agents/presets:
     get:
@@ -2231,6 +2234,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:165
       x-lobster-support: ga
   /api/v1/agents/presets/{presetId}/install:
     post:
@@ -2284,6 +2288,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:167
       x-lobster-support: ga
   /api/v1/agents/{id}:
     delete:
@@ -2331,6 +2336,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:164
       x-lobster-support: ga
     get:
       operationId: get_api_v1_agents_id
@@ -2377,6 +2383,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:161
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_agents_id
@@ -2429,6 +2436,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:163
       x-lobster-support: ga
   /api/v1/artifacts/preview-sessions/{previewSessionId}:
     delete:
@@ -2476,6 +2484,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:179
       x-lobster-support: ga
   /api/v1/artifacts/{artifactId}/preview:
     post:
@@ -2529,6 +2538,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:177
+        - 附录A:178
       x-lobster-support: ga
   /api/v1/asr/sessions:
     post:
@@ -2576,6 +2587,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:365
       x-lobster-support: ga
   /api/v1/asr/sessions/{asrSessionId}/stream:
     post:
@@ -2629,6 +2641,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:365
       x-lobster-support: ga
   /api/v1/billing/account:
     get:
@@ -2670,6 +2683,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:238
       x-lobster-support: ga
   /api/v1/billing/byok:
     post:
@@ -2887,6 +2901,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:514
       x-lobster-support: ga
   /api/v1/config/enterprise:
     get:
@@ -2928,6 +2943,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:254
       x-lobster-support: ga
   /api/v1/cowork/bootstrap:
     get:
@@ -2969,6 +2985,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:132
       x-lobster-support: ga
     put:
       operationId: put_api_v1_cowork_bootstrap
@@ -3015,6 +3032,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:133
       x-lobster-support: ga
   /api/v1/cowork/config:
     get:
@@ -3056,6 +3074,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:125
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_cowork_config
@@ -3102,6 +3121,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:126
       x-lobster-support: ga
   /api/v1/cowork/dreaming/diary:
     get:
@@ -3143,6 +3163,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:135
       x-lobster-support: ga
   /api/v1/cowork/dreaming/status:
     get:
@@ -3184,6 +3205,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:134
       x-lobster-support: ga
   /api/v1/cowork/memory/entries:
     get:
@@ -3225,6 +3247,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:128
       x-lobster-support: ga
     post:
       operationId: post_api_v1_cowork_memory_entries
@@ -3271,6 +3294,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:129
       x-lobster-support: ga
   /api/v1/cowork/memory/entries/{id}:
     delete:
@@ -3318,6 +3342,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:131
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_cowork_memory_entries_id
@@ -3370,6 +3395,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:130
       x-lobster-support: ga
   /api/v1/cowork/memory/stats:
     get:
@@ -3411,6 +3437,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:127
       x-lobster-support: ga
   /api/v1/html-shares:
     get:
@@ -3452,6 +3479,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:191
+        - 附录A:194
       x-lobster-support: ga
     post:
       operationId: post_api_v1_html_shares
@@ -3498,6 +3527,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:189
+        - 附录A:192
       x-lobster-support: ga
   /api/v1/html-shares/{id}:
     get:
@@ -3545,6 +3576,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:198
       x-lobster-support: ga
     put:
       operationId: put_api_v1_html_shares_id
@@ -3597,6 +3629,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:190
+        - 附录A:193
       x-lobster-support: ga
   /api/v1/html-shares/{id}/access-mode:
     patch:
@@ -3650,6 +3684,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:196
       x-lobster-support: ga
   /api/v1/html-shares/{id}/status:
     patch:
@@ -3703,6 +3738,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:195
+        - 附录A:197
       x-lobster-support: ga
   /api/v1/html-shares/{shareId}/deployment:
     get:
@@ -3750,6 +3787,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:210
       x-lobster-support: ga
   /api/v1/kits/install:
     post:
@@ -3797,6 +3835,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:278
       x-lobster-support: ga
   /api/v1/kits/installed:
     get:
@@ -3838,6 +3877,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:280
       x-lobster-support: ga
   /api/v1/kits/marketplace:
     get:
@@ -3879,6 +3919,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:277
       x-lobster-support: ga
   /api/v1/kits/{id}:
     delete:
@@ -3926,6 +3967,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:279
       x-lobster-support: ga
   /api/v1/kv/{key}:
     delete:
@@ -3973,6 +4015,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:253
       x-lobster-support: ga
     get:
       operationId: get_api_v1_kv_key
@@ -4019,6 +4062,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:251
       x-lobster-support: ga
     put:
       operationId: put_api_v1_kv_key
@@ -4071,6 +4115,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:252
       x-lobster-support: ga
   /api/v1/mcp/marketplace:
     get:
@@ -4112,6 +4157,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:294
       x-lobster-support: ga
   /api/v1/mcp/servers:
     get:
@@ -4153,6 +4199,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:288
       x-lobster-support: ga
     post:
       operationId: post_api_v1_mcp_servers
@@ -4199,6 +4246,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:289
       x-lobster-support: ga
   /api/v1/mcp/servers/{id}:
     delete:
@@ -4246,6 +4294,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:291
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_mcp_servers_id
@@ -4298,6 +4347,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:290
+        - 附录A:292
       x-lobster-support: ga
   /api/v1/mcp/servers/{id}/launch-resolution/retry:
     post:
@@ -4351,6 +4402,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:293
       x-lobster-support: ga
   /api/v1/media/tasks/{taskId}:
     get:
@@ -4398,6 +4450,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:144
       x-lobster-support: ga
   /api/v1/media/tasks/{taskId}/cancel:
     post:
@@ -4451,6 +4504,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:142
       x-lobster-support: ga
   /api/v1/model/config:
     get:
@@ -4492,6 +4546,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:221
       x-lobster-support: ga
     put:
       operationId: put_api_v1_model_config
@@ -4538,6 +4593,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:223
       x-lobster-support: ga
   /api/v1/model/config/check:
     post:
@@ -4585,6 +4641,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:222
       x-lobster-support: ga
   /api/v1/model/proxy:
     post:
@@ -4632,6 +4689,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:218
       x-lobster-support: ga
   /api/v1/model/stream:
     post:
@@ -4679,6 +4737,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:219
+        - 附录A:365
       x-lobster-support: ga
   /api/v1/model/stream/{requestId}/abort:
     post:
@@ -4732,6 +4792,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:220
       x-lobster-support: ga
   /api/v1/models:
     get:
@@ -4773,6 +4834,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:143
+        - 附录A:240
       x-lobster-support: ga
   /api/v1/models/{id}:
     get:
@@ -4861,6 +4924,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:302
       x-lobster-support: ga
   /api/v1/plugins/batch-save:
     post:
@@ -4908,6 +4972,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:310
       x-lobster-support: ga
   /api/v1/plugins/detect:
     post:
@@ -4955,6 +5020,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:303
       x-lobster-support: ga
   /api/v1/plugins/install:
     post:
@@ -5002,6 +5068,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:305
       x-lobster-support: ga
   /api/v1/plugins/sync:
     post:
@@ -5049,6 +5116,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:304
       x-lobster-support: ga
   /api/v1/plugins/updates/check:
     get:
@@ -5090,6 +5158,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:311
       x-lobster-support: ga
   /api/v1/plugins/{id}:
     delete:
@@ -5137,6 +5206,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:306
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_plugins_id
@@ -5189,6 +5259,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:307
       x-lobster-support: ga
   /api/v1/plugins/{id}/config:
     put:
@@ -5242,6 +5313,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:309
       x-lobster-support: ga
   /api/v1/plugins/{id}/config-schema:
     get:
@@ -5289,6 +5361,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:308
       x-lobster-support: ga
   /api/v1/plugins/{id}/update:
     post:
@@ -5342,6 +5415,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:312
       x-lobster-support: ga
   /api/v1/pricing/models:
     get:
@@ -5383,6 +5457,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:239
       x-lobster-support: ga
   /api/v1/privacy/deletions:
     post:
@@ -5618,6 +5693,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:349
       x-lobster-support: ga
   /api/v1/runtime/migration/last-restore:
     get:
@@ -5659,6 +5735,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:351
       x-lobster-support: ga
   /api/v1/runtime/migration/restores:
     post:
@@ -5706,6 +5783,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:350
       x-lobster-support: ga
   /api/v1/runtime/provision:
     post:
@@ -5753,6 +5831,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:344
+        - 附录A:345
       x-lobster-support: ga
   /api/v1/runtime/repair:
     post:
@@ -5800,6 +5880,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:347
       x-lobster-support: ga
   /api/v1/runtime/restart:
     post:
@@ -5847,6 +5928,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:346
       x-lobster-support: ga
   /api/v1/runtime/session-policy:
     get:
@@ -5888,6 +5970,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:352
       x-lobster-support: ga
     put:
       operationId: put_api_v1_runtime_session_policy
@@ -5934,6 +6017,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:353
       x-lobster-support: ga
   /api/v1/runtime/status:
     get:
@@ -5975,6 +6059,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:343
       x-lobster-support: ga
   /api/v1/scheduled-tasks:
     get:
@@ -6016,6 +6101,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:322
       x-lobster-support: ga
     post:
       operationId: post_api_v1_scheduled_tasks
@@ -6062,6 +6148,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:324
       x-lobster-support: ga
   /api/v1/scheduled-tasks/channels:
     get:
@@ -6103,6 +6190,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:334
       x-lobster-support: ga
   /api/v1/scheduled-tasks/channels/{ch}/conversations:
     get:
@@ -6150,6 +6238,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:335
       x-lobster-support: ga
   /api/v1/scheduled-tasks/runs:
     get:
@@ -6191,6 +6280,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:332
       x-lobster-support: ga
   /api/v1/scheduled-tasks/runs/{runId}/session:
     get:
@@ -6238,6 +6328,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:333
       x-lobster-support: ga
   /api/v1/scheduled-tasks/{id}:
     delete:
@@ -6285,6 +6376,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:326
       x-lobster-support: ga
     get:
       operationId: get_api_v1_scheduled_tasks_id
@@ -6331,6 +6423,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:323
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_scheduled_tasks_id
@@ -6383,6 +6476,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:325
+        - 附录A:327
       x-lobster-support: ga
   /api/v1/scheduled-tasks/{id}/runs:
     get:
@@ -6430,6 +6525,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:330
       x-lobster-support: ga
     post:
       operationId: post_api_v1_scheduled_tasks_id_runs
@@ -6482,6 +6578,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:328
       x-lobster-support: ga
   /api/v1/scheduled-tasks/{id}/runs/count:
     get:
@@ -6529,6 +6626,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:331
       x-lobster-support: ga
   /api/v1/scheduled-tasks/{id}/stop:
     post:
@@ -6582,6 +6680,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:329
       x-lobster-support: ga
   /api/v1/sessions:
     get:
@@ -6623,6 +6722,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:105
       x-lobster-support: ga
     post:
       operationId: post_api_v1_sessions
@@ -6669,6 +6769,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:99
       x-lobster-support: ga
   /api/v1/sessions/batch-delete:
     post:
@@ -6716,6 +6817,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:103
       x-lobster-support: ga
   /api/v1/sessions/{id}:
     delete:
@@ -6763,6 +6865,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:102
       x-lobster-support: ga
     get:
       operationId: get_api_v1_sessions_id
@@ -6809,6 +6912,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:104
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_sessions_id
@@ -6861,6 +6965,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:107
+        - 附录A:108
       x-lobster-support: ga
     post:
       operationId: post_api_v1_sessions_id
@@ -6913,6 +7019,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:224
       x-lobster-support: ga
   /api/v1/sessions/{id}/compact-context:
     post:
@@ -6966,6 +7073,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:112
       x-lobster-support: ga
   /api/v1/sessions/{id}/context-usage:
     get:
@@ -7013,6 +7121,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:111
       x-lobster-support: ga
   /api/v1/sessions/{id}/exports/result-image:
     post:
@@ -7066,6 +7175,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:116
       x-lobster-support: ga
   /api/v1/sessions/{id}/exports/text:
     post:
@@ -7119,6 +7229,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:118
       x-lobster-support: ga
   /api/v1/sessions/{id}/fork:
     post:
@@ -7172,6 +7283,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:109
       x-lobster-support: ga
   /api/v1/sessions/{id}/managed:
     get:
@@ -7219,6 +7331,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:110
       x-lobster-support: ga
   /api/v1/sessions/{id}/messages:
     get:
@@ -7266,6 +7379,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:106
       x-lobster-support: ga
   /api/v1/sessions/{id}/permissions/{requestId}/respond:
     post:
@@ -7325,6 +7439,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:141
       x-lobster-support: ga
   /api/v1/sessions/{id}/rail-index:
     get:
@@ -7372,6 +7487,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:114
       x-lobster-support: ga
   /api/v1/sessions/{id}/result-image/chunks:
     post:
@@ -7425,6 +7541,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:115
       x-lobster-support: ga
   /api/v1/sessions/{id}/result-image/files:
     post:
@@ -7478,6 +7595,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:117
       x-lobster-support: ga
   /api/v1/sessions/{id}/runtime:
     patch:
@@ -7531,6 +7649,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:348
       x-lobster-support: ga
   /api/v1/sessions/{id}/stop:
     post:
@@ -7584,6 +7703,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:101
       x-lobster-support: ga
   /api/v1/sessions/{id}/subagents:
     get:
@@ -7631,6 +7751,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:150
       x-lobster-support: ga
   /api/v1/sessions/{id}/title-generation:
     post:
@@ -7684,6 +7805,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:224
       x-lobster-support: ga
   /api/v1/sessions/{id}/turns:
     post:
@@ -7737,6 +7859,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:100
       x-lobster-support: ga
   /api/v1/sessions/{id}/viewed:
     post:
@@ -7790,6 +7913,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:113
       x-lobster-support: ga
   /api/v1/share-deployments/analyze:
     post:
@@ -7837,6 +7961,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:207
       x-lobster-support: ga
   /api/v1/share-deployments/candidates:
     post:
@@ -7884,6 +8009,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:206
       x-lobster-support: ga
   /api/v1/share-deployments/node:
     post:
@@ -7902,35 +8028,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericResponse"
           description: Successful response
-        "400":
+        "501":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-          description: VALIDATION_FAILED
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: UNAUTHENTICATED
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: NOT_FOUND
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: INTERNAL_ERROR
+          description: UNSUPPORTED_FEATURE
       tags:
         - share-deployments
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:208
       x-lobster-support: unsupported
   /api/v1/share-deployments/static:
     post:
@@ -7978,6 +8087,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:208
       x-lobster-support: ga
   /api/v1/share-deployments/{deploymentId}:
     get:
@@ -8025,6 +8135,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:209
       x-lobster-support: ga
   /api/v1/skills:
     get:
@@ -8066,6 +8177,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:262
       x-lobster-support: ga
   /api/v1/skills/install:
     post:
@@ -8113,6 +8225,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:265
       x-lobster-support: ga
   /api/v1/skills/marketplace:
     get:
@@ -8154,6 +8267,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:273
       x-lobster-support: ga
   /api/v1/skills/routing-prompt:
     get:
@@ -8195,6 +8309,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:269
       x-lobster-support: ga
   /api/v1/skills/sync:
     post:
@@ -8242,6 +8357,9 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:274
+        - 附录A:275
+        - 附录A:276
       x-lobster-support: ga
   /api/v1/skills/{id}:
     delete:
@@ -8289,6 +8407,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:264
       x-lobster-support: ga
     patch:
       operationId: patch_api_v1_skills_id
@@ -8341,6 +8460,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:263
       x-lobster-support: ga
   /api/v1/skills/{id}/config:
     get:
@@ -8388,6 +8508,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:270
       x-lobster-support: ga
     put:
       operationId: put_api_v1_skills_id_config
@@ -8440,6 +8561,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:271
       x-lobster-support: ga
   /api/v1/skills/{id}/confirm:
     post:
@@ -8493,6 +8615,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:267
       x-lobster-support: ga
   /api/v1/skills/{id}/test:
     post:
@@ -8546,6 +8669,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:272
       x-lobster-support: ga
   /api/v1/skills/{id}/upgrade:
     post:
@@ -8599,6 +8723,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:266
       x-lobster-support: ga
   /api/v1/stream/ticket:
     post:
@@ -8693,6 +8818,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:151
       x-lobster-support: ga
   /api/v1/subagents/{runId}/messages:
     get:
@@ -8740,6 +8866,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:152
       x-lobster-support: ga
   /api/v1/workspaces:
     get:
@@ -8868,6 +8995,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:119
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/files:
     delete:
@@ -8962,6 +9090,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:376
+        - 附录A:378
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/files/stat:
     get:
@@ -9009,6 +9139,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:377
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/files/thumbnail:
     get:
@@ -9056,6 +9187,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:379
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/files/tree:
     get:
@@ -9103,6 +9235,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:373
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/files/upload:
     post:
@@ -9156,6 +9289,8 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:374
+        - 附录A:375
       x-lobster-support: ga
   /api/v1/workspaces/{wid}/uploads:
     post:
@@ -9315,6 +9450,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:233
       x-lobster-support: ga
   /auth/login:
     post:
@@ -9362,6 +9498,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:232
       x-lobster-support: ga
   /auth/logout:
     post:
@@ -9409,6 +9546,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:243
       x-lobster-support: ga
   /auth/me:
     get:
@@ -9450,6 +9588,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:236
       x-lobster-support: ga
   /auth/profile-summary:
     get:
@@ -9491,6 +9630,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:237
       x-lobster-support: ga
   /auth/refresh:
     post:
@@ -9538,6 +9678,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:241
       x-lobster-support: ga
   /oauth/authorize:
     post:
@@ -9585,6 +9726,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:232
       x-lobster-support: ga
   /oauth/token:
     post:
@@ -9632,6 +9774,7 @@ paths:
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
+        - 附录A:233
       x-lobster-support: ga
 servers:
   - url: /

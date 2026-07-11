@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 
 import * as Schemas from '../index.schemas.js';
+import { IpcGaInventory } from './ipc-ga-inventory.js';
 
 export const HttpMethod = { Get: 'GET', Post: 'POST', Put: 'PUT', Patch: 'PATCH', Delete: 'DELETE' } as const;
 export type HttpMethod = (typeof HttpMethod)[keyof typeof HttpMethod];
@@ -19,7 +20,7 @@ const route = (method: HttpMethod, path: string, operationId: string, requestNam
   legacyBridgePaths: [], sourceRefs: ['附录A', '19§3.3'], support: method === 'POST' && path === '/api/v1/share-deployments/node' ? 'unsupported' : 'ga',
 });
 
-export const RouteRegistry = [
+const RouteDefinitions = [
   route('GET', '/api/v1/agents', 'get_api_v1_agents', 'EmptyRequest', 'GenericResponse'),
   route('POST', '/api/v1/agents', 'post_api_v1_agents', 'GenericRequest', 'GenericResponse'),
   route('DELETE', '/api/v1/agents/{id}', 'delete_api_v1_agents_id', 'EmptyRequest', 'GenericResponse'),
@@ -182,3 +183,19 @@ export const RouteRegistry = [
   route('POST', '/oauth/authorize', 'post_oauth_authorize', 'GenericRequest', 'GenericResponse'),
   route('POST', '/oauth/token', 'post_oauth_token', 'OAuthTokenRequest', 'TokenResponse'),
 ] as const satisfies readonly RouteRegistryEntry[];
+
+export const RouteRegistry = RouteDefinitions.map((definition) => {
+  const inventoryRows = IpcGaInventory.filter(
+    (row) =>
+      row.kind === 'route' && row.targets.some((target) => target === definition.operationId),
+  );
+  return {
+    ...definition,
+    errors:
+      definition.support === RouteSupport.Unsupported
+        ? ['UNSUPPORTED_FEATURE']
+        : definition.errors,
+    legacyBridgePaths: inventoryRows.map((row) => row.legacyIpc),
+    sourceRefs: [...definition.sourceRefs, ...inventoryRows.map((row) => row.sourceRef)],
+  } satisfies RouteRegistryEntry;
+});

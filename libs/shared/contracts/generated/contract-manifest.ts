@@ -1,8 +1,8 @@
 // Generated file. Do not edit.
 export const ContractManifest = {
   "contractVersion": "1.0.0",
-  "sourceHash": "9768a108bb53fda9a0941143cdcdd300d5fa9f16d123c2cd4f8618c143bfc171",
-  "outputHash": "61c6ffaab0b7ed7479b74eb39c4ea31f4620ead96232ca9c873b09913757c605",
+  "sourceHash": "d43b7b48753edeead514c47935159e148394c4d8c84524395c6c9f75dddc44dd",
+  "outputHash": "fc6a825e503ca06a7a67a99147f0d7293ccfb8cb72beb87cd70dfb3627f2a27a",
   "routeCount": 161,
   "channelCount": 32,
   "inventoryCount": 184,
