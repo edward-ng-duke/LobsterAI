@@ -617,13 +617,16 @@ components:
             additionalProperties: false
             properties:
               claudeSessionId:
-                minLength: 1
-                type: string
+                anyOf:
+                  - minLength: 1
+                    type: string
+                  - type: "null"
               sessionId:
                 minLength: 1
                 type: string
             required:
               - sessionId
+              - claudeSessionId
             title: completeData
             type: object
           emittedAt:
@@ -656,6 +659,9 @@ components:
           - data
         type: object
       title: complete
+      x-lobster-async-channel: cowork/stream/complete
+      x-lobster-bridge-method: cowork.onStreamComplete
+      x-lobster-ipc-topic: cowork:stream:complete
     contextMaintenance:
       name: contextMaintenance
       payload:
@@ -704,6 +710,9 @@ components:
           - data
         type: object
       title: contextMaintenance
+      x-lobster-async-channel: cowork/stream/context-maintenance
+      x-lobster-bridge-method: cowork.onStreamContextMaintenance
+      x-lobster-ipc-topic: cowork:stream:contextMaintenance
     contextUsage:
       name: contextUsage
       payload:
@@ -755,6 +764,9 @@ components:
           - data
         type: object
       title: contextUsage
+      x-lobster-async-channel: cowork/stream/context-usage
+      x-lobster-bridge-method: cowork.onStreamContextUsage
+      x-lobster-ipc-topic: cowork:stream:contextUsage
     error:
       name: error
       payload:
@@ -764,17 +776,7 @@ components:
             additionalProperties: false
             properties:
               error:
-                additionalProperties: false
-                properties:
-                  code:
-                    minLength: 1
-                    type: string
-                  message:
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
+                type: string
               sessionId:
                 minLength: 1
                 type: string
@@ -813,6 +815,9 @@ components:
           - data
         type: object
       title: error
+      x-lobster-async-channel: cowork/stream/error
+      x-lobster-bridge-method: cowork.onStreamError
+      x-lobster-ipc-topic: cowork:stream:error
     filesChanged:
       name: filesChanged
       payload:
@@ -916,6 +921,9 @@ components:
           - data
         type: object
       title: goal
+      x-lobster-async-channel: cowork/stream/goal
+      x-lobster-bridge-method: cowork.onStreamGoal
+      x-lobster-ipc-topic: cowork:stream:goal
     mcpChanged:
       name: mcpChanged
       payload:
@@ -1070,6 +1078,9 @@ components:
           - data
         type: object
       title: message
+      x-lobster-async-channel: cowork/stream/message
+      x-lobster-bridge-method: cowork.onStreamMessage
+      x-lobster-ipc-topic: cowork:stream:message
     messageUpdate:
       name: messageUpdate
       payload:
@@ -1127,6 +1138,9 @@ components:
           - data
         type: object
       title: messageUpdate
+      x-lobster-async-channel: cowork/stream/message-update
+      x-lobster-bridge-method: cowork.onStreamMessageUpdate
+      x-lobster-ipc-topic: cowork:stream:messageUpdate
     openSessionFromNotification:
       name: openSessionFromNotification
       payload:
@@ -1276,6 +1290,9 @@ components:
           - data
         type: object
       title: permission
+      x-lobster-async-channel: cowork/stream/permission
+      x-lobster-bridge-method: cowork.onStreamPermission
+      x-lobster-ipc-topic: cowork:stream:permission
     permissionDismiss:
       name: permissionDismiss
       payload:
@@ -1321,6 +1338,9 @@ components:
           - data
         type: object
       title: permissionDismiss
+      x-lobster-async-channel: cowork/stream/permission-dismiss
+      x-lobster-bridge-method: cowork.onStreamPermissionDismiss
+      x-lobster-ipc-topic: cowork:stream:permissionDismiss
     pluginsInstallLog:
       name: pluginsInstallLog
       payload:
@@ -1454,6 +1474,9 @@ components:
           - data
         type: object
       title: sessionStatus
+      x-lobster-async-channel: cowork/stream/session-status
+      x-lobster-bridge-method: cowork.onStreamSessionStatus
+      x-lobster-ipc-topic: cowork:stream:sessionStatus
     sessionsChanged:
       name: sessionsChanged
       payload:

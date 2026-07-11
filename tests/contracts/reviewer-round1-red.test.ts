@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { analyzeBreakingDiff } from '../../scripts/contracts/breaking-diff.mjs';
 import { BridgeRegistry } from '../../libs/shared/contracts/src/registry/bridge.js';
+import { ChannelRegistry } from '../../libs/shared/contracts/src/registry/channels.js';
 import { CoworkStreamRegistry } from '../../libs/shared/contracts/src/registry/cowork-stream.js';
 import { IpcGaInventory } from '../../libs/shared/contracts/src/registry/ipc-ga-inventory.js';
 import { RouteRegistry } from '../../libs/shared/contracts/src/registry/routes.js';
@@ -46,9 +47,9 @@ describe('Reviewer Round 1 route and schema mutations', () => {
 
   test('maps every GA inventory row through bridge and a real route or channel target', () => {
     const routeIds = new Set(RouteRegistry.map((route) => route.operationId));
-    const channelIds = new Set(CoworkStreamRegistry.map((event) => event.wireType));
+    const channelIds = new Set(ChannelRegistry.map((event) => event.messageType));
     const bridgeTargets = new Set(
-      BridgeRegistry.filter((entry) => entry.target).map((entry) => entry.target),
+      BridgeRegistry.flatMap((entry) => entry.targets),
     );
     for (const row of IpcGaInventory) {
       expect(row.bridgePaths.length, row.id).toBeGreaterThan(0);

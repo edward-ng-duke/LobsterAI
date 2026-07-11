@@ -1,1 +1,1 @@
-{"sessionId":"s1","error":"failed"}
+{"sessionId":"s1","error":{"code":"INTERNAL_ERROR","message":"failed"}}

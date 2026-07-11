@@ -172,9 +172,17 @@ const generatedOpenapiTypes = astToString(
 
 const asyncMessages = {};
 for (const channel of ChannelRegistry) {
+  const coworkStream = CoworkStreamRegistry.find((entry) => entry.wireType === channel.messageType);
   asyncMessages[channel.messageType] = {
     name: channel.messageType,
     title: channel.messageType,
+    ...(coworkStream
+      ? {
+          'x-lobster-ipc-topic': coworkStream.ipcTopic,
+          'x-lobster-async-channel': coworkStream.asyncChannel,
+          'x-lobster-bridge-method': coworkStream.bridgeMethod,
+        }
+      : {}),
     payload:
       channel.messageType === 'clientControl'
         ? schemaJson(channel.schema, channel.messageType)

@@ -33,11 +33,11 @@ const permissionPayload = z.strictObject({
 const permissionDismissPayload = z.strictObject({ requestId: z.string().min(1) });
 const completePayload = z.strictObject({
   sessionId: z.string().min(1),
-  claudeSessionId: z.string().min(1).optional(),
+  claudeSessionId: z.string().min(1).nullable(),
 });
 const errorPayload = z.strictObject({
   sessionId: z.string().min(1),
-  error: z.strictObject({ code: z.string().min(1), message: z.string() }),
+  error: z.string(),
 });
 
 export const CoworkStreamRegistry = [
@@ -58,4 +58,3 @@ export const CoworkStreamChannel = Object.fromEntries(
 ) as { [Entry in (typeof CoworkStreamRegistry)[number] as Entry['wireType']]: Entry['ipcTopic'] };
 
 export type CoworkStreamWireType = (typeof CoworkStreamRegistry)[number]['wireType'];
-
