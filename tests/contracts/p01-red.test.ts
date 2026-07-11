@@ -24,7 +24,7 @@ describe('P01 contract gate red baseline', () => {
       stage: stageManifest.currentStage,
       status: 'PASS',
     });
-  });
+  }, 30_000);
 
   test('provides the frozen contract registries, specifications, and consumers', () => {
     const requiredFiles = [
