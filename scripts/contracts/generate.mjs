@@ -58,6 +58,7 @@ const sourceFiles = [
   ...walk(path.join(repositoryRoot, 'libs/shared/contracts/src')).filter((file) => file.endsWith('.ts')),
   path.join(repositoryRoot, 'libs/shared/contracts/codegen-policy.json'),
   path.join(repositoryRoot, 'src/renderer/types/electron.d.ts'),
+  path.join(repositoryRoot, '改造计划/附录A-IPC通道与接口映射.md'),
   fileURLToPath(import.meta.url),
 ];
 const sourceHash = sha256(

@@ -74,6 +74,21 @@ const checkAppendixCoverage = () => {
   const routeTargets = new Set(RouteRegistry.map((route) => route.operationId));
   const channelTargets = new Set(ChannelRegistry.map((channel) => channel.channelId));
   const inventoryIds = new Set();
+  const appendixLines = readFileSync(
+    path.join(repositoryRoot, '改造计划/附录A-IPC通道与接口映射.md'),
+    'utf8',
+  ).split(/\r?\n/);
+  let section = '';
+  const expectedSourceRefs = new Set();
+  appendixLines.forEach((line, index) => {
+    if (line.startsWith('### ')) section = line.slice(4);
+    if (!line.startsWith('|') || /^\|[- :]+\|/.test(line) || !line.includes('✅')) return;
+    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
+    if (/IPC|事件（send）|GA 主线/.test(cells[0])) return;
+    if (/^A\.(?:2|3)/.test(section) || line.includes('`app:getVersion`')) {
+      expectedSourceRefs.add(`附录A:${index + 1}`);
+    }
+  });
   const domains = {};
   for (const row of IpcGaInventory) {
     assert('appendix-a-coverage', !inventoryIds.has(row.id), `duplicate inventory id ${row.id}`);
@@ -84,6 +99,12 @@ const checkAppendixCoverage = () => {
     const domain = row.legacyIpc.split(':')[0];
     domains[domain] = (domains[domain] ?? 0) + 1;
   }
+  equalSets(
+    'appendix-a-coverage',
+    new Set(IpcGaInventory.map((row) => row.sourceRef)),
+    expectedSourceRefs,
+    'Appendix A GA/partial row denominator mismatch',
+  );
   const referencedRoutes = new Set(IpcGaInventory.filter((row) => row.kind === 'route').flatMap((row) => row.targets));
   const referencedChannels = new Set(IpcGaInventory.filter((row) => row.kind === 'channel').flatMap((row) => row.targets));
   const supplementalRoutes = new Set([
@@ -99,6 +120,7 @@ const checkAppendixCoverage = () => {
   const supplementalChannels = new Set(['asrAudioChunk', 'asrPartial', 'asrFinal', 'asrError']);
   for (const target of channelTargets) assert('appendix-a-coverage', referencedChannels.has(target) || supplementalChannels.has(target), `orphan channel ${target}`);
   summaries.inventoryCount = IpcGaInventory.length;
+  summaries.appendixExpectedCount = expectedSourceRefs.size;
   summaries.inventoryDomains = domains;
 };
 
@@ -296,15 +318,17 @@ const checkGenerated = () => {
 const checkBreaking = () => {
   const baseRef = process.env.CONTRACT_BASE_REF;
   if (!baseRef) return;
-  const show = spawnSync('git', ['show', `${baseRef}:libs/shared/contracts/openapi.yaml`], { cwd: repositoryRoot, encoding: 'utf8' });
-  if (show.status !== 0) {
-    console.error(JSON.stringify({ status: 'BLOCKED', check: 'breaking', reason: `base ref/spec unavailable: ${baseRef}` }));
+  const result = spawnSync(process.execPath, ['scripts/contracts/breaking-diff.mjs'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: process.env,
+  });
+  if (result.status === 2) {
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
     process.exit(2);
   }
-  const base = parseYaml(show.stdout);
-  const currentOperations = new Set(Object.entries(openapi.paths).flatMap(([routePath, item]) => Object.keys(item).map((method) => `${method} ${routePath}`)));
-  const removed = Object.entries(base.paths ?? {}).flatMap(([routePath, item]) => Object.keys(item).map((method) => `${method} ${routePath}`)).filter((operation) => !currentOperations.has(operation));
-  assert('breaking', removed.length === 0, `removed operations: ${removed.join(',')}`);
+  assert('breaking', result.status === 0, result.stdout + result.stderr);
 };
 
 const checks = new Map([
