@@ -42,6 +42,7 @@
         "scripts/db/validate.mjs",
         "scripts/db/validate-evidence.mjs",
         "scripts/db/evidence-bundle.schema.json",
+        "scripts/db/snapshot-evidence.mjs",
         "scripts/db/validate-static.mjs",
         "scripts/db/preflight.mjs",
         "scripts/db/run-integration.mjs",

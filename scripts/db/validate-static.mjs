@@ -44,6 +44,7 @@ const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
 const evidenceValidator = read('scripts/db/validate-evidence.mjs');
 const evidenceSchema = read('scripts/db/evidence-bundle.schema.json');
+const evidenceSnapshot = read('scripts/db/snapshot-evidence.mjs');
 
 const migrationRoot = path.join(root, 'prisma/migrations');
 const migrationDirectories = existsSync(migrationRoot)
@@ -81,6 +82,9 @@ for (const required of ['additionalProperties', 'codeEvidenceSha', 'stageEvidenc
 }
 for (const required of ['unknown property', 'source SHA', 'runner SHA mismatch']) {
   if (!evidenceValidator.includes(required)) errors.push(`evidence validator lacks ${required}`);
+}
+for (const required of ['copyNativeReport', "report.sourceSha !== expectedSourceSha", 'atomicWrite']) {
+  if (!evidenceSnapshot.includes(required)) errors.push(`native evidence snapshot lacks ${required}`);
 }
 for (const [dependency, version] of Object.entries({
   prisma: '6.19.3',
