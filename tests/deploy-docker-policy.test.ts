@@ -1,9 +1,14 @@
 import { spawnSync } from 'node:child_process';
+import { EventEmitter, once } from 'node:events';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import {
+  installRuntimeOrchestratorSignalHandlers,
+  startRuntimeOrchestratorShell,
+} from '../apps/runtime-orchestrator/src/index.js';
 import { validateDockerfile } from '../scripts/check-docker-build.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
@@ -101,5 +106,17 @@ describe('P03 production image policy', () => {
       env: { ...process.env, OPENCLAW_GATEWAY_PORT: '9' },
     });
     expect(negative.status).not.toBe(0);
+  });
+
+  test('runtime orchestrator closes its real server on SIGTERM', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+
+    await closed;
+    expect(server.listening).toBe(false);
   });
 });

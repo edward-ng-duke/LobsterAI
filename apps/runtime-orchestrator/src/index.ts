@@ -8,6 +8,11 @@ export interface RuntimeOrchestratorOptions {
   port: number;
 }
 
+export interface RuntimeOrchestratorSignalSource {
+  once(event: 'SIGINT' | 'SIGTERM', listener: () => void): unknown;
+  off(event: 'SIGINT' | 'SIGTERM', listener: () => void): unknown;
+}
+
 export const readRuntimeOrchestratorOptions = (
   environment: NodeJS.ProcessEnv = process.env,
 ): RuntimeOrchestratorOptions => {
@@ -52,8 +57,29 @@ export const startRuntimeOrchestratorShell = async (
   return server;
 };
 
+export const installRuntimeOrchestratorSignalHandlers = (
+  server: Server,
+  signalSource: RuntimeOrchestratorSignalSource,
+): (() => void) => {
+  let closing = false;
+  const stop = (): void => {
+    if (closing) return;
+    closing = true;
+    server.close();
+  };
+  const removeHandlers = (): void => {
+    signalSource.off('SIGINT', stop);
+    signalSource.off('SIGTERM', stop);
+  };
+  signalSource.once('SIGINT', stop);
+  signalSource.once('SIGTERM', stop);
+  server.once('close', removeHandlers);
+  return removeHandlers;
+};
+
 const isMainModule = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMainModule) {
   const server = await startRuntimeOrchestratorShell();
   console.log('[Runtime Orchestrator] scaffold listening', server.address());
+  installRuntimeOrchestratorSignalHandlers(server, process);
 }
