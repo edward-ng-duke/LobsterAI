@@ -125,7 +125,8 @@ if (existsSync(stageFile)) {
   }
   if (
     stage.runnerSha256 !== sha256File(path.join(root, 'scripts/run-saas-stage-gate.mjs')) ||
-    stage.manifestSha256 !== sha256File(path.join(root, 'scripts/saas-stage-gates.json'))
+    stage.manifestSha256 !== sha256File(path.join(root, 'scripts/saas-stage-gates.json')) ||
+    stage.expectedManifestSha256 !== stage.manifestSha256
   ) {
     errors.push('prisma-stage-gate.json: outer runner or gate manifest digest mismatch');
   }

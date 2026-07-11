@@ -163,7 +163,7 @@
     "prismaStageGate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "gate", "stage", "status", "activationTask", "reason", "fixturesChecked", "invocationId", "generatedAt", "sourceSha", "runnerSha256", "manifestSha256", "command", "commandOutputSha256"],
+      "required": ["schemaVersion", "gate", "stage", "status", "activationTask", "reason", "fixturesChecked", "invocationId", "generatedAt", "sourceSha", "runnerSha256", "manifestSha256", "expectedManifestSha256", "command", "commandOutputSha256"],
       "properties": {
         "schemaVersion": { "const": 1 },
         "gate": { "const": "prisma:validate" },
@@ -177,6 +177,7 @@
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
         "runnerSha256": { "$ref": "#/$defs/sha256" },
         "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "expectedManifestSha256": { "$ref": "#/$defs/sha256" },
         "command": { "type": "array", "minItems": 2, "items": { "type": "string" } },
         "commandOutputSha256": { "$ref": "#/$defs/sha256" }
       }

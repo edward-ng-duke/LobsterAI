@@ -31,6 +31,27 @@ if (runnerSha256 !== manifest.runnerSha256) {
   process.exit(1);
 }
 
+const externallyExpectedManifestSha256 =
+  process.env.SAAS_EXPECTED_STAGE_MANIFEST_SHA256 || process.argv[3];
+if (gateName === 'prisma:validate') {
+  if (!/^[a-f0-9]{64}$/.test(externallyExpectedManifestSha256 ?? '')) {
+    console.error(JSON.stringify({
+      status: 'ERROR',
+      gate: gateName,
+      reason: 'external stage manifest digest is required',
+    }));
+    process.exit(1);
+  }
+  if (externallyExpectedManifestSha256 !== manifestSha256) {
+    console.error(JSON.stringify({
+      status: 'ERROR',
+      gate: gateName,
+      reason: 'external stage manifest digest mismatch',
+    }));
+    process.exit(1);
+  }
+}
+
 const fixtureErrors = gate.fixtures.flatMap((relativePath) => {
   const absolutePath = path.join(repositoryRoot, relativePath);
   if (!existsSync(absolutePath)) return [`missing fixture: ${relativePath}`];
@@ -114,6 +135,7 @@ const report = {
   sourceSha,
   runnerSha256,
   manifestSha256,
+  expectedManifestSha256: externallyExpectedManifestSha256 ?? null,
   command: gate.command ?? null,
   commandOutputSha256: commandResult
     ? createHash('sha256').update(`${commandResult.stdout}\n${commandResult.stderr}`).digest('hex')

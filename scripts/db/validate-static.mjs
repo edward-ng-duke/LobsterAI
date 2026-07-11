@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,9 @@ const read = (relativePath) => {
   }
   return readFileSync(absolutePath, 'utf8');
 };
+
+const sha256File = (relativePath) =>
+  createHash('sha256').update(readFileSync(path.join(root, relativePath))).digest('hex');
 
 const json = (relativePath) => {
   try {
@@ -119,6 +123,16 @@ for (const relativePath of [
   if (!stageManifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]) {
     errors.push(`Prisma stage must externally pin ${relativePath}`);
   }
+  if (
+    stageManifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath] !==
+    sha256File(relativePath)
+  ) {
+    errors.push(`Prisma stage trusted digest mismatch for ${relativePath}`);
+  }
+}
+const stageManifestSha256 = sha256File('scripts/saas-stage-gates.json');
+if (!packageJson.scripts?.['prisma:validate']?.endsWith(stageManifestSha256)) {
+  errors.push('Prisma stage entry must include the externally accepted gate manifest digest');
 }
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {
   if (!evidenceProvenance.includes(required)) errors.push(`evidence provenance lacks ${required}`);
