@@ -76,3 +76,12 @@ exit 1; 5 tests failed
 - `CONTRACT_BASE_REF` 无效或外部 base 不可读取时固定 `BLOCKED/2`，不得改成 PASS。
 - 本任务未实现 controller/service/provider/ASR 上游/BYOK ledger/quota，也未添加伪 handler。
 - Reviewer 应至少独立重跑：删 `goal`、手改生成物、冒号路径、删除附录 A 行、breaking field 五个 mutation。
+
+## Round 2 Reviewer 退回修复（2026-07-11 15:29 +0800）
+
+- 验证基线：`200c36943f4fb50b7a32a8e8e7d43ec7ece19130`；Node `v24.15.0`，npm `11.12.1`。
+- Red：`abf478e5` 初始 9/9 failed；Green 后扩展为 10/10 PASS，覆盖 Reviewer 五项 P1 与原子 staging 故障注入。
+- 最新计数：schema `103`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`。
+- 最新 hash：source `2d771c6e7552895d65d036854afbd676ce25660cf2a79844a68419175cddf394`；output `8e2e6f43c14cbf5c9173bcb2f7202fcf622d589fec3956aed43f0abe2226f24d`；inventory `a89dcc7d51bc33e282adaf51d4885f2fb8451c00573956fc951f214c77cb1c02`。
+- 总门：`npm ci`、generate/check/test:contract/typecheck、changed-file lint、189-file Vitest、SaaS 9-workspace build、renderer build、Electron compile 均 exit 0。
+- 关键变化：无虚构 REST；逐 operation status/security/errors；三注册表双向 target；Electron 命名类型不再擦除为 `unknown`；Cowork 10 四方 payload；递归 breaking diff；无删除窗口的 atomic publish 与 stale 拒绝。
