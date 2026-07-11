@@ -217,7 +217,7 @@ const RouteDefinitions = [
   route('POST', '/auth/logout', 'post_auth_logout', 'EmptyRequest', 'LogoutResponse', { auth: 'refresh-cookie', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
   route('GET', '/auth/me', 'get_auth_me', 'EmptyRequest', 'AuthMeResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
   route('GET', '/auth/profile-summary', 'get_auth_profile_summary', 'EmptyRequest', 'AuthProfileSummaryResponseSchema', { auth: 'access-token', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND'] }),
-  route('POST', '/auth/refresh', 'post_auth_refresh', 'RefreshRequest', 'TokenResponse', { auth: 'refresh-cookie', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
+  route('POST', '/auth/refresh', 'post_auth_refresh', 'EmptyRequest', 'TokenResponse', { auth: 'refresh-cookie', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
   route('POST', '/oauth/authorize', 'post_oauth_authorize', 'LoginRequest', 'LoginResponse', { auth: 'public', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR'] }),
   route('POST', '/oauth/token', 'post_oauth_token', 'OAuthTokenRequest', 'TokenResponse', { auth: 'public', successStatus: 200, errors: ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR', 'UNAUTHENTICATED'] }),
 ] as const satisfies readonly RouteRegistryEntry[];

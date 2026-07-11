@@ -23,7 +23,10 @@ export const OAuthTokenRequestSchema = z.discriminatedUnion('grantType', [
     grantType: z.literal('refresh_token'),
     refreshToken: z.string().min(1),
   }),
-]);
+]).meta({
+  'x-lobster-authorization-code-binding': 'code+verifier+redirectUri',
+  'x-lobster-redirect-binding': 'redirectUri must equal the login request redirectUri',
+});
 export const TokenResponseSchema = z.strictObject({
   accessToken: z.string().min(1),
   expiresAt: z.iso.datetime(),
