@@ -36,6 +36,22 @@ export const ResourceSubscriptionSchema = z.strictObject({
 export const StreamTicketRequestSchema = z.strictObject({
   sessions: z.array(z.string().min(1)).max(100).optional(),
   resourceSubscriptions: z.array(ResourceSubscriptionSchema).max(100).optional(),
+}).superRefine((value, context) => {
+  const sessions = value.sessions ?? [];
+  if (new Set(sessions).size !== sessions.length) {
+    context.addIssue({ code: 'custom', path: ['sessions'], message: 'Duplicate session scope' });
+  }
+  const resources = (value.resourceSubscriptions ?? []).map(
+    (subscription) =>
+      `${subscription.channel}\0${subscription.params.workspaceId}\0${subscription.params.path ?? ''}`,
+  );
+  if (new Set(resources).size !== resources.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['resourceSubscriptions'],
+      message: 'Duplicate resource scope',
+    });
+  }
 });
 
 export const StreamTicketResponseSchema = z.strictObject({
@@ -70,4 +86,3 @@ export const WsClientControlSchema = z.discriminatedUnion('type', [
     seq: z.string().min(1),
   }),
 ]);
-

@@ -319,8 +319,13 @@ const checkStreamTicket = () => {
   ];
   const invalid = [
     { tenantId: 't1' }, { jwt: 'token' }, { sessions: [''] },
+    { sessions: ['s1', 's1'] },
     { resourceSubscriptions: [{ channel: 'unknown', params: { workspaceId: 'w1' } }] },
     { resourceSubscriptions: [{ channel: 'files:changed', params: {} }] },
+    { resourceSubscriptions: [
+      { channel: 'files:changed', params: { workspaceId: 'w1', path: 'a' } },
+      { channel: 'files:changed', params: { workspaceId: 'w1', path: 'a' } },
+    ] },
   ];
   valid.forEach((fixture, index) => assert('stream-ticket', StreamTicketRequestSchema.safeParse(fixture).success, `valid fixture ${index} rejected`));
   invalid.forEach((fixture, index) => assert('stream-ticket', StreamTicketRequestSchema.safeParse(fixture).success === false, `invalid fixture ${index} accepted`));
