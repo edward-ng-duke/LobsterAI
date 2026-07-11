@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   lstatSync,
@@ -15,6 +16,7 @@ const digestPattern = /^sha256:[a-f0-9]{64}$/;
 const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
+export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
 
 const sha256 = (content) => `sha256:${createHash('sha256').update(content).digest('hex')}`;
 
@@ -119,16 +121,22 @@ const discoverLocalExtensions = (root, errors) => {
 };
 
 const discoverKit = (root) => {
-  const sourcePath = 'src/main/computerUse/computerUseRuntime.ts';
-  const content = readFileSync(path.join(root, sourcePath), 'utf8');
-  const version = content.match(/Version:\s*'([^']+)'/)?.[1] ?? 'UNPINNED';
+  const sourcePath = 'src/main/computerUse/computerUseKit.ts';
+  const inputPaths = [
+    sourcePath,
+    'src/main/computerUse/computerUseRuntime.ts',
+    'src/shared/computerUse/constants.ts',
+  ];
+  const content = inputPaths.map(relativePath => readFileSync(path.join(root, relativePath), 'utf8')).join('\n');
+  const version = readFileSync(path.join(root, 'src/main/computerUse/computerUseRuntime.ts'), 'utf8')
+    .match(/Version:\s*'([^']+)'/)?.[1] ?? 'UNPINNED';
   return [{
     id: 'kit:computer-use',
     kind: 'kit',
     sourcePath,
     source: 'repository:built-in-kit',
     version,
-    integrity: fileDigest(root, sourcePath),
+    integrity: sha256(content),
     license: 'repository-license',
     scanStatus: 'platform-reviewed',
     productionEligible: false,
@@ -202,7 +210,35 @@ const validateAsset = (asset, errors) => {
   }
 };
 
-export const validateEvidence = (manifest, now = new Date()) => {
+export const validateVulnerabilityReport = (report, waivers = [], now = new Date()) => {
+  const errors = [];
+  const findings = report.findings ?? [];
+  for (const waiver of waivers) {
+    if (waiver.imageDigest !== report.imageDigest) {
+      if (findings.some(finding => finding.id === waiver.findingId)) {
+        errors.push(`waiver ${waiver.findingId}: image digest mismatch`);
+      }
+      continue;
+    }
+    if (!findings.some(finding => finding.id === waiver.findingId)) {
+      errors.push(`waiver ${waiver.findingId}: finding mismatch`);
+    }
+    if (new Date(waiver.expiresAt).getTime() <= now.getTime()) {
+      errors.push(`waiver ${waiver.findingId}: waiver is expired`);
+    }
+  }
+  for (const finding of findings) {
+    if (String(finding.severity).toLowerCase() !== 'critical') continue;
+    const validWaiver = waivers.some(waiver => waiver.findingId === finding.id
+      && waiver.imageDigest === report.imageDigest
+      && waiver.owner && waiver.reason
+      && new Date(waiver.expiresAt).getTime() > now.getTime());
+    if (!validWaiver) errors.push(`${report.imageDigest}: unwaived Critical finding ${finding.id}`);
+  }
+  return errors;
+};
+
+export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) => {
   const errors = [];
   for (const waiver of manifest.waivers ?? []) {
     if (!waiver.owner || !waiver.reason || !waiver.expiresAt) {
@@ -211,12 +247,35 @@ export const validateEvidence = (manifest, now = new Date()) => {
       errors.push(`waiver ${waiver.findingId ?? '<unknown>'}: waiver is expired`);
     }
   }
+  const evidenceNames = (manifest.imageEvidence ?? []).map(evidence => evidence.imageName);
+  const duplicates = evidenceNames.filter((name, index) => evidenceNames.indexOf(name) !== index);
+  if (duplicates.length > 0) errors.push(`duplicate image evidence: ${[...new Set(duplicates)].join(', ')}`);
+  for (const required of requiredProductionImages) {
+    if (!evidenceNames.includes(required)) errors.push(`missing image evidence: ${required}`);
+  }
+  for (const actual of evidenceNames) {
+    if (!requiredProductionImages.includes(actual)) errors.push(`unexpected image evidence: ${actual}`);
+  }
   for (const evidence of manifest.imageEvidence ?? []) {
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
     if (evidence.sbom?.imageDigest !== evidence.digest) errors.push(`${evidence.image}: SBOM digest mismatch`);
     if (evidence.sbom?.sourceSha !== evidence.sourceSha) errors.push(`${evidence.image}: SBOM source SHA mismatch`);
-    if ((evidence.criticalFindings ?? 0) > 0) errors.push(`${evidence.image}: critical findings are not allowed`);
+    if (expectedSourceSha && evidence.sourceSha !== expectedSourceSha) errors.push(`${evidence.image}: source SHA mismatch`);
+    if (!evidence.vulnerabilityScan) errors.push(`${evidence.image}: vulnerability scan evidence is required`);
+    else {
+      if (evidence.vulnerabilityScan.imageDigest !== evidence.digest) errors.push(`${evidence.image}: vulnerability scan digest mismatch`);
+      if (evidence.vulnerabilityScan.sourceSha !== evidence.sourceSha) errors.push(`${evidence.image}: vulnerability scan source SHA mismatch`);
+      if (!digestPattern.test(evidence.vulnerabilityScan.sha256 ?? '')) errors.push(`${evidence.image}: invalid vulnerability scan hash`);
+      errors.push(...validateVulnerabilityReport({
+        imageDigest: evidence.digest,
+        findings: evidence.vulnerabilityScan.findings ?? [],
+      }, manifest.waivers ?? [], now));
+    }
+    if ((evidence.criticalFindings ?? 0) > 0
+      && !(manifest.waivers ?? []).some(waiver => waiver.imageDigest === evidence.digest)) {
+      errors.push(`${evidence.image}: critical findings are not allowed`);
+    }
     if (/:latest(?:$|@)/.test(evidence.image ?? '')) errors.push(`${evidence.image}: latest tag is forbidden`);
   }
   if (manifest.signature?.status === 'ACTIVE' && (manifest.signature.trustedIdentities?.length ?? 0) === 0) {
@@ -236,7 +295,7 @@ export const validateScanReport = (report) => {
   return errors;
 };
 
-export const validateInventory = (root, manifest) => {
+export const validateInventory = (root, manifest, options = {}) => {
   const { assets: discovered, errors } = discoverAssets(root);
   if (manifest.schemaVersion !== 2) errors.push('manifest schemaVersion must be 2');
   if (manifest.status !== 'ACTIVE') errors.push('manifest status must be ACTIVE');
@@ -260,7 +319,7 @@ export const validateInventory = (root, manifest) => {
   for (const asset of declared) {
     if (!discoveredById.has(asset.id)) errors.push(`manifest contains ghost asset: ${asset.id}`);
   }
-  errors.push(...validateEvidence(manifest));
+  if (options.requireEvidence) errors.push(...validateEvidence(manifest, new Date(), options.expectedSourceSha));
   return errors;
 };
 
@@ -287,7 +346,18 @@ export const buildManifest = (root = repositoryRoot) => {
 
 const run = () => {
   const manifest = readJson(repositoryRoot, manifestRelativePath);
-  const errors = validateInventory(repositoryRoot, manifest);
+  const git = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' });
+  const expectedSourceSha = git.status === 0 ? git.stdout.trim() : undefined;
+  const evidencePath = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据/docker-build-check.json');
+  let evidence = [];
+  if (existsSync(evidencePath)) {
+    const report = JSON.parse(readFileSync(evidencePath, 'utf8'));
+    if (report.status === 'PASSED') evidence = report.images ?? [];
+  }
+  const errors = validateInventory(repositoryRoot, { ...manifest, imageEvidence: evidence }, {
+    requireEvidence: true,
+    expectedSourceSha,
+  });
   if (errors.length > 0) {
     console.error(JSON.stringify({ status: 'FAILED', check: 'supply-chain', errors }, null, 2));
     process.exitCode = 1;
@@ -297,7 +367,7 @@ const run = () => {
     status: 'PASSED',
     check: 'supply-chain',
     assetsChecked: manifest.assets.length,
-    imageEvidenceChecked: manifest.imageEvidence.length,
+    imageEvidenceChecked: evidence.length,
     publishStatus: manifest.signature.status,
   }));
 };

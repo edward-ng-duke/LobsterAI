@@ -8,10 +8,10 @@
     {
       "id": "kit:computer-use",
       "kind": "kit",
-      "sourcePath": "src/main/computerUse/computerUseRuntime.ts",
+      "sourcePath": "src/main/computerUse/computerUseKit.ts",
       "source": "repository:built-in-kit",
       "version": "1.0.7",
-      "integrity": "sha256:1ce99c09a4a1848b796ab8210a92af4127c198da865a698a8a3eb330ff8aa236",
+      "integrity": "sha256:b6ee94ce3355923738317ce9533431780e140771764160b603b49b5544a2bd11",
       "license": "repository-license",
       "scanStatus": "platform-reviewed",
       "productionEligible": false,
