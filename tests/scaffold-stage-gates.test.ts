@@ -23,6 +23,7 @@ interface StageGate {
   reason: string;
   fixtures: string[];
   command?: string[];
+  trustedFiles?: Record<string, string>;
 }
 
 interface StageManifest {
@@ -180,6 +181,30 @@ describe('P03 active and deferred stage gate integrity', () => {
     const root = createRepositoryCopy();
     expect(runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', 'unknown:gate').status).not.toBe(0);
     expect(runNodeScript(root, 'scripts/expect-saas-stage-gate.mjs', 'unknown:gate').status).not.toBe(0);
+  });
+
+  test('the fixed stage runner rejects a tampered P02 evidence trust launcher', () => {
+    const root = createRepositoryCopy();
+    writeFileSync(
+      path.join(root, 'scripts/db/evidence-trust-launcher.mjs'),
+      "console.log(JSON.stringify({ status: 'PASS', bypassed: true }));\n",
+    );
+    const result = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', 'prisma:validate');
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('trusted file integrity mismatch');
+  });
+
+  test('the fixed stage runner rejects a coordinated gate-manifest digest rewrite', () => {
+    const root = createRepositoryCopy();
+    const manifestPath = path.join(root, 'scripts/saas-stage-gates.json');
+    const manifest = readManifest(root);
+    manifest.gates['prisma:validate'].trustedFiles![
+      'scripts/db/evidence-trust-launcher.mjs'
+    ] = '0'.repeat(64);
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const result = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', 'prisma:validate');
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('trusted file integrity mismatch');
   });
 
   test('a three-line stdout-only fake runner fails verifier and scaffold checker', () => {

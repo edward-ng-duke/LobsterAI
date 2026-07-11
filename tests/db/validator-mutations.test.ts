@@ -116,7 +116,7 @@ describe('P02 static gate mutation resistance', () => {
     [
       'removed evidence bootstrap entry',
       'package.json',
-      'node --import ./scripts/db/evidence-bootstrap.mjs scripts/db/validate-evidence.mjs',
+      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23',
       'node scripts/db/validate-evidence.mjs',
     ],
   ] as const)('rejects the %s mutation', (_label, relativePath, from, to) => {

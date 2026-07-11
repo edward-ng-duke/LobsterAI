@@ -8,6 +8,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
+const trustedBootstrapSha256 = '3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23';
 const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
@@ -29,6 +30,7 @@ const createFixture = (): string => {
     'scripts/db/evidence-bootstrap.mjs',
     'scripts/db/evidence-bundle.schema.json',
     'scripts/db/evidence-provenance.mjs',
+    'scripts/db/evidence-trust-launcher.mjs',
     'scripts/db/preflight.mjs',
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
@@ -89,8 +91,13 @@ const run = (root: string, bootstrapped: boolean) =>
   spawnSync(
     process.execPath,
     [
-      ...(bootstrapped ? ['--import', './scripts/db/evidence-bootstrap.mjs'] : []),
-      'scripts/db/validate-evidence.mjs',
+      ...(bootstrapped
+        ? [
+            'scripts/db/evidence-trust-launcher.mjs',
+            '--expected-bootstrap-sha256',
+            trustedBootstrapSha256,
+          ]
+        : ['scripts/db/validate-evidence.mjs']),
     ],
     {
       cwd: root,
@@ -120,7 +127,7 @@ describe('P02 external evidence bootstrap boundary', () => {
     git(root, 'commit', '-m', 'fix(db): bypass bootstrap');
     const result = run(root, true);
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('trusted bootstrap');
+    expect(result.stderr).toContain('bootstrap integrity mismatch');
   });
 
   test('coordinated bootstrap and validator replacement cannot make the official entry pass', () => {
