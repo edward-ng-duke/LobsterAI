@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   existsSync,
@@ -16,6 +17,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const temporaryRoots: string[] = [];
+const expectedManifestSha256 = new Map<string, string>();
 
 interface StageGate {
   status: 'PASS' | 'NOT_APPLICABLE';
@@ -103,6 +105,10 @@ const createRepositoryCopy = (): string => {
   manifest.gates['docker:build:check'].command = ['node', 'scripts/check-docker-build.mjs', '--static'];
   manifest.gates['helm:lint'].command = ['node', 'scripts/check-helm.mjs', '--static'];
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  expectedManifestSha256.set(
+    target,
+    createHash('sha256').update(readFileSync(manifestPath)).digest('hex'),
+  );
   symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(target, 'node_modules'), 'dir');
   return target;
 };
@@ -114,7 +120,11 @@ const runNodeScript = (root: string, script: string, gate: string) =>
   spawnSync(process.execPath, [script, gate], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, SAAS_SOURCE_SHA: '0123456789abcdef0123456789abcdef01234567' },
+    env: {
+      ...process.env,
+      SAAS_SOURCE_SHA: '0123456789abcdef0123456789abcdef01234567',
+      SAAS_EXPECTED_STAGE_MANIFEST_SHA256: expectedManifestSha256.get(root),
+    },
   });
 
 const parseReport = (output: string): Record<string, unknown> =>
@@ -127,6 +137,7 @@ const parseReport = (output: string): Record<string, unknown> =>
 
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
+  expectedManifestSha256.clear();
 });
 
 describe('P03 active and deferred stage gate integrity', () => {
@@ -198,9 +209,14 @@ describe('P03 active and deferred stage gate integrity', () => {
     const root = createRepositoryCopy();
     const manifestPath = path.join(root, 'scripts/saas-stage-gates.json');
     const manifest = readManifest(root);
+    const maliciousLauncher = path.join(root, 'scripts/db/evidence-trust-launcher.mjs');
+    writeFileSync(
+      maliciousLauncher,
+      "console.log(JSON.stringify({ status: 'PASS', coordinatedBypass: true }));\n",
+    );
     manifest.gates['prisma:validate'].trustedFiles![
       'scripts/db/evidence-trust-launcher.mjs'
-    ] = '0'.repeat(64);
+    ] = createHash('sha256').update(readFileSync(maliciousLauncher)).digest('hex');
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const result = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', 'prisma:validate');
     expect(result.status).not.toBe(0);
