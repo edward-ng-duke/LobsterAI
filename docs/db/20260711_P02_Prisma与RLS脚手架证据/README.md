@@ -1,10 +1,10 @@
 # P02 Prisma 与 RLS 脚手架证据
 
-- 状态：`REVIEW_PENDING`（Reviewer Round 2）
+- 状态：`REVIEW_PENDING`（Reviewer Round 3）
 - Developer：`/root/p02_developer`
-- codeEvidenceSha：`ec2cc92379ac754c9625614be7cd0f2c49e74435`
-- code evidence-only commit：`c80b9c2aff4ae9599942450f3628f315a1b8e4fe`
-- stageEvidenceSha：`c80b9c2aff4ae9599942450f3628f315a1b8e4fe`
+- codeEvidenceSha：`3d8eb58b3fcbe7efd4d84788658cf6b350862cd2`
+- code evidence-only commit：`37c7a4819fafd9a62c52202c022604024c8a3c26`
+- stageEvidenceSha：`37c7a4819fafd9a62c52202c022604024c8a3c26`
 - 环境：macOS arm64 / Node `v24.15.0` / PostgreSQL `17.10 (Debian 17.10-1.pgdg12+1)`
 - 镜像：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`
 - P01 接受 SHA：`a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28`
@@ -15,10 +15,11 @@
 
 报告不能把包含自身的提交 SHA 写进自身内容。本目录采用可机器验证的两段 evidence-only descendant 链：
 
-1. 四份 code report 由实现提交 `ec2cc923...` 的原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`c80b9c2a...` 只提交这些 raw report 与 manifest。
-2. 正式 `prisma:validate` stage 在 `c80b9c2a...` 上运行，stage report 的 `sourceSha` 等于该证据提交；后续提交只允许本目录和 P02 Developer 开发记录发生变化。
+1. 四份 code report 由实现提交 `3d8eb58b...` 的原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`37c7a481...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
+2. 正式 `prisma:validate` stage 在 `37c7a481...` 上运行，stage report 的 `sourceSha` 等于该证据提交；后续提交只允许本目录和 P02 Developer 开发记录发生变化。
 3. `validate-evidence.mjs` 用严格 schema 拒绝未知字段，核对每份报告内容 SHA-256 与 runner SHA-256，并要求 code/stage SHA 位于最终 HEAD 的 first-parent 链。
-4. `git diff codeEvidenceSha..HEAD` 中出现任意代码、测试或 gate 路径都会失败。mutation 测试在临时 Git 仓库真实构造“实现 → 证据 → 任意代码提交”，确认最后一步被拒绝。
+4. validator 从 source SHA 的下一提交起到 HEAD，逐个审计 first-parent commit；每个 commit 都与其唯一父提交做 `--name-status -z -M` 比较。A/M/D 路径和 R/C 的旧、新两端都必须在严格 allowlist，任何 merge commit 均 fail-closed。
+5. mutation 测试覆盖 add、modify、delete、code→evidence rename、code→revert、merge 与 source 仅在 non-first-parent 可达。后续 revert 不能再洗掉历史代码提交。
 
 因此，本记录称“最终证据是实现 SHA 的 evidence-only descendant”，不声称报告与包含该报告的 commit 字面同 SHA。
 
@@ -28,11 +29,11 @@
 
 | 文件 | 原生标识 | source SHA | 结果 |
 |---|---|---|---|
-| `contracts-preflight.json` | runId `321841b8-85e7-4491-8225-d207258d5a9c` | `ec2cc923...` | PASS |
-| `preflight.json` | runId `89b9bc85-535f-4209-94d3-17d44acde61c` | `ec2cc923...` | PASS；container removed |
-| `integration.json` | runId `2b10f3df-d7ee-470a-aea9-fb259baad214` | `ec2cc923...` | PASS；skipped=0；container removed |
-| `validation.json` | runId `3ba5ebfc-051f-4d34-b1c3-99fdffef0d88` | `ec2cc923...` | PASS；原生 `commands[]` 共 8 项 |
-| `prisma-stage-gate.json` | invocationId `5697445a-1bff-43e3-9b06-dbffb3f75cb3` | `c80b9c2a...` | PASS |
+| `contracts-preflight.json` | runId `cf242ecc-c3ff-4d2b-a53c-ceb8d2ff082d` | `3d8eb58b...` | PASS |
+| `preflight.json` | runId `400e274b-de63-4ca7-bf7c-0a9f3efd2e15` | `3d8eb58b...` | PASS；container removed |
+| `integration.json` | runId `2e80be88-6437-492f-bd75-0653bb1d9882` | `3d8eb58b...` | PASS；skipped=0；container removed |
+| `validation.json` | runId `c0a7cccd-d312-4d2c-8094-6af2e256739c` | `3d8eb58b...` | PASS；原生 `commands[]` 共 8 项 |
+| `prisma-stage-gate.json` | invocationId `fa89ea5b-d583-4827-92f6-0ed6e60cede8` | `37c7a481...` | PASS |
 
 `evidence-manifest.json` 保存上述文件摘要、source SHA、runner 路径和 runner 摘要。当前实现与报告中的 generated Prisma client hash 均为 `c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441`。
 
@@ -50,7 +51,7 @@
 
 - 严格 `evidence-bundle.schema.json` 对所有嵌套对象使用 `additionalProperties: false`。
 - 原生 validation 保留 `commands[]`，不再用手工 `commandExitCodes` 摘要代替 runner 输出。
-- unknown-field、stale-source、detached-extension 和 evidence 后插入代码提交 mutation 均失败。
+- unknown-field、stale-source、detached-extension，以及 evidence 后 add/modify/delete/rename/revert/merge mutation 均失败。
 - `prisma:validate:active` 同时执行实现验证与 committed evidence 校验；证据 bootstrap 与 core test 分离，避免循环依赖。
 
 ## 18 AC 证据映射
@@ -74,16 +75,16 @@
 | 15 | commit/rollback/throw/same connection 与 A/B interleaved 池泄漏覆盖 |
 | 16 | production seed guard、确定性 A/B seed、重复 seed 幂等 |
 | 17 | `prisma:validate` 真 stage PASS；CI 独立 arm64 DB job，无软跳过 |
-| 18 | strict raw evidence schema、内容/runner hash、first-parent 与 evidence-only diff 校验 |
+| 18 | strict raw schema、内容/runner hash、逐 first-parent commit 的 name-status evidence-only 审计 |
 
-## Round 2 已执行验证
+## Round 3 已执行验证
 
 | 命令 | 结果 |
 |---|---|
-| `node scripts/db/validate.mjs` | exit 0；原生 validation runId `3ba5ebfc-...` |
-| `npm run test:db:unit` | exit 0；55/55 |
+| `node scripts/db/validate.mjs` | exit 0；原生 validation runId `c0a7cccd-...` |
+| provenance mutation | exit 0；20/20，覆盖 add/modify/delete/rename/revert/merge/non-first-parent |
 | `npm run test:db:integration`（由 validation 调用） | exit 0；21/21，skipped=0 |
-| `npm run prisma:validate` | exit 0；invocationId `5697445a-...` |
+| `npm run prisma:validate` | exit 0；invocationId `fa89ea5b-...` |
 | `node scripts/db/validate-evidence.mjs` | exit 0；code/stage provenance PASS |
 | `npm ci` | exit 0；lockfile clean install 与 Prisma postinstall generate 成功 |
 | `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
@@ -93,7 +94,7 @@
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-原生机器报告以本目录 JSON 与 manifest 为准。交付前再次运行 `prisma:validate` 产生了绑定最终文档 HEAD 的临时 `.reports`，但没有覆盖上述冻结 raw snapshot；冻结证据链仍由 manifest 指向 `ec2cc923...` 与 `c80b9c2a...`。
+原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `3d8eb58b...` 与 `37c7a481...`；不声称报告与包含报告的提交自引用同 SHA。
 
 ## 已知非 P02 风险
 
