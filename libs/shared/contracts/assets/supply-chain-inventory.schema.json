@@ -235,12 +235,13 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "severity", "package", "version"],
+            "required": ["id", "severity", "artifactId", "package", "version"],
             "properties": {
               "id": { "type": "string", "minLength": 1 },
               "severity": {
                 "enum": ["Unknown", "Negligible", "Low", "Medium", "High", "Critical"]
               },
+              "artifactId": { "type": "string", "minLength": 1 },
               "package": { "type": "string", "minLength": 1 },
               "version": { "type": "string", "minLength": 1 }
             }

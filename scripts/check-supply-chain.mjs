@@ -319,17 +319,23 @@ const readEvidenceDocument = (evidenceDirectory, declaration, label, errors) => 
 const validateSpdxDocument = (document, evidence, errors) => {
   const label = `${evidence.image}: SPDX`;
   const expectedName = `lobsterai-p03-${evidence.imageName}`;
+  const packages = Array.isArray(document?.packages) ? document.packages : [];
+  const packageIds = packages.map(candidate => candidate?.SPDXID);
+  const packageIdsUnique = packageIds.every(id => typeof id === 'string' && id.length > 0)
+    && new Set(packageIds).size === packageIds.length;
   const describes = Array.isArray(document?.relationships)
     ? document.relationships.filter(relationship => relationship?.spdxElementId === 'SPDXRef-DOCUMENT'
       && relationship?.relationshipType === 'DESCRIBES')
     : [];
-  const rootPackage = describes.length === 1 && Array.isArray(document?.packages)
-    ? document.packages.find(candidate => candidate?.SPDXID === describes[0].relatedSpdxElement)
-    : undefined;
+  const rootPackages = describes.length === 1
+    ? packages.filter(candidate => candidate?.SPDXID === describes[0].relatedSpdxElement)
+    : [];
+  const rootPackage = rootPackages.length === 1 ? rootPackages[0] : undefined;
   if (document?.spdxVersion !== 'SPDX-2.3' || document?.SPDXID !== 'SPDXRef-DOCUMENT'
     || document?.name !== expectedName || !Array.isArray(document?.creationInfo?.creators)
     || !document.creationInfo.creators.some(creator => /^Tool: syft-1\.44\./.test(creator))
-    || describes.length !== 1 || !rootPackage || rootPackage.name !== expectedName
+    || describes.length !== 1 || !packageIdsUnique || rootPackages.length !== 1
+    || !rootPackage || rootPackage.name !== expectedName
     || rootPackage.versionInfo !== evidence.sourceSha.slice(0, 12)) {
     errors.push(`${label}: subject/source structure does not match image evidence`);
     return undefined;
@@ -349,6 +355,37 @@ const validateSpdxDocument = (document, evidence, errors) => {
     return undefined;
   }
   return manifestDigest;
+};
+
+const findingIdentity = finding => JSON.stringify([
+  finding.id,
+  finding.artifactId,
+  finding.package,
+  finding.version,
+]);
+
+const findingRecord = finding => JSON.stringify([
+  finding.id,
+  finding.severity,
+  finding.artifactId,
+  finding.package,
+  finding.version,
+]);
+
+const multiset = (values, key) => {
+  const counts = new Map();
+  for (const value of values) {
+    const identity = key(value);
+    counts.set(identity, (counts.get(identity) ?? 0) + 1);
+  }
+  return counts;
+};
+
+const sameMultiset = (left, right, key) => {
+  const leftCounts = multiset(left, key);
+  const rightCounts = multiset(right, key);
+  return leftCounts.size === rightCounts.size
+    && [...leftCounts].every(([identity, count]) => rightCounts.get(identity) === count);
 };
 
 const findingsFromGrype = (document, evidence, spdxManifestDigest, errors) => {
@@ -372,14 +409,18 @@ const findingsFromGrype = (document, evidence, spdxManifestDigest, errors) => {
     const finding = {
       id: match?.vulnerability?.id ?? '<unknown>',
       severity: match?.vulnerability?.severity ?? 'Unknown',
+      artifactId: match?.artifact?.id ?? '<unknown>',
       package: match?.artifact?.name ?? '<unknown>',
       version: match?.artifact?.version ?? '<unknown>',
     };
-    if (!finding.id || !finding.package || !finding.version) {
+    if (!finding.id || !finding.artifactId || !finding.package || !finding.version) {
       errors.push(`${label}: match is missing vulnerability or package identity`);
       return undefined;
     }
     findings.push(finding);
+  }
+  if (multiset(findings, findingIdentity).size !== findings.length) {
+    errors.push(`${label}: raw matches contain duplicate vulnerability/package identity`);
   }
   return findings;
 };
@@ -440,7 +481,11 @@ const validateDiskEvidence = (root, manifest, evidence, errors, now) => {
     ? findingsFromGrype(grype, evidence, spdxManifestDigest, errors)
     : undefined;
   if (findings) {
-    if (JSON.stringify(findings) !== JSON.stringify(evidence.vulnerabilityScan.findings)) {
+    const wrapperFindings = evidence.vulnerabilityScan.findings;
+    if (multiset(wrapperFindings, findingIdentity).size !== wrapperFindings.length) {
+      errors.push(`${evidence.image}: wrapper findings contain duplicate vulnerability/package identity`);
+    }
+    if (!sameMultiset(findings, wrapperFindings, findingRecord)) {
       errors.push(`${evidence.image}: wrapper findings do not match raw Grype matches`);
     }
     const criticalFindings = findings.filter(finding => finding.severity === 'Critical').length;

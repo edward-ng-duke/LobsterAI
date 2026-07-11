@@ -296,6 +296,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   const findings = (scanDocument.matches ?? []).map(match => ({
     id: match.vulnerability?.id ?? '<unknown>',
     severity: match.vulnerability?.severity ?? 'Unknown',
+    artifactId: match.artifact?.id ?? '<unknown>',
     package: match.artifact?.name ?? '<unknown>',
     version: match.artifact?.version ?? '<unknown>',
   }));
