@@ -99,6 +99,49 @@ describe('P00 scaffold checker mutation resistance', () => {
     expect(errors).toContain('solution reference');
   });
 
+  test('rejects a fully disguised unapproved physical deployable', () => {
+    const root = createRepositoryCopy();
+    const gatewayRoot = path.join(root, 'apps/gateway');
+    mkdirSync(path.join(gatewayRoot, 'src'), { recursive: true });
+    writeJson(root, 'apps/gateway/package.json', {
+      name: '@lobsterai/gateway',
+      version: '0.0.0',
+      private: true,
+      type: 'module',
+      scripts: {
+        build: 'node -e "require(\'node:fs\').readFileSync(\'package.json\')"',
+        typecheck: 'node -e "require(\'node:fs\').readFileSync(\'package.json\')"',
+      },
+    });
+    writeJson(root, 'apps/gateway/tsconfig.json', {
+      extends: '../../tsconfig.base.json',
+      compilerOptions: { rootDir: 'src', outDir: 'dist' },
+      include: ['src/**/*.ts'],
+    });
+    writeFileSync(
+      path.join(gatewayRoot, 'README.md'),
+      '# Disguised gateway\n\nThis deployable is intentionally complete enough to bypass keyword gates.\n',
+    );
+    writeFileSync(path.join(gatewayRoot, 'src/index.ts'), 'export const gateway = true;\n');
+
+    const solution = readJson(root, 'tsconfig.workspace.json');
+    const references = solution.references as Array<{ path: string }>;
+    references.push({ path: './apps/gateway' });
+    writeJson(root, 'tsconfig.workspace.json', solution);
+
+    const lockfile = readJson(root, 'package-lock.json');
+    const packages = lockfile.packages as Record<string, unknown>;
+    packages['apps/gateway'] = { name: '@lobsterai/gateway', version: '0.0.0' };
+    packages['node_modules/@lobsterai/gateway'] = { resolved: 'apps/gateway', link: true };
+    writeJson(root, 'package-lock.json', lockfile);
+
+    const errors = collectScaffoldErrors(root).join('\n');
+    expect(errors).toContain('[SCAF-1]');
+    expect(errors).toContain('unapproved physical deployable apps/gateway');
+    expect(errors).toContain('[SCAF-2]');
+    expect(errors).toContain('must use its registered build command');
+  });
+
   test('rejects lockfile and workspace manifest drift', () => {
     const root = createRepositoryCopy();
     const lockfile = readJson(root, 'package-lock.json');
