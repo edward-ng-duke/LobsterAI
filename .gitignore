@@ -6,6 +6,8 @@ release/
 node_modules
 dist
 dist-electron
+dist-types
+*.tsbuildinfo
 .DS_Store
 .env 
 .claude/
