@@ -1,5 +1,15 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
@@ -13,12 +23,32 @@ import { RouteRegistry } from '../../libs/shared/contracts/src/registry/routes.j
 import { analyzeBreakingDiff } from '../../scripts/contracts/breaking-diff.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
-const staleOutput = path.join(
-  repositoryRoot,
-  'libs/shared/contracts/generated/reviewer-round1-stale.tmp.ts',
-);
+const temporaryRoots: string[] = [];
 
-afterEach(() => rmSync(staleOutput, { force: true }));
+const createContractCopy = (): string => {
+  const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p01-reviewer-round1-'));
+  temporaryRoots.push(root);
+  for (const relativePath of [
+    'apps/api/src/generated',
+    'apps/web/src/generated',
+    'libs/client/bridge/src',
+    'libs/shared/contracts',
+    'scripts/contracts',
+    'src/renderer/types/electron.d.ts',
+    '改造计划/附录A-IPC通道与接口映射.md',
+  ]) {
+    const source = path.join(repositoryRoot, relativePath);
+    const destination = path.join(root, relativePath);
+    mkdirSync(path.dirname(destination), { recursive: true });
+    cpSync(source, destination, { recursive: true });
+  }
+  symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(root, 'node_modules'), 'dir');
+  return root;
+};
+
+afterEach(() => {
+  temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
+});
 
 describe('Reviewer Round 1 route and schema mutations', () => {
   test('has no generic route DTOs, fake routes, unsecured protected routes, or fixed success statuses', () => {
@@ -152,14 +182,19 @@ describe('Reviewer Round 1 atomic generation mutations', () => {
   });
 
   test('rejects an extra stale file in a managed generated directory', () => {
+    const root = createContractCopy();
+    const staleOutput = path.join(
+      root,
+      'libs/shared/contracts/generated/reviewer-round1-stale.tmp.ts',
+    );
     writeFileSync(staleOutput, '// stale managed output\n');
     const result = spawnSync(process.execPath, ['scripts/contracts/generate.mjs', '--check'], {
-      cwd: repositoryRoot,
+      cwd: root,
       encoding: 'utf8',
     });
     expect(result.status, result.stdout + result.stderr).not.toBe(0);
     expect(existsSync(staleOutput)).toBe(true);
-  });
+  }, 30_000);
 
   test('keeps the published outputs intact when staging fails closed', () => {
     const publishedOutput = path.join(repositoryRoot, 'libs/shared/contracts/openapi.yaml');
