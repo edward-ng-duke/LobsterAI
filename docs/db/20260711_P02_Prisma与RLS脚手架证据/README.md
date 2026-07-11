@@ -94,15 +94,16 @@
 | `node scripts/db/validate.mjs` | exit 0；原生 validation runId `f74eb514-...` |
 | Tester evidence boundary | exit 0；6/6 |
 | external/bootstrap/outer boundary | exit 0；10/10（含双文件协同与 manifest+launcher 协同） |
-| provenance mutation | exit 0；20/20，覆盖 add/modify/delete/rename/revert/merge/non-first-parent |
+| provenance/static mutation | exit 0；21/21，覆盖 add/modify/delete/rename/revert/merge/non-first-parent 与移除 bootstrap 入口 |
+| `npm run test:db:unit` | exit 0；7 files / 72 tests |
 | `npm run test:db:integration`（由 validation 调用） | exit 0；24/24，skipped=0 |
-| `npm run prisma:validate` | exit 0；invocationId `d15fb42f-...`；外部 manifest digest 匹配 |
+| `npm run prisma:validate` | exit 0；冻结 invocationId `d15fb42f-...`；交付前重跑 `6eba84f6-...`；外部 manifest digest 均匹配 |
 | trusted evidence launcher | exit 0；code/stage/raw/provenance/outer digests PASS |
 | `npm ci` | exit 0；lockfile clean install 与 Prisma postinstall generate 成功 |
 | `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
 | `npm run typecheck` | exit 0 |
 | changed-file ESLint / `npm run lint:saas` | exit 0；0 warning |
-| `npm test` | exit 0；202 files，2173 passed，1 个既有 skip |
+| `npm test` | exit 0；204 files，2186 passed，1 个既有 skip |
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
