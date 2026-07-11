@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
-FROM node:24.15.0-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS build
+FROM node:24.18.0-alpine3.24@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS build
 WORKDIR /src
 ARG TARGETARCH
 ENV OPENCLAW_SRC=/build/openclaw
@@ -25,7 +25,7 @@ RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;
  && cp "$OPENCLAW_SRC/openclaw.mjs" "$current/openclaw.mjs" \
  && cp -R "$OPENCLAW_SRC/dist" "$current/dist"
 
-FROM node:24.15.0-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS production
+FROM node:24.18.0-alpine3.24@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS production
 RUN addgroup -S -g 10001 lobster && adduser -S -D -H -u 10001 -G lobster lobster
 WORKDIR /opt/openclaw
 COPY --from=build --chown=10001:10001 /src/vendor/openclaw-runtime/current /opt/openclaw
