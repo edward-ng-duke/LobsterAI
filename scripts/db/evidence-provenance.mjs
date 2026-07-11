@@ -75,7 +75,7 @@ export const validateEvidenceOnlyDescendant = ({
       continue;
     }
     for (const entry of changed.paths) {
-      if (!allowedEvidencePath(entry.path)) {
+      if (!allowedEvidencePath(entry.path, entry.status)) {
         errors.push(
           `non-evidence change after source SHA: ${entry.status} ${entry.path} (${commitSha})`,
         );

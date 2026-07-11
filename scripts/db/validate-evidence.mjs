@@ -199,9 +199,12 @@ if (
   errors.push('validation.json: command output hashes must be nonzero and run-specific');
 }
 
-const allowedEvidencePath = (file) =>
+const authoritativeCompletionTablePath =
+  '改造计划/20260711_V2单租户Web闭环开发/00-总体完成表.md';
+const allowedEvidencePath = (file, status) =>
   file.startsWith('docs/db/20260711_P02_Prisma与RLS脚手架证据/') ||
-  /^改造计划\/20260711_V2单租户Web闭环开发\/任务\/[^/]+\/(?:开发记录|审核意见|审核记录|测试记录|测试报告)\.md$/.test(file);
+  /^改造计划\/20260711_V2单租户Web闭环开发\/任务\/[^/]+\/(?:开发记录|审核意见|审核记录|测试记录|测试报告)\.md$/.test(file) ||
+  (file === authoritativeCompletionTablePath && status === 'M');
 for (const provenanceError of validateEvidenceOnlyDescendant({
   gitRoot,
   sourceSha: manifest.codeEvidenceSha,
