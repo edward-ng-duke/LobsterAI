@@ -1,6 +1,10 @@
 {
   "name": "lobsterai",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*/*"
+  ],
   "author": {
     "name": "LobsterAI",
     "email": "lobsterai.project@rd.netease.com"
@@ -74,7 +78,12 @@
     "dev": "vite",
     "prebuild": "node scripts/generate-keyfrom-build-info.cjs",
     "build": "tsc && vite build",
-    "lint": "eslint src/",
+    "lint": "eslint src/ \"apps/*/src/**/*.{ts,tsx}\" \"libs/*/*/src/**/*.ts\" tests/scaffold.test.ts",
+    "lint:saas": "eslint \"apps/*/src/**/*.{ts,tsx}\" \"libs/*/*/src/**/*.ts\" tests/scaffold.test.ts",
+    "typecheck": "tsc -b tsconfig.workspace.json --pretty false",
+    "scaffold:check": "node scripts/check-saas-scaffold.mjs",
+    "test:scaffold": "vitest run tests/scaffold.test.ts",
+    "build:saas": "npm run build --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",

@@ -1,0 +1,49 @@
+name: SaaS Scaffold
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/**'
+      - 'libs/**'
+      - 'scripts/check-saas-scaffold.mjs'
+      - 'tests/scaffold.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/saas-scaffold.yml'
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'libs/**'
+      - 'scripts/check-saas-scaffold.mjs'
+      - 'tests/scaffold.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/saas-scaffold.yml'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run scaffold:check
+      - run: npm run lint:saas
+      - run: npm run typecheck
+      - run: npm run test:scaffold
+      - run: npm run build:saas
+      - name: Verify legacy renderer and Electron compatibility
+        run: |
+          npm run build
+          npm run compile:electron
+      - name: Verify tracked sources remain reproducible
+        run: git diff --exit-code

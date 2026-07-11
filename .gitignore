@@ -32,7 +32,9 @@ SKILLs/**/.server.log
 SKILLs/**/.server.pid
 SKILLs/**/.venv/
 
+# Keep one reproducible root workspace lockfile; nested skill locks are runtime output.
 package-lock.json
+!/package-lock.json
 
 nul
 .work.env

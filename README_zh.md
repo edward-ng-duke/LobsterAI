@@ -135,6 +135,10 @@ Renderer 开发服务器默认运行在 `http://localhost:5175`。
 
 ## 本地开发
 
+桌面端到 SaaS 的工程改造计划及分阶段准入门统一索引在
+[`改造计划/README.md`](改造计划/README.md)。新增 SaaS 代码必须先通过 workspace
+和兼容性门禁，再进入业务实现。
+
 ```bash
 # 生产 renderer bundle
 npm run build

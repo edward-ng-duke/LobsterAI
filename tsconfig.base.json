@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@lobsterai/client-bridge": ["libs/client/bridge/src/index.ts"],
+      "@lobsterai/server-auth": ["libs/server/auth/src/index.ts"],
+      "@lobsterai/server-db": ["libs/server/db/src/index.ts"],
+      "@lobsterai/shared-contracts": ["libs/shared/contracts/src/index.ts"],
+      "@lobsterai/shared-types": ["libs/shared/types/src/index.ts"]
+    },
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"]
+  }
+}
