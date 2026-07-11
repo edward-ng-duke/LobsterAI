@@ -118,6 +118,29 @@
 - 另 1 项正确发现 P03 product-source resolver 已把本 P02 `docs/db` evidence commit `613bbe91...` 当作镜像产品 source，而 accepted P03 evidence source 仍为 `187da9a...`。这会使 Reviewer/Tester 文档继续无意义推进 P03 source。
 - P03 Developer 已将 resolver 收敛为实际 Docker image inputs；最终 product source 稳定为 `f93fdd59...`，exact-five invocation `5673b88b...` 在共享 worktree 存在，formal checker PASS。本轮因而以 `21e141d4...` 完成最后 rebaseline。
 
+## 最终 rebaseline 回归
+
+以 stage/docs clean commit `668dd0eff6216c18a01d11085e0c8c93c1eaee1b` 为起点执行；全部命令 exit `0`：
+
+| 命令 | 结果 |
+|---|---|
+| P02 boundary/provenance/merge 四文件 targeted | 4 files / 32 tests PASS |
+| `npm run test:db:unit` | 8 files / 74 tests PASS |
+| `npm run test:db:integration` | 4 files / 24 tests PASS；runId `64a5c156-821d-419c-9e49-4c500bb380a5`；`skipped=0`；container removed |
+| P03 四文件 targeted | 4 files / 74 tests PASS（旧 58 项基线后又增加 source-boundary corners） |
+| P03 product-source 独立 targeted | 1 file / 19 tests PASS；docs-only 后仍解析 `f93fdd59...` |
+| `node scripts/check-supply-chain.mjs` | PASS；57 assets / exact 5 image evidence；publish 诚实 `BLOCKED` |
+| `node scripts/check-docker-build.mjs --static` | PASS；5 images |
+| `npm run contracts:check` / `npm run test:contract` | PASS；15/15 contract checks |
+| `npm run prisma:validate` | PASS；invocationId `ca6f78f9-6ef4-460e-bbeb-bb50ad1b6432` |
+| `npm test` | 207 files PASS；2252 passed / 1 existing skipped；0 failed |
+| `npm run typecheck` | PASS |
+| P02 changed-file ESLint / `npm run lint:saas` | PASS；0 warning |
+| `npm run build:saas` | PASS；9 workspaces / 18 fresh artifacts |
+| `npm run build` / `npm run compile:electron` | PASS；仅既有 Vite/eval/chunk warning |
+
+最终记录提交后再执行 trusted evidence validator 与关键 provenance 回归，确保角色文档提交只位于精确 evidence allowlist，任何后续产品代码变更仍 fail-closed。
+
 ## 已知非 P02 风险
 
 - 根项目既有 axios/Electron/xlsx 等供应链债务不由 P02 伪装解决；破坏性升级留给 P03/专项任务。
