@@ -2973,14 +2973,16 @@ export interface components {
                 /** @enum {string} */
                 kind: "at";
             } | {
-                intervalMs: number;
+                anchorMs?: number;
+                everyMs: number;
                 /** @enum {string} */
                 kind: "every";
             } | {
-                expression: string;
+                expr: string;
                 /** @enum {string} */
                 kind: "cron";
-                timezone: string;
+                staggerMs?: number;
+                tz?: string;
             };
         };
         ScheduledTaskListResponseSchema: {
@@ -2994,14 +2996,16 @@ export interface components {
                     /** @enum {string} */
                     kind: "at";
                 } | {
-                    intervalMs: number;
+                    anchorMs?: number;
+                    everyMs: number;
                     /** @enum {string} */
                     kind: "every";
                 } | {
-                    expression: string;
+                    expr: string;
                     /** @enum {string} */
                     kind: "cron";
-                    timezone: string;
+                    staggerMs?: number;
+                    tz?: string;
                 };
             }[];
         };
@@ -3284,14 +3288,16 @@ export interface components {
                 /** @enum {string} */
                 kind: "at";
             } | {
-                intervalMs: number;
+                anchorMs?: number;
+                everyMs: number;
                 /** @enum {string} */
                 kind: "every";
             } | {
-                expression: string;
+                expr: string;
                 /** @enum {string} */
                 kind: "cron";
-                timezone: string;
+                staggerMs?: number;
+                tz?: string;
             };
         };
         TaskRunCountResponseSchema: {
@@ -3319,7 +3325,11 @@ export interface components {
         };
         TaskRunQuerySchema: {
             cursor?: string;
+            /** Format: date-time */
+            endDate?: string;
             limit?: number;
+            /** Format: date-time */
+            startDate?: string;
             /** @enum {string} */
             status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
         };
@@ -3329,14 +3339,16 @@ export interface components {
             /** @enum {string} */
             kind: "at";
         } | {
-            intervalMs: number;
+            anchorMs?: number;
+            everyMs: number;
             /** @enum {string} */
             kind: "every";
         } | {
-            expression: string;
+            expr: string;
             /** @enum {string} */
             kind: "cron";
-            timezone: string;
+            staggerMs?: number;
+            tz?: string;
         };
         TaskSessionResponseSchema: {
             sessionId: string;
@@ -3357,14 +3369,16 @@ export interface components {
                 /** @enum {string} */
                 kind: "at";
             } | {
-                intervalMs: number;
+                anchorMs?: number;
+                everyMs: number;
                 /** @enum {string} */
                 kind: "every";
             } | {
-                expression: string;
+                expr: string;
                 /** @enum {string} */
                 kind: "cron";
-                timezone: string;
+                staggerMs?: number;
+                tz?: string;
             };
         };
         TenantScopedError: {
@@ -10395,7 +10409,13 @@ export interface operations {
     };
     get_api_v1_scheduled_tasks_id_runs: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                endDate?: string;
+                limit?: number;
+                startDate?: string;
+                status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
+            };
             header?: never;
             path: {
                 id: string;
@@ -10864,7 +10884,9 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string;
+                endDate?: string;
                 limit?: number;
+                startDate?: string;
                 status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
             };
             header?: never;

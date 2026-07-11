@@ -188,11 +188,16 @@ export const SupplyChainPolicyErrorSchema = z.strictObject({ code: z.literal('PE
 
 export const TaskScheduleSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('at'), at: z.iso.datetime() }),
-  z.strictObject({ kind: z.literal('every'), intervalMs: z.number().int().positive() }),
+  z.strictObject({
+    kind: z.literal('every'),
+    everyMs: z.number().int().positive(),
+    anchorMs: z.number().int().nonnegative().optional(),
+  }),
   z.strictObject({
     kind: z.literal('cron'),
-    expression: z.string().min(1),
-    timezone: z.string().min(1),
+    expr: z.string().min(1),
+    tz: z.string().min(1).optional(),
+    staggerMs: z.number().int().nonnegative().optional(),
   }),
 ]);
 export const ScheduledTaskDtoSchema = z.strictObject({ id: z.string().min(1), name: z.string().min(1), schedule: TaskScheduleSchema, enabled: z.boolean() });

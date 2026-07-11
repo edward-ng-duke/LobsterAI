@@ -85,7 +85,13 @@ export const TaskStopRequestSchema = z.strictObject({ reason: z.string().optiona
 export const TaskChannelListResponseSchema = z.strictObject({ channels: z.array(z.string().min(1)) });
 export const TaskConversationListResponseSchema = z.strictObject({ conversations: z.array(z.strictObject({ id: z.string().min(1), title: z.string() })) });
 export const TaskSessionResponseSchema = z.strictObject({ sessionId: z.string().min(1) });
-export const TaskRunQuerySchema = z.strictObject({ status: z.enum(['queued', 'running', 'succeeded', 'failed', 'stopped']).optional(), limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).optional() });
+export const TaskRunQuerySchema = z.strictObject({
+  status: z.enum(['queued', 'running', 'succeeded', 'failed', 'stopped']).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z.string().min(1).optional(),
+  startDate: z.iso.datetime().optional(),
+  endDate: z.iso.datetime().optional(),
+});
 
 export const SessionListResponseSchema = z.strictObject({ sessions: z.array(z.strictObject({ id: z.string().min(1), title: z.string(), status: z.enum(['idle', 'running', 'completed', 'error']) })) });
 export const SessionListQuerySchema = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).optional(), pinned: z.boolean().optional() });

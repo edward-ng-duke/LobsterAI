@@ -2615,7 +2615,10 @@ components:
               type: object
             - additionalProperties: false
               properties:
-                intervalMs:
+                anchorMs:
+                  minimum: 0
+                  type: integer
+                everyMs:
                   exclusiveMinimum: 0
                   type: integer
                 kind:
@@ -2624,24 +2627,26 @@ components:
                   type: string
               required:
                 - kind
-                - intervalMs
+                - everyMs
               type: object
             - additionalProperties: false
               properties:
-                expression:
+                expr:
                   minLength: 1
                   type: string
                 kind:
                   enum:
                     - cron
                   type: string
-                timezone:
+                staggerMs:
+                  minimum: 0
+                  type: integer
+                tz:
                   minLength: 1
                   type: string
               required:
                 - kind
-                - expression
-                - timezone
+                - expr
               type: object
       required:
         - id
@@ -2681,7 +2686,10 @@ components:
                     type: object
                   - additionalProperties: false
                     properties:
-                      intervalMs:
+                      anchorMs:
+                        minimum: 0
+                        type: integer
+                      everyMs:
                         exclusiveMinimum: 0
                         type: integer
                       kind:
@@ -2690,24 +2698,26 @@ components:
                         type: string
                     required:
                       - kind
-                      - intervalMs
+                      - everyMs
                     type: object
                   - additionalProperties: false
                     properties:
-                      expression:
+                      expr:
                         minLength: 1
                         type: string
                       kind:
                         enum:
                           - cron
                         type: string
-                      timezone:
+                      staggerMs:
+                        minimum: 0
+                        type: integer
+                      tz:
                         minLength: 1
                         type: string
                     required:
                       - kind
-                      - expression
-                      - timezone
+                      - expr
                     type: object
             required:
               - id
@@ -3549,7 +3559,10 @@ components:
               type: object
             - additionalProperties: false
               properties:
-                intervalMs:
+                anchorMs:
+                  minimum: 0
+                  type: integer
+                everyMs:
                   exclusiveMinimum: 0
                   type: integer
                 kind:
@@ -3558,24 +3571,26 @@ components:
                   type: string
               required:
                 - kind
-                - intervalMs
+                - everyMs
               type: object
             - additionalProperties: false
               properties:
-                expression:
+                expr:
                   minLength: 1
                   type: string
                 kind:
                   enum:
                     - cron
                   type: string
-                timezone:
+                staggerMs:
+                  minimum: 0
+                  type: integer
+                tz:
                   minLength: 1
                   type: string
               required:
                 - kind
-                - expression
-                - timezone
+                - expr
               type: object
       required:
         - name
@@ -3671,10 +3686,16 @@ components:
         cursor:
           minLength: 1
           type: string
+        endDate:
+          format: date-time
+          type: string
         limit:
           maximum: 100
           minimum: 1
           type: integer
+        startDate:
+          format: date-time
+          type: string
         status:
           enum:
             - queued
@@ -3701,7 +3722,10 @@ components:
           type: object
         - additionalProperties: false
           properties:
-            intervalMs:
+            anchorMs:
+              minimum: 0
+              type: integer
+            everyMs:
               exclusiveMinimum: 0
               type: integer
             kind:
@@ -3710,24 +3734,26 @@ components:
               type: string
           required:
             - kind
-            - intervalMs
+            - everyMs
           type: object
         - additionalProperties: false
           properties:
-            expression:
+            expr:
               minLength: 1
               type: string
             kind:
               enum:
                 - cron
               type: string
-            timezone:
+            staggerMs:
+              minimum: 0
+              type: integer
+            tz:
               minLength: 1
               type: string
           required:
             - kind
-            - expression
-            - timezone
+            - expr
           type: object
     TaskSessionResponseSchema:
       additionalProperties: false
@@ -3782,7 +3808,10 @@ components:
               type: object
             - additionalProperties: false
               properties:
-                intervalMs:
+                anchorMs:
+                  minimum: 0
+                  type: integer
+                everyMs:
                   exclusiveMinimum: 0
                   type: integer
                 kind:
@@ -3791,24 +3820,26 @@ components:
                   type: string
               required:
                 - kind
-                - intervalMs
+                - everyMs
               type: object
             - additionalProperties: false
               properties:
-                expression:
+                expr:
                   minLength: 1
                   type: string
                 kind:
                   enum:
                     - cron
                   type: string
-                timezone:
+                staggerMs:
+                  minimum: 0
+                  type: integer
+                tz:
                   minLength: 1
                   type: string
               required:
                 - kind
-                - expression
-                - timezone
+                - expr
               type: object
       type: object
     TenantScopedError:
@@ -10142,6 +10173,20 @@ paths:
           schema:
             minLength: 1
             type: string
+        - in: query
+          name: startDate
+          required: false
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+            type: string
+        - in: query
+          name: endDate
+          required: false
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+            type: string
       responses:
         "200":
           content:
@@ -10496,6 +10541,44 @@ paths:
           required: true
           schema:
             minLength: 1
+            type: string
+        - in: query
+          name: status
+          required: false
+          schema:
+            enum:
+              - queued
+              - running
+              - succeeded
+              - failed
+              - stopped
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 100
+            minimum: 1
+            type: integer
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            minLength: 1
+            type: string
+        - in: query
+          name: startDate
+          required: false
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+            type: string
+        - in: query
+          name: endDate
+          required: false
+          schema:
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
             type: string
       responses:
         "200":

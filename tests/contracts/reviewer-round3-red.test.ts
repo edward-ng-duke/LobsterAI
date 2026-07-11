@@ -34,7 +34,7 @@ describe('Reviewer Round 3 parameter contract mutations', () => {
     ['get_api_v1_sessions', ['cursor', 'limit', 'pinned']],
     ['get_api_v1_sessions_id_messages', ['cursor', 'direction', 'limit']],
     ['get_api_v1_html_shares', ['clientSourceKey', 'source']],
-    ['get_api_v1_scheduled_tasks_runs', ['cursor', 'limit', 'status']],
+    ['get_api_v1_scheduled_tasks_runs', ['cursor', 'endDate', 'limit', 'startDate', 'status']],
     ['get_api_v1_workspaces_wid_files_tree', ['cursor', 'depth', 'path', 'sort']],
     ['get_api_v1_workspaces_wid_files_download', ['as', 'path']],
   ])('emits %s query parameters', (operationId, expected) => {
@@ -113,8 +113,8 @@ describe('Reviewer Round 3 canonical bridge-shape mutations', () => {
 
   test.each([
     { kind: 'at', at: '2026-07-12T09:00:00.000Z' },
-    { kind: 'every', intervalMs: 60_000 },
-    { kind: 'cron', expression: '0 9 * * *', timezone: 'Asia/Shanghai' },
+    { kind: 'every', everyMs: 60_000, anchorMs: 0 },
+    { kind: 'cron', expr: '0 9 * * *', tz: 'Asia/Shanghai', staggerMs: 1_000 },
   ])('accepts scheduled task schedule $kind', (schedule) => {
     expect(route('post_api_v1_scheduled_tasks').request.safeParse({
       name: 'task',
