@@ -66,6 +66,12 @@ describe('P03 production image policy', () => {
     expect(health).toContain('OPENCLAW_GATEWAY_PORT');
     expect(health).not.toContain("readFileSync('/opt/openclaw/package.json'");
 
+    const dockerfile = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile'),
+      'utf8',
+    );
+    expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
+
     const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
     expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
     expect(checker).toContain('--tmpfs=/state');
