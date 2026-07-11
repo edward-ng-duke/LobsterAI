@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  chmodSync,
   cpSync,
   mkdirSync,
   mkdtempSync,
@@ -74,10 +75,10 @@ const createFixtureRoot = () => {
   return root;
 };
 
-const runChecker = (root: string) => spawnSync(
+const runChecker = (root: string, environment: NodeJS.ProcessEnv = process.env) => spawnSync(
   process.execPath,
   ['scripts/check-supply-chain.mjs'],
-  { cwd: root, encoding: 'utf8' },
+  { cwd: root, encoding: 'utf8', env: environment },
 );
 
 const mutateEvidenceDocument = (
@@ -338,5 +339,194 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     const installer = readFileSync(path.join(repositoryRoot, 'scripts/ensure-openclaw-plugins.cjs'), 'utf8');
     expect(installer).not.toContain('All ${plugins.length} plugin(s) installed successfully.');
     expect(installer).toContain('skipped');
+  });
+
+  test.each([
+    {
+      name: 'missing required runtime field',
+      mutate: (report: Record<string, any>) => delete report.images[0].runtimeEvidence.status,
+    },
+    {
+      name: 'wrong Critical count type',
+      mutate: (report: Record<string, any>) => { report.images[0].criticalFindings = '0'; },
+    },
+    {
+      name: 'unknown plugin installation field',
+      mutate: (report: Record<string, any>) => {
+        const openClaw = report.images.find(
+          (image: Record<string, string>) => image.imageName === 'openclaw-runtime',
+        );
+        openClaw.pluginInstallations[0].directoryPresent = true;
+      },
+    },
+  ])('rejects schema corner: $name', ({ mutate }) => {
+    const root = createFixtureRoot();
+    const report = readJson(reportPath(root));
+    mutate(report);
+    writeJson(reportPath(root), report);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
+  test('rejects absolute and FIFO evidence paths without reading the FIFO', () => {
+    const absoluteRoot = createFixtureRoot();
+    const absoluteReport = readJson(reportPath(absoluteRoot));
+    absoluteReport.images[0].sbom.path = path.join(evidenceDirectory(absoluteRoot), 'web.spdx.json');
+    writeJson(reportPath(absoluteRoot), absoluteReport);
+    const absolute = runChecker(absoluteRoot);
+    expect(absolute.status, `${absolute.stdout}\n${absolute.stderr}`).not.toBe(0);
+
+    const fifoRoot = createFixtureRoot();
+    const fifoReport = readJson(reportPath(fifoRoot));
+    const fifoName = 'evidence.fifo';
+    const fifoPath = path.join(evidenceDirectory(fifoRoot), fifoName);
+    const mkfifo = spawnSync('mkfifo', [fifoPath], { encoding: 'utf8' });
+    expect(mkfifo.status, mkfifo.stderr).toBe(0);
+    fifoReport.images[0].sbom.path = fifoName;
+    writeJson(reportPath(fifoRoot), fifoReport);
+    const startedAt = Date.now();
+    const fifo = runChecker(fifoRoot);
+    expect(Date.now() - startedAt).toBeLessThan(5_000);
+    expect(fifo.status, `${fifo.stdout}\n${fifo.stderr}`).not.toBe(0);
+  });
+
+  test('rejects a valid SBOM file replacement even when its hash is coordinated', () => {
+    const root = createFixtureRoot();
+    const report = readJson(reportPath(root));
+    const web = report.images.find((image: Record<string, string>) => image.imageName === 'web');
+    const api = report.images.find((image: Record<string, string>) => image.imageName === 'api');
+    const webPath = path.join(evidenceDirectory(root), web.sbom.path);
+    cpSync(path.join(evidenceDirectory(root), api.sbom.path), webPath);
+    web.sbom.sha256 = sha256File(webPath);
+    writeJson(reportPath(root), report);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
+  test.each([
+    {
+      name: 'multiple SPDX subjects',
+      mutate: (document: Record<string, any>) => {
+        const describes = document.relationships.find(
+          (relationship: Record<string, string>) => relationship.relationshipType === 'DESCRIBES',
+        );
+        document.relationships.push(structuredClone(describes));
+      },
+    },
+    {
+      name: 'missing SPDX subject relationship',
+      mutate: (document: Record<string, any>) => {
+        document.relationships = document.relationships.filter(
+          (relationship: Record<string, string>) => relationship.relationshipType !== 'DESCRIBES',
+        );
+      },
+    },
+    {
+      name: 'duplicate SPDX package identity',
+      mutate: (document: Record<string, any>) => {
+        const describes = document.relationships.find(
+          (relationship: Record<string, string>) => relationship.relationshipType === 'DESCRIBES',
+        );
+        const rootPackage = document.packages.find(
+          (candidate: Record<string, string>) => candidate.SPDXID === describes.relatedSpdxElement,
+        );
+        document.packages.push(structuredClone(rootPackage));
+      },
+    },
+  ])('rejects $name with a coordinated file hash', ({ mutate }) => {
+    const root = createFixtureRoot();
+    mutateEvidenceDocument(root, 'web', 'sbom', mutate);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
+  test('rejects duplicate raw Grype matches even when wrapper findings are duplicated identically', () => {
+    const root = createFixtureRoot();
+    const report = readJson(reportPath(root));
+    const web = report.images.find((image: Record<string, string>) => image.imageName === 'web');
+    const scanPath = path.join(evidenceDirectory(root), web.vulnerabilityScan.path);
+    const scan = readJson(scanPath);
+    const duplicatedMatch = structuredClone(scan.matches[0]);
+    scan.matches.push(duplicatedMatch);
+    writeJson(scanPath, scan);
+    web.vulnerabilityScan.sha256 = sha256File(scanPath);
+    web.vulnerabilityScan.findings.push({
+      id: duplicatedMatch.vulnerability.id,
+      severity: duplicatedMatch.vulnerability.severity,
+      package: duplicatedMatch.artifact.name,
+      version: duplicatedMatch.artifact.version,
+    });
+    writeJson(reportPath(root), report);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
+  test('rejects unavailable and digest-drifted local Docker image metadata', () => {
+    const missingRoot = createFixtureRoot();
+    const missingBin = path.join(missingRoot, 'bin');
+    mkdirSync(missingBin);
+    const missingDocker = path.join(missingBin, 'docker');
+    writeFileSync(missingDocker, '#!/bin/sh\nexit 1\n');
+    chmodSync(missingDocker, 0o755);
+    const missing = runChecker(missingRoot, {
+      ...process.env,
+      PATH: `${missingBin}:${process.env.PATH ?? ''}`,
+    });
+    expect(`${missing.stdout}\n${missing.stderr}`).toContain('bound local Docker image is unavailable');
+    expect(missing.status).not.toBe(0);
+
+    const driftRoot = createFixtureRoot();
+    const driftBin = path.join(driftRoot, 'bin');
+    mkdirSync(driftBin);
+    const driftDocker = path.join(driftBin, 'docker');
+    writeFileSync(driftDocker, [
+      '#!/bin/sh',
+      `printf '%s\\n' '{"Id":"sha256:${'0'.repeat(64)}","RepoDigests":[]}'`,
+      '',
+    ].join('\n'));
+    chmodSync(driftDocker, 0o755);
+    const drift = runChecker(driftRoot, {
+      ...process.env,
+      PATH: `${driftBin}:${process.env.PATH ?? ''}`,
+    });
+    expect(`${drift.stdout}\n${drift.stderr}`).toContain('local Docker image digest does not match evidence');
+    expect(drift.status).not.toBe(0);
+  });
+
+  test.each([
+    {
+      name: 'required plugin skipped',
+      mutate: (installations: Array<Record<string, unknown>>) => {
+        installations.find(plugin => plugin.id === 'openclaw-netease-bee')!.status = 'skipped';
+      },
+    },
+    {
+      name: 'duplicate plugin declaration replacing another declared ID',
+      mutate: (installations: Array<Record<string, unknown>>) => {
+        installations[1] = structuredClone(installations[0]);
+      },
+    },
+    {
+      name: 'unknown plugin replacing a declared ID',
+      mutate: (installations: Array<Record<string, unknown>>) => {
+        installations[0].id = 'unknown-plugin';
+      },
+    },
+    {
+      name: 'optional plugin claimed installed while absent from the bound final image',
+      mutate: (installations: Array<Record<string, unknown>>) => {
+        installations.find(plugin => plugin.id === 'moltbot-popo')!.status = 'installed';
+      },
+    },
+  ])('rejects plugin installation drift: $name', ({ mutate }) => {
+    const root = createFixtureRoot();
+    const report = readJson(reportPath(root));
+    const openClaw = report.images.find(
+      (image: Record<string, string>) => image.imageName === 'openclaw-runtime',
+    );
+    mutate(openClaw.pluginInstallations);
+    writeJson(reportPath(root), report);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
   });
 });
