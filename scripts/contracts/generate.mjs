@@ -253,7 +253,7 @@ const createElectronBridgeSource = () => {
     statements.push(text);
   }
   const aliases = [...new Set(importedNames)].sort().map((name) => `type ${name} = unknown;`).join('\n');
-  return `${tsHeader}\n/* eslint-disable @typescript-eslint/no-explicit-any */\n${aliases}\n\n${statements.join('\n\n')}\n`;
+  return `${tsHeader}\n${aliases}\n\n${statements.join('\n\n')}\n`;
 };
 
 const bridgeMapSource = `${tsHeader}\nexport const ElectronBridgeMap = ${JSON.stringify(

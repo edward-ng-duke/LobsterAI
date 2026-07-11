@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { ErrorCodeSchema } from './errors.js';
 
 export const ErrorEnvelopeSchema = z.strictObject({

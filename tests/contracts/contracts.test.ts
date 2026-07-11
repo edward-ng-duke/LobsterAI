@@ -10,8 +10,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { stringify as stringifyYaml, parse as parseYaml } from 'yaml';
+
 import { afterEach, describe, expect, test } from 'vitest';
+import { parse as parseYaml,stringify as stringifyYaml } from 'yaml';
 
 import { analyzeBreakingDiff } from '../../scripts/contracts/breaking-diff.mjs';
 

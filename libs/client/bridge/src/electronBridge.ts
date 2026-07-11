@@ -1,5 +1,4 @@
 // Generated file. Do not edit.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Agent = unknown;
 type AgentLegacyIdentityCleanupResult = unknown;
 type AppUpdateCheckResult = unknown;

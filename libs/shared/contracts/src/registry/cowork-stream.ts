@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { AskUserQuestionSchema } from '../domains/core.schema.js';
 
 const messagePayload = z.strictObject({

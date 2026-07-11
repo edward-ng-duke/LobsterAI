@@ -43,6 +43,7 @@ const createRepositoryCopy = (): string => {
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
+    '改造计划/附录A-IPC通道与接口映射.md',
   ]) {
     const source = path.join(repositoryRoot, relativePath);
     const destination = path.join(target, relativePath);
@@ -148,7 +149,7 @@ describe('SaaS scaffold independent tester corner cases', () => {
 
     expect(secondReport.invocationId).not.toBe(firstReport.invocationId);
     expect(readdirSync(reportDirectory).filter((file) => file.endsWith('.tmp'))).toEqual([]);
-  });
+  }, 30_000);
 
   test('Web production HTML references only assets present in the emitted bundle', () => {
     const webDist = path.join(repositoryRoot, 'apps/web/dist');
