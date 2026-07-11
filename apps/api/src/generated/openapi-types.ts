@@ -2204,6 +2204,17 @@ export interface components {
             code: string;
             requestId: string;
         };
+        BillingAccountResponse: {
+            breakdown: {
+                daily: number;
+                granted: number;
+                monthly: number;
+                topup: number;
+            };
+            creditsLimit: number;
+            creditsRemaining: number;
+            creditsUsed: number;
+        };
         BillingError: {
             /** @enum {string} */
             code: "QUOTA_EXCEEDED" | "VALIDATION_FAILED";
@@ -2215,20 +2226,21 @@ export interface components {
         };
         BillingHoldResponse: {
             bucketDeltas: {
-                overdraft: number;
-                promotional: number;
-                purchased: number;
-                subscription: number;
+                daily: number;
+                granted: number;
+                monthly: number;
+                topup: number;
             };
             holdId: string;
         };
         BillingLedgerEntry: {
             bucketDeltas: {
-                overdraft: number;
-                promotional: number;
-                purchased: number;
-                subscription: number;
+                daily: number;
+                granted: number;
+                monthly: number;
+                topup: number;
             };
+            credits: number;
             /** @enum {string} */
             entryType: "hold" | "settle" | "release" | "refund" | "topup" | "grant" | "adjust";
             /** @enum {string} */
@@ -3545,11 +3557,17 @@ export interface components {
             };
             success: boolean;
         };
+        QuotaBucketDeltas: {
+            daily: number;
+            granted: number;
+            monthly: number;
+            topup: number;
+        };
         QuotaBuckets: {
-            overdraft: number;
-            promotional: number;
-            purchased: number;
-            subscription: number;
+            daily: number;
+            granted: number;
+            monthly: number;
+            topup: number;
         };
         ReadFileAsDataUrlResponse: {
             dataUrl?: string;
@@ -4664,7 +4682,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QuotaBuckets"];
+                    "application/json": components["schemas"]["BillingAccountResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */

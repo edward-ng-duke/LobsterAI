@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
-import * as Schemas from '../../libs/shared/contracts/src/index.schemas.js';
 import { StreamTicketRequestSchema } from '../../libs/shared/contracts/src/envelope.schema.js';
+import * as Schemas from '../../libs/shared/contracts/src/index.schemas.js';
 import { RouteRegistry } from '../../libs/shared/contracts/src/registry/routes.js';
 
 const schemaCatalog = Schemas as unknown as Record<

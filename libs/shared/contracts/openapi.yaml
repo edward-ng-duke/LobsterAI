@@ -264,6 +264,45 @@ components:
         - code
         - requestId
       type: object
+    BillingAccountResponse:
+      additionalProperties: false
+      properties:
+        breakdown:
+          additionalProperties: false
+          properties:
+            daily:
+              minimum: 0
+              type: number
+            granted:
+              minimum: 0
+              type: number
+            monthly:
+              minimum: 0
+              type: number
+            topup:
+              minimum: 0
+              type: number
+          required:
+            - daily
+            - monthly
+            - granted
+            - topup
+          type: object
+        creditsLimit:
+          minimum: 0
+          type: number
+        creditsRemaining:
+          minimum: 0
+          type: number
+        creditsUsed:
+          minimum: 0
+          type: number
+      required:
+        - creditsRemaining
+        - creditsLimit
+        - creditsUsed
+        - breakdown
+      type: object
     BillingError:
       additionalProperties: false
       properties:
@@ -298,23 +337,19 @@ components:
         bucketDeltas:
           additionalProperties: false
           properties:
-            overdraft:
-              maximum: 0
+            daily:
               type: number
-            promotional:
-              minimum: 0
+            granted:
               type: number
-            purchased:
-              minimum: 0
+            monthly:
               type: number
-            subscription:
-              minimum: 0
+            topup:
               type: number
           required:
-            - subscription
-            - purchased
-            - promotional
-            - overdraft
+            - daily
+            - monthly
+            - granted
+            - topup
           type: object
         holdId:
           minLength: 1
@@ -329,24 +364,22 @@ components:
         bucketDeltas:
           additionalProperties: false
           properties:
-            overdraft:
-              maximum: 0
+            daily:
               type: number
-            promotional:
-              minimum: 0
+            granted:
               type: number
-            purchased:
-              minimum: 0
+            monthly:
               type: number
-            subscription:
-              minimum: 0
+            topup:
               type: number
           required:
-            - subscription
-            - purchased
-            - promotional
-            - overdraft
+            - daily
+            - monthly
+            - granted
+            - topup
           type: object
+        credits:
+          type: number
         entryType:
           enum:
             - hold
@@ -374,6 +407,7 @@ components:
         - requestId
         - entryType
         - reason
+        - credits
         - bucketDeltas
       type: object
     BillingSettleRequest:
@@ -6543,26 +6577,43 @@ components:
       required:
         - success
       type: object
+    QuotaBucketDeltas:
+      additionalProperties: false
+      properties:
+        daily:
+          type: number
+        granted:
+          type: number
+        monthly:
+          type: number
+        topup:
+          type: number
+      required:
+        - daily
+        - monthly
+        - granted
+        - topup
+      type: object
     QuotaBuckets:
       additionalProperties: false
       properties:
-        overdraft:
-          maximum: 0
-          type: number
-        promotional:
+        daily:
           minimum: 0
           type: number
-        purchased:
+        granted:
           minimum: 0
           type: number
-        subscription:
+        monthly:
+          minimum: 0
+          type: number
+        topup:
           minimum: 0
           type: number
       required:
-        - subscription
-        - purchased
-        - promotional
-        - overdraft
+        - daily
+        - monthly
+        - granted
+        - topup
       type: object
     ReadFileAsDataUrlResponse:
       additionalProperties: false
@@ -8057,7 +8108,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/QuotaBuckets"
+                $ref: "#/components/schemas/BillingAccountResponse"
           description: Successful response
         "400":
           content:

@@ -88,7 +88,7 @@ const RouteDefinitions = [
   route('POST', '/api/v1/artifacts/{artifactId}/preview', 'post_api_v1_artifacts_artifactId_preview', 'PreviewTokenRequest', 'PreviewTokenResponse'),
   route('DELETE', '/api/v1/artifacts/preview-sessions/{previewSessionId}', 'delete_api_v1_artifacts_preview_sessions_previewSessionId', 'EmptyRequest', 'OperationResponse'),
   route('POST', '/api/v1/asr/sessions', 'post_api_v1_asr_sessions', 'AsrSessionCreateRequest', 'AsrSessionCreateResponse'),
-  route('GET', '/api/v1/billing/account', 'get_api_v1_billing_account', 'EmptyRequest', 'QuotaBuckets'),
+  route('GET', '/api/v1/billing/account', 'get_api_v1_billing_account', 'EmptyRequest', 'BillingAccountResponse'),
   route('POST', '/api/v1/billing/byok', 'post_api_v1_billing_byok', 'OperationRequest', 'OperationResponse'),
   route('DELETE', '/api/v1/billing/byok/{provider}', 'delete_api_v1_billing_byok_provider', 'EmptyRequest', 'OperationResponse'),
   route('GET', '/api/v1/billing/plan', 'get_api_v1_billing_plan', 'EmptyRequest', 'OperationResponse'),

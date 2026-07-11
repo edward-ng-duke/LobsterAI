@@ -354,12 +354,13 @@ const checkCoreDto = () => {
 };
 
 const checkDeferredContracts = () => {
-  for (const name of ['ModelDetailResponse', 'PricingCatalogResponse', 'MediaTaskStatusResponse', 'MediaCancelResponse', 'AsrSessionCreateRequest', 'AsrSessionCreateResponse']) assert('deferred-contracts', name in Schemas, `missing ${name}`);
+  for (const name of ['ModelDetailResponse', 'PricingCatalogResponse', 'MediaTaskStatusResponse', 'MediaCancelResponse', 'AsrSessionCreateRequest', 'AsrSessionCreateResponse', 'BillingAccountResponse', 'QuotaBuckets', 'QuotaBucketDeltas']) assert('deferred-contracts', name in Schemas, `missing ${name}`);
   const nodeRoute = RouteRegistry.find((route) => route.path === '/api/v1/share-deployments/node');
   assert('deferred-contracts', nodeRoute?.support === 'unsupported', 'node deployment does not freeze 501 unsupported contract');
   const forbiddenImports = ["from 'axios'", 'fetch(', 'billingLedger', 'providerAdapter'];
   const source = readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/src/domains/deferred.schema.ts'), 'utf8');
   for (const fragment of forbiddenImports) assert('deferred-contracts', !source.includes(fragment), `behavior implementation leaked: ${fragment}`);
+  assert('deferred-contracts', Schemas.BillingAccountResponse.safeParse({ creditsRemaining: 10, creditsLimit: 14, creditsUsed: 4, breakdown: { daily: 1, monthly: 2, granted: 3, topup: 4 } }).success, 'D12 billing account response rejected');
 };
 
 const checkGenerated = () => {

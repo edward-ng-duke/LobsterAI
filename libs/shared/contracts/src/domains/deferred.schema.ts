@@ -79,10 +79,30 @@ export const AsrFinalEventSchema = z.strictObject({ text: z.string(), isFinal: z
 export const AsrErrorEventSchema = z.strictObject({ code: z.string().min(1), message: z.string() });
 
 export const QuotaBucketsSchema = z.strictObject({
-  subscription: z.number().nonnegative(),
-  purchased: z.number().nonnegative(),
-  promotional: z.number().nonnegative(),
-  overdraft: z.number().nonpositive(),
+  daily: z.number().nonnegative(),
+  monthly: z.number().nonnegative(),
+  granted: z.number().nonnegative(),
+  topup: z.number().nonnegative(),
+});
+export const QuotaBucketDeltasSchema = z.strictObject({
+  daily: z.number(),
+  monthly: z.number(),
+  granted: z.number(),
+  topup: z.number(),
+});
+export const BillingAccountResponseSchema = z.strictObject({
+  creditsRemaining: z.number().nonnegative(),
+  creditsLimit: z.number().nonnegative(),
+  creditsUsed: z.number().nonnegative(),
+  breakdown: QuotaBucketsSchema,
+}).superRefine((account, context) => {
+  const balance = Object.values(account.breakdown).reduce((sum, value) => sum + value, 0);
+  if (Math.abs(balance - account.creditsRemaining) > Number.EPSILON) {
+    context.addIssue({ code: 'custom', path: ['creditsRemaining'], message: 'Balance mismatch' });
+  }
+  if (Math.abs(account.creditsLimit - account.creditsRemaining - account.creditsUsed) > Number.EPSILON) {
+    context.addIssue({ code: 'custom', path: ['creditsUsed'], message: 'Usage mismatch' });
+  }
 });
 export const BillingLedgerEntrySchema = z.strictObject({
   requestId: z.string().min(1),
@@ -96,7 +116,19 @@ export const BillingLedgerEntrySchema = z.strictObject({
     'chargeback',
     'sandbox_cost',
   ]),
-  bucketDeltas: QuotaBucketsSchema,
+  credits: z.number(),
+  bucketDeltas: QuotaBucketDeltasSchema,
+}).superRefine((entry, context) => {
+  const deltas = Object.values(entry.bucketDeltas);
+  const hasPositive = deltas.some((value) => value > 0);
+  const hasNegative = deltas.some((value) => value < 0);
+  if (hasPositive && hasNegative) {
+    context.addIssue({ code: 'custom', path: ['bucketDeltas'], message: 'Mixed delta signs' });
+  }
+  const total = deltas.reduce((sum, value) => sum + value, 0);
+  if (Math.abs(total - entry.credits) > Number.EPSILON) {
+    context.addIssue({ code: 'custom', path: ['bucketDeltas'], message: 'Delta sum mismatch' });
+  }
 });
 
 export const WorkspaceCreateRequestSchema = z.strictObject({ name: z.string().min(1) });
@@ -145,7 +177,7 @@ export const TaskStatusEventSchema = z.strictObject({ taskId: z.string().min(1),
 export const TaskRunEventSchema = TaskRunDtoSchema;
 
 export const BillingHoldRequestSchema = z.strictObject({ requestId: z.string().min(1), credits: z.number().positive() });
-export const BillingHoldResponseSchema = z.strictObject({ holdId: z.string().min(1), bucketDeltas: QuotaBucketsSchema });
+export const BillingHoldResponseSchema = z.strictObject({ holdId: z.string().min(1), bucketDeltas: QuotaBucketDeltasSchema });
 export const BillingSettleRequestSchema = z.strictObject({ requestId: z.string().min(1), holdId: z.string().min(1), credits: z.number().nonnegative() });
 export const UsageReportSchema = z.strictObject({ requestId: z.string().min(1), tokens: z.number().int().nonnegative(), credits: z.number().nonnegative() });
 export const BillingErrorSchema = z.strictObject({ code: z.enum(['QUOTA_EXCEEDED', 'VALIDATION_FAILED']), requestId: z.string().min(1) });
