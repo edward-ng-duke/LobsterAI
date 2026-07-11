@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -17,6 +18,8 @@ const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidenceRelativePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
 const taskRelativePath =
   '改造计划/20260711_V2单租户Web闭环开发/任务/P02-PR2数据库脚手架';
+const governanceRelativePath =
+  '改造计划/20260711_V2单租户Web闭环开发/00-总体完成表.md';
 const temporaryRoots: string[] = [];
 
 const sha256File = (target: string): string =>
@@ -54,6 +57,9 @@ const createEvidenceFixture = (): string => {
     cpSync(path.join(repositoryRoot, relativePath), target);
   }
   writeFileSync(path.join(root, 'implementation.txt'), 'stable P02 implementation\n');
+  const governancePath = path.join(root, governanceRelativePath);
+  mkdirSync(path.dirname(governancePath), { recursive: true });
+  writeFileSync(governancePath, '# Authoritative completion table\n\n| P02 | [ ] |\n');
   git(root, 'add', '.');
   git(root, 'commit', '-m', 'feat: implementation');
   const implementationSha = git(root, 'rev-parse', 'HEAD');
@@ -162,6 +168,65 @@ describe('P02 independent Tester evidence and provenance boundaries', () => {
     );
     const result = runValidator(root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test('allows only a normal modification of the authoritative completion table', () => {
+    const root = createEvidenceFixture();
+    commitFile(
+      root,
+      governanceRelativePath,
+      '# Authoritative completion table\n\n| P02 | [x] |\n',
+      'docs(plan): record coordinator acceptance',
+    );
+
+    const result = runValidator(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test.each([
+    '改造计划/20260711_V2单租户Web闭环开发/05-计划自检报告.md',
+    '改造计划/20260711_V2单租户Web闭环开发/任务/evil/00-总体完成表.md',
+    '改造计划/20260711_V2单租户Web闭环开发/00-总体完成表.md.evil',
+  ])('rejects a neighboring or lookalike governance path: %s', (relativePath) => {
+    const root = createEvidenceFixture();
+    commitFile(root, relativePath, '# Not authoritative\n', 'docs(plan): spoof governance');
+    const result = runValidator(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(relativePath);
+  });
+
+  test('rejects deletion of the authoritative completion table', () => {
+    const root = createEvidenceFixture();
+    rmSync(path.join(root, governanceRelativePath));
+    git(root, 'add', '-A');
+    git(root, 'commit', '-m', 'docs(plan): delete completion table');
+    const result = runValidator(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(governanceRelativePath);
+  });
+
+  test('rejects renaming the authoritative completion table into an allowed task record', () => {
+    const root = createEvidenceFixture();
+    const destination = `${taskRelativePath}/开发记录.md`;
+    mkdirSync(path.dirname(path.join(root, destination)), { recursive: true });
+    renameSync(path.join(root, governanceRelativePath), path.join(root, destination));
+    git(root, 'add', '-A');
+    git(root, 'commit', '-m', 'docs(plan): disguise completion table as task evidence');
+    const result = runValidator(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(governanceRelativePath);
+  });
+
+  test('rejects copying the completion table to a neighboring plan document', () => {
+    const root = createEvidenceFixture();
+    const destination =
+      '改造计划/20260711_V2单租户Web闭环开发/00-总体完成表-copy.md';
+    cpSync(path.join(root, governanceRelativePath), path.join(root, destination));
+    git(root, 'add', destination);
+    git(root, 'commit', '-m', 'docs(plan): copy completion table');
+    const result = runValidator(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(destination);
   });
 
   test('fails closed when the evidence validator tampers with its own provenance checks', () => {
