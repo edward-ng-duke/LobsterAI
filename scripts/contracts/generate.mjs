@@ -85,6 +85,14 @@ for (const [name, schema] of Object.entries(SchemaCatalog).sort(([left], [right]
 )) {
   openapiRegistry.register(name, schema);
 }
+for (const route of RouteRegistry) {
+  if (!(route.requestName in SchemaCatalog)) {
+    openapiRegistry.register(route.requestName, route.request);
+  }
+  if (route.responseName !== 'ErrorEnvelope' && !(route.responseName in SchemaCatalog)) {
+    openapiRegistry.register(route.responseName, route.response);
+  }
+}
 const componentSchemas = new OpenApiGeneratorV31(
   openapiRegistry.definitions,
 ).generateComponents().components.schemas;
@@ -120,10 +128,12 @@ for (const route of RouteRegistry) {
     tags: [route.domain],
     'x-lobster-source-refs': route.sourceRefs,
     'x-lobster-support': route.support,
+    'x-lobster-error-codes': route.errors,
     parameters: pathParameters,
+    security: route.auth === 'access-token' ? [{ accessToken: [] }] : [],
     responses: {
-      '200': {
-        description: 'Successful response',
+      [String(route.successStatus)]: {
+        description: route.support === 'unsupported' ? 'Unsupported feature' : 'Successful response',
         content: { 'application/json': { schema: { $ref: `#/components/schemas/${route.responseName}` } } },
       },
     },
