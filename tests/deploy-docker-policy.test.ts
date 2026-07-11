@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { validateDockerfile } from '../scripts/check-docker-build.mjs';
+
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const imageNames = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'] as const;
 const dynamicInstallPattern = /\b(?:npm|pnpm|yarn|pip3?|npx)\s+(?:install|add|ci)|\bcurl\b|\bwget\b|git\s+clone/i;
@@ -19,7 +21,7 @@ describe('P03 production image policy', () => {
     expect(existsSync(dockerfilePath), `${imageName} Dockerfile is missing`).toBe(true);
     const dockerfile = readFileSync(dockerfilePath, 'utf8');
 
-    expect(dockerfile.match(/^FROM\s+/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(dockerfile.match(/^FROM\s+/gm)?.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(dockerfile).toMatch(/^USER\s+[1-9][0-9]*:[1-9][0-9]*\s*$/m);
     expect(dockerfile).toMatch(/^HEALTHCHECK\s+/m);
     expect(dockerfile).toMatch(/^(?:ENTRYPOINT|CMD)\s+\[.+\]\s*$/m);
@@ -34,5 +36,23 @@ describe('P03 production image policy', () => {
       'utf8',
     );
     expect(productionDockerfile).not.toMatch(/(?:xvfb|x11vnc|novnc|chromium|electron|\bdebug\b)/i);
+  });
+
+  test('static policy rejects root, dynamic runtime installs, GUI payloads and unpinned bases', () => {
+    const baseline = readFileSync(path.join(repositoryRoot, 'docker', 'api', 'Dockerfile'), 'utf8');
+    expect(validateDockerfile('api', baseline)).toEqual([]);
+
+    expect(validateDockerfile('api', baseline.replace('USER 10001:10001', 'USER 0:0')).join('\n'))
+      .toContain('numeric non-root');
+    expect(validateDockerfile('api', baseline.replace(
+      'ENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+      'RUN npm install unsafe-package\nENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+    )).join('\n')).toContain('dynamic install');
+    expect(validateDockerfile('api', baseline.replace(
+      'ENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+      'RUN apk add xvfb\nENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+    )).join('\n')).toContain('GUI/latest');
+    expect(validateDockerfile('api', baseline.replace(/@sha256:[a-f0-9]{64}/g, '')).join('\n'))
+      .toContain('digest-pinned');
   });
 });

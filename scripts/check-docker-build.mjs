@@ -1,0 +1,266 @@
+import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export const productionImages = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'];
+const pinnedBasePattern = /^FROM\s+[^\s]+@sha256:[a-f0-9]{64}\s+AS\s+[a-z0-9-]+\s*$/gim;
+const dynamicInstallPattern = /\b(?:npm|pnpm|yarn|pip3?|npx)\s+(?:install|add|ci)|\bcurl\b|\bwget\b|git\s+clone/i;
+const forbiddenProductionPattern = /(?:xvfb|x11vnc|novnc|chromium|electron|:latest|\bdebug\b)/i;
+const secretPattern = /(?:-----BEGIN [A-Z ]+PRIVATE KEY-----|npm_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/;
+
+const run = (command, args, options = {}) => spawnSync(command, args, {
+  cwd: repositoryRoot,
+  encoding: 'utf8',
+  ...options,
+});
+
+const productionStage = (dockerfile) =>
+  dockerfile.match(/\nFROM\s+[^\n]+\s+AS\s+production\s*\n([\s\S]*)$/i)?.[1] ?? '';
+
+export const validateDockerfile = (imageName, dockerfile) => {
+  const errors = [];
+  const bases = dockerfile.match(pinnedBasePattern) ?? [];
+  if (bases.length < 2) errors.push(`${imageName}: requires at least two digest-pinned stages`);
+  const runtime = productionStage(dockerfile);
+  if (!runtime) errors.push(`${imageName}: missing final AS production stage`);
+  if (!/^USER\s+[1-9][0-9]*:[1-9][0-9]*\s*$/m.test(runtime)) {
+    errors.push(`${imageName}: final USER must be a numeric non-root UID:GID`);
+  }
+  if (!/^HEALTHCHECK\s+/m.test(runtime)) errors.push(`${imageName}: missing HEALTHCHECK`);
+  if (!/^(?:ENTRYPOINT|CMD)\s+\[[^\n]+\]\s*$/m.test(runtime)) {
+    errors.push(`${imageName}: final entrypoint must use exec-array form`);
+  }
+  if (dynamicInstallPattern.test(runtime)) errors.push(`${imageName}: production stage performs a dynamic install/download`);
+  if (forbiddenProductionPattern.test(runtime)) errors.push(`${imageName}: production stage contains GUI/latest/debug content`);
+  if (/COPY\s+\.\s+\./i.test(runtime)) errors.push(`${imageName}: production stage copies an unbounded build context`);
+  if (secretPattern.test(dockerfile)) errors.push(`${imageName}: Dockerfile contains a secret-like value`);
+  return errors;
+};
+
+const validateEntrypoints = (root) => {
+  const errors = [];
+  for (const relativePath of [
+    'docker/worker/entrypoint.sh',
+    'docker/openclaw-runtime/entrypoint.sh',
+  ]) {
+    const absolutePath = path.join(root, relativePath);
+    if (!existsSync(absolutePath)) {
+      errors.push(`missing entrypoint: ${relativePath}`);
+      continue;
+    }
+    const content = readFileSync(absolutePath, 'utf8');
+    if (dynamicInstallPattern.test(content)) errors.push(`${relativePath}: runtime download/install is forbidden`);
+    if (!content.startsWith('#!/bin/sh\nset -eu')) errors.push(`${relativePath}: entrypoint must fail closed`);
+  }
+  const worker = path.join(root, 'docker/worker/entrypoint.sh');
+  if (existsSync(worker) && !/trap\s+\w+\s+INT TERM/.test(readFileSync(worker, 'utf8'))) {
+    errors.push('worker entrypoint must forward SIGINT and SIGTERM');
+  }
+  return errors;
+};
+
+const validateDockerignore = (root) => {
+  const ignorePath = path.join(root, '.dockerignore');
+  if (!existsSync(ignorePath)) return ['missing root .dockerignore'];
+  const entries = new Set(readFileSync(ignorePath, 'utf8').split(/\r?\n/).map(value => value.trim()));
+  return ['.git', '.env', '.env.*', '.npmrc', 'node_modules', '**/node_modules', '.reports']
+    .filter(entry => !entries.has(entry))
+    .map(entry => `.dockerignore must exclude ${entry}`);
+};
+
+const validateOpenClaw = (root, dockerfile) => {
+  const errors = [];
+  const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+  if (!dockerfile.includes(`OPENCLAW_VERSION=${packageJson.openclaw.version}`)) {
+    errors.push('openclaw-runtime: image version does not match package.json.openclaw.version');
+  }
+  for (const script of [
+    'ensure-openclaw-version.cjs',
+    'apply-openclaw-patches.cjs',
+    'run-build-openclaw-runtime.cjs',
+    'sync-openclaw-runtime-current.cjs',
+    'bundle-openclaw-gateway.cjs',
+    'ensure-openclaw-plugins.cjs',
+    'sync-local-openclaw-extensions.cjs',
+    'precompile-openclaw-extensions.cjs',
+    'install-openclaw-channel-deps.cjs',
+    'prune-openclaw-runtime.cjs',
+  ]) {
+    if (!dockerfile.includes(script)) errors.push(`openclaw-runtime: missing build step ${script}`);
+  }
+  if (!dockerfile.includes('TARGETARCH') || !dockerfile.includes('linux-x64') || !dockerfile.includes('linux-arm64')) {
+    errors.push('openclaw-runtime: linux architecture mapping is incomplete');
+  }
+  if (/mac-(?:x64|arm64)|win-(?:x64|arm64)/i.test(dockerfile)) {
+    errors.push('openclaw-runtime: host desktop binaries must not enter the image');
+  }
+  return errors;
+};
+
+export const checkDockerStatic = (root = repositoryRoot) => {
+  const errors = [...validateDockerignore(root), ...validateEntrypoints(root)];
+  for (const imageName of productionImages) {
+    const dockerfilePath = path.join(root, 'docker', imageName, 'Dockerfile');
+    if (!existsSync(dockerfilePath)) {
+      errors.push(`${imageName}: missing Dockerfile`);
+      continue;
+    }
+    const dockerfile = readFileSync(dockerfilePath, 'utf8');
+    errors.push(...validateDockerfile(imageName, dockerfile));
+    if (imageName === 'openclaw-runtime') errors.push(...validateOpenClaw(root, dockerfile));
+  }
+  const productionRuntime = path.join(root, 'docker/openclaw-runtime/Dockerfile');
+  const debugRuntime = path.join(root, 'docker/openclaw-runtime/Dockerfile.debug');
+  if (!existsSync(debugRuntime)) errors.push('openclaw-runtime: missing physically separate Dockerfile.debug');
+  if (existsSync(productionRuntime) && forbiddenProductionPattern.test(readFileSync(productionRuntime, 'utf8'))) {
+    errors.push('openclaw-runtime: production file contains debug/GUI content');
+  }
+  return errors;
+};
+
+const requireTool = (command, args) => {
+  const result = run(command, args);
+  if (result.status !== 0) {
+    throw new Error(`blocked: missing or unusable ${command}: ${result.stderr || result.stdout}`);
+  }
+  return (result.stdout || result.stderr).trim();
+};
+
+const waitForHealthy = (containerId, timeoutMs = 45_000) => {
+  const deadline = Date.now() + timeoutMs;
+  const waitBuffer = new Int32Array(new SharedArrayBuffer(4));
+  while (Date.now() < deadline) {
+    const inspect = run('docker', ['inspect', '--format', '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}', containerId]);
+    const status = inspect.stdout.trim();
+    if (status === 'running healthy') return;
+    if (/^(?:exited|dead)/.test(status)) throw new Error(`container exited before healthy: ${status}`);
+    Atomics.wait(waitBuffer, 0, 0, 250);
+  }
+  throw new Error(`container did not become healthy within ${timeoutMs}ms`);
+};
+
+const buildAndSmoke = (imageName, sourceSha, reportDirectory) => {
+  const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
+  const dockerfile = `docker/${imageName}/Dockerfile`;
+  const build = run('docker', ['build', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
+    stdio: 'inherit',
+  });
+  if (build.status !== 0) throw new Error(`${imageName}: docker build failed with exit ${build.status}`);
+  const inspect = run('docker', ['image', 'inspect', tag, '--format', '{{json .}}']);
+  if (inspect.status !== 0) throw new Error(`${imageName}: image inspect failed`);
+  const metadata = JSON.parse(inspect.stdout);
+  if (metadata.Config?.User !== '10001:10001') throw new Error(`${imageName}: effective image user is not 10001:10001`);
+  const history = run('docker', ['history', '--no-trunc', '--format', '{{.CreatedBy}}', tag]);
+  if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
+
+  if (imageName === 'openclaw-runtime') {
+    const version = run('docker', [
+      'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+      '--security-opt=no-new-privileges', '--user=10001:10001', '--entrypoint=node', tag,
+      '/opt/openclaw/openclaw.mjs', '--version',
+    ]);
+    if (version.status !== 0) throw new Error(`${imageName}: offline version smoke failed: ${version.stderr}`);
+  } else {
+    const args = [
+      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
+      '--security-opt=no-new-privileges', '--user=10001:10001', '--tmpfs=/tmp:rw,noexec,nosuid,size=16m',
+      tag,
+    ];
+    const started = run('docker', args);
+    if (started.status !== 0) throw new Error(`${imageName}: offline start smoke failed: ${started.stderr}`);
+    const containerId = started.stdout.trim();
+    try {
+      waitForHealthy(containerId);
+      const stopped = run('docker', ['stop', '--time=10', containerId]);
+      if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
+    } finally {
+      run('docker', ['rm', '--force', containerId]);
+    }
+  }
+
+  const imageDigest = metadata.Id;
+  const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
+  const sbom = run('syft', [tag, '--output', `spdx-json=${sbomPath}`]);
+  if (sbom.status !== 0) throw new Error(`${imageName}: SBOM generation failed: ${sbom.stderr}`);
+  const sbomSha256 = `sha256:${createHash('sha256').update(readFileSync(sbomPath)).digest('hex')}`;
+  return { imageName, tag, digest: imageDigest, sourceSha, sbom: { path: sbomPath, sha256: sbomSha256 } };
+};
+
+const writeReport = (report) => {
+  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据');
+  mkdirSync(reportDirectory, { recursive: true });
+  const reportPath = path.join(reportDirectory, 'docker-build-check.json');
+  const temporaryPath = `${reportPath}.${report.invocationId}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
+  renameSync(temporaryPath, reportPath);
+  return { reportDirectory, reportPath };
+};
+
+const main = () => {
+  const staticErrors = checkDockerStatic();
+  if (staticErrors.length > 0) {
+    console.error(JSON.stringify({ status: 'FAILED', check: 'docker-build', errors: staticErrors }, null, 2));
+    process.exitCode = 1;
+    return;
+  }
+  if (process.argv.includes('--static')) {
+    console.log(JSON.stringify({ status: 'PASSED', check: 'docker-build-static', imagesChecked: productionImages }));
+    return;
+  }
+  const dockerVersion = requireTool('docker', ['version', '--format', '{{.Client.Version}}']);
+  const syftVersion = requireTool('syft', ['version']);
+  const git = run('git', ['rev-parse', 'HEAD']);
+  if (git.status !== 0 || !/^[a-f0-9]{40}\s*$/.test(git.stdout)) throw new Error('unable to bind build to source SHA');
+  const sourceSha = git.stdout.trim();
+  const invocationId = randomUUID();
+  const { reportDirectory } = writeReport({
+    schemaVersion: 1,
+    status: 'RUNNING',
+    invocationId,
+    generatedAt: new Date().toISOString(),
+    sourceSha,
+    dockerVersion,
+    syftVersion,
+    images: [],
+  });
+  const images = [];
+  try {
+    for (const imageName of productionImages) images.push(buildAndSmoke(imageName, sourceSha, reportDirectory));
+    const report = {
+      schemaVersion: 1,
+      status: 'PASSED',
+      invocationId,
+      generatedAt: new Date().toISOString(),
+      sourceSha,
+      dockerVersion,
+      syftVersion,
+      productionNetwork: 'offline',
+      images,
+      signature: { status: 'BLOCKED', reason: 'Internal trust identity is not frozen; publish is forbidden.' },
+    };
+    const { reportPath } = writeReport(report);
+    console.log(JSON.stringify({ ...report, reportPath }));
+  } catch (error) {
+    rmSync(path.join(reportDirectory, 'docker-build-check.json'), { force: true });
+    throw error;
+  }
+};
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    main();
+  } catch (error) {
+    console.error(JSON.stringify({ status: 'BLOCKED', check: 'docker-build', reason: String(error) }));
+    process.exitCode = 2;
+  }
+}
