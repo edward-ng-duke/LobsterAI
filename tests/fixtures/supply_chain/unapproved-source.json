@@ -1,0 +1,8 @@
+{
+  "id": "mcp-package:unsafe",
+  "kind": "mcp-package",
+  "sourcePath": "tests/fixtures/supply_chain/unapproved-source.json",
+  "source": "https://registry.npmjs.org/unsafe",
+  "version": "1.0.0",
+  "integrity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "openclaw-plugin:unsafe",
+  "kind": "openclaw-plugin",
+  "sourcePath": "package.json#openclaw.plugins",
+  "source": "npm:unsafe-plugin",
+  "version": "latest",
+  "integrity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

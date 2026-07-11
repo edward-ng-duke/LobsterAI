@@ -1,0 +1,7 @@
+{
+  "findingId": "CVE-2099-0001",
+  "severity": "critical",
+  "owner": "security@example.invalid",
+  "reason": "Fixture waiver must be rejected because it expired.",
+  "expiresAt": "2020-01-01T00:00:00.000Z"
+}
