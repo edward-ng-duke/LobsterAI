@@ -73,4 +73,17 @@ describe('P03 Helm security baseline', () => {
     unknownField.privileged = true;
     expect(validateValues(unknownField).join('\n')).toContain('unknown field privileged');
   });
+
+  test('service-plane NetworkPolicies are component-to-component and port-scoped', () => {
+    const networkPolicies = readFileSync(
+      path.join(chartRoot, 'templates', 'networkpolicies.yaml'),
+      'utf8',
+    );
+    expect(networkPolicies).not.toContain('name: {{ include "lobsterai.fullname" . }}-allow-service-plane');
+    for (const edge of ['web-to-api', 'worker-to-api', 'orchestrator-to-api']) {
+      expect(networkPolicies).toContain(`-${edge}`);
+    }
+    expect(networkPolicies.match(/app\.kubernetes\.io\/component:/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+    expect(networkPolicies.match(/ports:/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
+  });
 });

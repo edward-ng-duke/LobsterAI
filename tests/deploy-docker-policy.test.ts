@@ -55,4 +55,20 @@ describe('P03 production image policy', () => {
     expect(validateDockerfile('api', baseline.replace(/@sha256:[a-f0-9]{64}/g, '')).join('\n'))
       .toContain('digest-pinned');
   });
+
+  test('OpenClaw health probes the live gateway and full smoke uses the production entrypoint', () => {
+    const health = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),
+      'utf8',
+    );
+    expect(health).toMatch(/(?:connect|fetch|WebSocket)/);
+    expect(health).toContain('OPENCLAW_GATEWAY_PORT');
+    expect(health).not.toContain("readFileSync('/opt/openclaw/package.json'");
+
+    const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
+    expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
+    expect(checker).toContain('--tmpfs=/state');
+    expect(checker).toContain('--tmpfs=/workspace');
+    expect(checker).toContain('waitForHealthy(containerId');
+  });
 });

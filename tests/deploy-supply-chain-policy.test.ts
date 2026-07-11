@@ -154,6 +154,74 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     expect(validateEvidence(evidence).join('\n')).toEqual(expect.stringContaining('trusted identities'));
   });
 
+  test('image evidence is an exact five-image set bound to one expected source SHA', () => {
+    const expectedSourceSha = '0123456789abcdef0123456789abcdef01234567';
+    const empty = buildManifest(repositoryRoot);
+    expect(validateEvidence(empty, new Date('2026-07-11T00:00:00Z'), expectedSourceSha).join('\n'))
+      .toContain('missing image evidence');
+
+    const makeEvidence = (imageName: string, sourceSha = expectedSourceSha) => ({
+      image: `registry.internal/lobster-${imageName}@sha256:${'a'.repeat(64)}`,
+      imageName,
+      digest: `sha256:${'a'.repeat(64)}`,
+      sourceSha,
+      sbom: {
+        format: 'spdx-json',
+        path: `${imageName}.spdx.json`,
+        sha256: `sha256:${'b'.repeat(64)}`,
+        imageDigest: `sha256:${'a'.repeat(64)}`,
+        sourceSha,
+      },
+      vulnerabilityScan: {
+        scanner: 'grype',
+        scannerVersion: '0.104.0',
+        path: `${imageName}.grype.json`,
+        sha256: `sha256:${'c'.repeat(64)}`,
+        imageDigest: `sha256:${'a'.repeat(64)}`,
+        sourceSha,
+        findings: [],
+      },
+      criticalFindings: 0,
+    });
+    const exact = buildManifest(repositoryRoot);
+    exact.imageEvidence = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker']
+      .map(name => makeEvidence(name)) as typeof exact.imageEvidence;
+    expect(validateEvidence(exact, new Date('2026-07-11T00:00:00Z'), expectedSourceSha)).toEqual([]);
+
+    const duplicate = structuredClone(exact);
+    duplicate.imageEvidence[4] = structuredClone(duplicate.imageEvidence[0]);
+    expect(validateEvidence(duplicate, new Date(), expectedSourceSha).join('\n')).toContain('duplicate image evidence');
+    const extra = structuredClone(exact);
+    extra.imageEvidence.push(makeEvidence('ghost') as typeof extra.imageEvidence[number]);
+    expect(validateEvidence(extra, new Date(), expectedSourceSha).join('\n')).toContain('unexpected image evidence');
+    const stale = structuredClone(exact);
+    stale.imageEvidence[0].sourceSha = 'f'.repeat(40);
+    expect(validateEvidence(stale, new Date(), expectedSourceSha).join('\n')).toContain('source SHA mismatch');
+  });
+
+  test('critical vulnerability waivers must match image digest and finding and remain unexpired', async () => {
+    const policy = await import('../scripts/check-supply-chain.mjs') as Record<string, unknown>;
+    expect(policy.validateVulnerabilityReport).toEqual(expect.any(Function));
+    const validate = policy.validateVulnerabilityReport as (
+      report: Record<string, unknown>,
+      waivers: Array<Record<string, unknown>>,
+      now: Date,
+    ) => string[];
+    const report = {
+      imageDigest: `sha256:${'a'.repeat(64)}`,
+      findings: [{ id: 'CVE-2099-0001', severity: 'Critical' }],
+    };
+    expect(validate(report, [], new Date()).join('\n')).toContain('unwaived Critical');
+    expect(validate(report, [{
+      findingId: 'CVE-2099-0001', imageDigest: `sha256:${'b'.repeat(64)}`,
+      owner: 'security', reason: 'fixture', expiresAt: '2099-01-01T00:00:00Z',
+    }], new Date()).join('\n')).toContain('image digest mismatch');
+    expect(validate(report, [{
+      findingId: 'CVE-OTHER', imageDigest: `sha256:${'a'.repeat(64)}`,
+      owner: 'security', reason: 'fixture', expiresAt: '2099-01-01T00:00:00Z',
+    }], new Date()).join('\n')).toContain('finding mismatch');
+  });
+
   test('asset discovery rejects a skill symlink that escapes the repository', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-inventory-'));
     temporaryRoots.push(root);
@@ -162,6 +230,8 @@ describe('P03 supply-chain inventory and evidence policy', () => {
       'openclaw-extensions',
       'package.json',
       'src/main/computerUse/computerUseRuntime.ts',
+      'src/main/computerUse/computerUseKit.ts',
+      'src/shared/computerUse/constants.ts',
       'src/renderer/data/mcpRegistry.json',
     ]) {
       mkdirSync(path.dirname(path.join(root, relativePath)), { recursive: true });
@@ -177,5 +247,30 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     symlinkSync(outside, path.join(root, 'SKILLs', 'escaped', 'SKILL.md'));
 
     expect(discoverAssets(root).errors.join('\n')).toContain('escapes repository through symlink');
+  });
+
+  test('computer-use Kit inventory drifts when bundle, skill or MCP defaults change', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-kit-'));
+    temporaryRoots.push(root);
+    for (const relativePath of [
+      'SKILLs', 'openclaw-extensions', 'package.json',
+      'src/main/computerUse/computerUseRuntime.ts',
+      'src/main/computerUse/computerUseKit.ts',
+      'src/shared/computerUse/constants.ts',
+      'src/renderer/data/mcpRegistry.json',
+    ]) {
+      mkdirSync(path.dirname(path.join(root, relativePath)), { recursive: true });
+      cpSync(path.join(repositoryRoot, relativePath), path.join(root, relativePath), {
+        recursive: true,
+        filter: candidate => !candidate.includes(`${path.sep}node_modules${path.sep}`),
+      });
+    }
+    const baseline = buildManifest(root);
+    const kitPath = path.join(root, 'src/main/computerUse/computerUseKit.ts');
+    writeFileSync(kitPath, readFileSync(kitPath, 'utf8').replace(
+      "name: 'Computer Use'",
+      "name: 'Mutated Computer Use'",
+    ));
+    expect(validateInventory(root, baseline).join('\n')).toContain('inventory drift: kit:computer-use');
   });
 });
