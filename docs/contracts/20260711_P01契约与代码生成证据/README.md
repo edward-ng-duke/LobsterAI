@@ -48,7 +48,7 @@ exit 1; 5 tests failed
 | 13 关键 DTO | PASS | start prompt、continue requestId、PermissionResult 判别联合、cursor/goal/capsule schema |
 | 14 V5 边界 DTO | PASS | model/config/pricing/media/ASR/billing 契约存在；node route 标 unsupported + 501；无 provider/ledger/网络实现 |
 | 15 生成可复现 | PASS | clean→临时文件→atomic rename；两次生成一致；header/stale/hand-edit checks |
-| 16 breaking diff | PASS | route/field/error/event 删除、enum 收窄、新 required 均报警；additive optional 通过；无效 base exit 2 BLOCKED；`cde584c0` bootstrap PASS |
+| 16 breaking diff | PASS | route/field/error/event 删除、enum 收窄、新 required 均报警；additive optional 通过；无效 base exit 2 BLOCKED；`cde584c0` 经显式 pre-contract allowlist 使用 frozen canonical bootstrap PASS，不把该提交中的 Generic/fake spec 当成公开契约 |
 | 17 消费方 codegen | PASS | openapi-typescript 生成 API/Web/bridge types；workspace typecheck 0；无反向 app import |
 | 18 CI/总回归 | PASS（本地） | workflow 锁定 generate/check/clean diff；下列总门全绿；远端 CI runId 待补 |
 
@@ -124,3 +124,10 @@ exit 1; 5 tests failed
 - 全量语义结果：35 个无 path GET 的 item-only `NOT_FOUND` 已清零；37 个无输入路由的 `VALIDATION_FAILED` 已清零；parameterized item GET 保留 `NOT_FOUND`；query collection 保留 validation 但无 `NOT_FOUND`。
 - 最新 counts/hash：schema `216`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `897bd39077d409e52a88e9efe89383380564812f494efb88fe09e2af6a1ed2c8`；output `583f7b819dd84131362d6d8190ce3ea34ae68b82cc8524ab15e1c9a04937e748`。
 - 最终总门：`contracts:check`、15/15 `test:contract`、typecheck、changed-file ESLint、80/80 targeted、194-file Vitest（2091 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、Renderer build、Electron compile 均 exit 0。Gate invocationId `8f620cb0-bde6-4d41-8eb9-96d56798f560`；本地无 CI runId。
+
+## Round 7 Tester 退回修复（2026-07-11 17:48 +0800）
+
+- Red 直接采用独立 Tester commit `4af5d7ee`：10 tests 中 6 PASS / 4 FAIL；三个 formal path mutation 和 pre-contract bootstrap 确定性失败，未复制同类测试。
+- `4d1e4fd2` / `9a95a446`：formal path 拒绝明文/percent-encoded dot segment、编码 slash/backslash、重复斜杠、反斜杠、query/hash/control 字符；保留 `{param}`、canonical cancel 和既有 colon-action 精确诊断。
+- `e9149751`：删除早期 Generic/fake bootstrap spec；`policy.json` 显式 allowlist `cde584c0` 为 pre-contract commit，并绑定受版本控制的空 canonical OpenAPI/AsyncAPI bootstrap。非 allowlist ref 不再静默 fallback：缺契约或坏 ref 为 BLOCKED/2，真实契约 ref 仍执行 breaking 比较。
+- 最终：Tester 10/10 PASS；Tester + 旧 Reviewer targeted 90/90；contracts 15/15；Vitest 195 files / 2101 passed / 1 skipped；typecheck、SaaS 9/18、Renderer、Electron 均 exit 0。Gate invocationId `60cc2acf-242a-468a-8ded-1cb72c55b329`；契约 counts/hash 未因 checker/bootstrap 修复变化。
