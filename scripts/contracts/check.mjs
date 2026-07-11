@@ -42,6 +42,15 @@ const equalSets = (check, left, right, label) => {
   const extra = [...left].filter((item) => !right.has(item));
   assert(check, missing.length === 0 && extra.length === 0, `${label}; missing=${missing.join(',')} extra=${extra.join(',')}`);
 };
+const isCanonicalFormalPath = (routePath) => {
+  if (!/^\/(?:api\/v1\/|auth\/|oauth\/|\.well-known\/)/.test(routePath)) return false;
+  if (routePath.includes('\\') || routePath.includes('?') || routePath.includes('#')) return false;
+  if (routePath.includes('%') || routePath.includes('//')) return false;
+  if (/[\u0000-\u001f\u007f]/.test(routePath) || /:([A-Za-z]|$)/.test(routePath)) return false;
+  return routePath.slice(1).split('/').every(
+    (segment) => segment.length > 0 && segment !== '.' && segment !== '..',
+  );
+};
 const canonicalJson = (value) => JSON.stringify(
   Array.isArray(value)
     ? value.map((entry) => JSON.parse(canonicalJson(entry)))
@@ -74,8 +83,7 @@ const checkRoutes = () => {
   assert('routes', new Set(operationIds).size === operationIds.length, 'duplicate operationId');
   assert('routes', new Set(methodPaths).size === methodPaths.length, 'duplicate method/path');
   for (const route of RouteRegistry) {
-    assert('routes', /^\/(?:api\/v1\/|auth\/|oauth\/|\.well-known\/)/.test(route.path), `unversioned formal route ${route.path}`);
-    assert('routes', !/:([A-Za-z]|$)/.test(route.path), `colon parameter/action in ${route.path}`);
+    assert('routes', isCanonicalFormalPath(route.path), `non-canonical formal route ${route.path}`);
     assert('routes', route.request && route.response, `missing schema reference for ${route.operationId}`);
     assert('routes', !route.requestName.startsWith('Generic'), `generic request schema ${route.operationId}`);
     assert('routes', !route.responseName.startsWith('Generic'), `generic response schema ${route.operationId}`);
@@ -184,11 +192,18 @@ const legacyPaths = [
 ];
 const legacyPathSet = new Set(legacyPaths);
 const isCanonicalRoute = (routePath) =>
-  !legacyPathSet.has(routePath) &&
-  /^\/(?:api\/v1\/|auth\/|oauth\/|\.well-known\/)/.test(routePath) &&
-  !/:([A-Za-z]|$)/.test(routePath);
+  !legacyPathSet.has(routePath) && isCanonicalFormalPath(routePath);
 const checkRouteNegative = () => {
   for (const routePath of legacyPaths) assert('route-negative', !isCanonicalRoute(routePath), `accepted legacy path ${routePath}`);
+  for (const routePath of [
+    '/api/v1/runtime/../auth/login',
+    '/api/v1/runtime/./restart',
+    '/api/v1/runtime/%2e%2e/auth/login',
+    '/api/v1/runtime/%2Fauth',
+    '/api/v1/runtime/%5cauth',
+    '/api/v1//runtime/restart',
+    '/api/v1/runtime\\restart',
+  ]) assert('route-negative', !isCanonicalRoute(routePath), `accepted ambiguous path ${routePath}`);
   for (const routePath of RouteRegistry.map((route) => route.path)) assert('route-negative', isCanonicalRoute(routePath), `rejected canonical path ${routePath}`);
   for (const canonical of ['/api/v1/media/tasks/{taskId}/cancel', '/api/v1/share-deployments/static', '/api/v1/share-deployments/node']) {
     assert('route-negative', isCanonicalRoute(canonical), `substring false-positive ${canonical}`);
