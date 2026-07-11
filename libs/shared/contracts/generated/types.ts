@@ -1,5 +1,6 @@
 // Generated file. Do not edit.
 import { z } from 'zod';
+
 import * as Schemas from '../src/index.schemas.js';
 export type AgentCreateRequest = z.infer<typeof Schemas.AgentCreateRequest>;
 export type AgentDto = z.infer<typeof Schemas.AgentDto>;
@@ -50,6 +51,8 @@ export type MessageListResponse = z.infer<typeof Schemas.MessageListResponse>;
 export type ModelDetailResponse = z.infer<typeof Schemas.ModelDetailResponse>;
 export type ModelDto = z.infer<typeof Schemas.ModelDto>;
 export type OAuthTokenRequest = z.infer<typeof Schemas.OAuthTokenRequest>;
+export type OperationRequest = z.infer<typeof Schemas.OperationRequest>;
+export type OperationResponse = z.infer<typeof Schemas.OperationResponse>;
 export type PageInfo = z.infer<typeof Schemas.PageInfo>;
 export type PermissionDismissEvent = z.infer<typeof Schemas.PermissionDismissEvent>;
 export type PermissionRespondRequest = z.infer<typeof Schemas.PermissionRespondRequest>;

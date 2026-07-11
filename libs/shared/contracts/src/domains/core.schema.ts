@@ -3,13 +3,19 @@ import { z } from 'zod';
 export const EmptyRequestSchema = z.strictObject({});
 export const GenericResponseSchema = z.object({ data: z.unknown().optional() });
 export const GenericRequestSchema = z.object({}).catchall(z.unknown());
+const OperationScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const OperationValueSchema = z.union([
+  OperationScalarSchema,
+  z.array(OperationScalarSchema),
+  z.record(z.string(), OperationScalarSchema),
+]);
 export const OperationRequestSchema = z.strictObject({
-  input: z.json().optional(),
+  input: OperationValueSchema.optional(),
   idempotencyKey: z.string().min(1).optional(),
 });
 export const OperationResponseSchema = z.strictObject({
   success: z.boolean(),
-  data: z.json().optional(),
+  data: OperationValueSchema.optional(),
 });
 
 export const LoginRequestSchema = z.strictObject({

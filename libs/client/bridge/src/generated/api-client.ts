@@ -128,22 +128,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/asr/sessions/{asrSessionId}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["post_api_v1_asr_sessions_asrSessionId_stream"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/billing/account": {
         parameters: {
             query?: never;
@@ -1273,7 +1257,7 @@ export interface paths {
         };
         get: operations["get_api_v1_sessions_id"];
         put?: never;
-        post: operations["post_api_v1_sessions_id"];
+        post?: never;
         delete: operations["delete_api_v1_sessions_id"];
         options?: never;
         head?: never;
@@ -2016,22 +2000,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["post_auth_callback"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -2275,6 +2243,84 @@ export interface components {
         ContinueTurnRequest: {
             prompt: string;
         };
+        DeleteApiV1AgentsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1ArtifactsPreviewSessionsPreviewSessionIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1BillingByokProviderResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1CoworkMemoryEntriesIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1KitsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1KvKeyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1McpServersIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1PluginsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1ScheduledTasksIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1SessionsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1SkillsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1SubagentsRunIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        DeleteApiV1WorkspacesWidFilesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
         DeleteSessionResponse: {
             /** @enum {boolean} */
             deleted: true;
@@ -2321,6 +2367,378 @@ export interface components {
         };
         GenericResponse: {
             data?: unknown;
+        };
+        GetApiV1AgentsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1AgentsPresetsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1AgentsPresetTemplatesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1AgentsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1BillingAccountResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1BillingPlanResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1BillingUsageResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ConfigAppInfoResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ConfigEnterpriseResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkBootstrapResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkDreamingDiaryResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkDreamingStatusResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkMemoryEntriesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1CoworkMemoryStatsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1HtmlSharesIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1HtmlSharesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1HtmlSharesShareIdDeploymentResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1KitsInstalledResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1KitsMarketplaceResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1KvKeyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1McpMarketplaceResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1McpServersResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ModelConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ModelsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1PluginsIdConfigSchemaResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1PluginsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1PluginsUpdatesCheckResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1PrivacyDeletionsDeletionIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1PrivacyExportsExportIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1RuntimeMigrationLastRestoreResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1RuntimeSessionPolicyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1RuntimeStatusResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksChannelsChConversationsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksChannelsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksIdRunsCountResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksIdRunsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksRunsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ScheduledTasksRunsRunIdSessionResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdContextUsageResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdManagedResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdMessagesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdRailIndexResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsIdSubagentsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SessionsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1ShareDeploymentsDeploymentIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SkillsIdConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SkillsMarketplaceResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SkillsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SkillsRoutingPromptResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1SubagentsRunIdMessagesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesRecentResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesWidFilesDownloadResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesWidFilesStatResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesWidFilesThumbnailResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetApiV1WorkspacesWidFilesTreeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetAuthMeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        GetAuthProfileSummaryResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
         };
         GoalUpdate: {
             goal?: unknown;
@@ -2436,9 +2854,153 @@ export interface components {
             redirectUri: string;
             verifier: string;
         };
+        OperationRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        OperationResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
         PageInfo: {
             hasMore: boolean;
             nextCursor?: string;
+        };
+        PatchApiV1AgentsIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1AgentsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1CoworkConfigRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1CoworkConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1CoworkMemoryEntriesIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1CoworkMemoryEntriesIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1HtmlSharesIdAccessModeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1HtmlSharesIdAccessModeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1HtmlSharesIdStatusRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1HtmlSharesIdStatusResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1McpServersIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1McpServersIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1PluginsIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1PluginsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1ScheduledTasksIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1ScheduledTasksIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1SessionsIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1SessionsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1SessionsIdRuntimeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1SessionsIdRuntimeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PatchApiV1SkillsIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PatchApiV1SkillsIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
         };
         PermissionDismissEvent: {
             requestId: string;
@@ -2493,6 +3055,630 @@ export interface components {
             holderId: string;
             workspaceId: string;
         };
+        PostApiV1AgentsPresetsPresetIdInstallRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1AgentsPresetsPresetIdInstallResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1AgentsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1AgentsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ArtifactsArtifactIdPreviewRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ArtifactsArtifactIdPreviewResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1BillingByokRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1BillingByokResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1CoworkMemoryEntriesRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1CoworkMemoryEntriesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1HtmlSharesRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1HtmlSharesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1KitsInstallRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1KitsInstallResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1McpServersIdLaunchResolutionRetryRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1McpServersIdLaunchResolutionRetryResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1McpServersRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1McpServersResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ModelConfigCheckRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ModelConfigCheckResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ModelProxyRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ModelProxyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ModelStreamRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ModelStreamRequestIdAbortRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ModelStreamRequestIdAbortResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ModelStreamResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PluginsBatchSaveRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PluginsBatchSaveResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PluginsDetectRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PluginsDetectResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PluginsIdUpdateRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PluginsIdUpdateResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PluginsInstallRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PluginsInstallResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PluginsSyncRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PluginsSyncResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PrivacyDeletionsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PrivacyDeletionsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1PrivacyExportsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1PrivacyExportsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1RuntimeMigrationBackupsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1RuntimeMigrationBackupsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1RuntimeMigrationRestoresRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1RuntimeMigrationRestoresResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1RuntimeProvisionRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1RuntimeProvisionResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1RuntimeRepairRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1RuntimeRepairResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1RuntimeRestartRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1RuntimeRestartResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ScheduledTasksIdRunsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ScheduledTasksIdRunsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ScheduledTasksIdStopRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ScheduledTasksIdStopResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ScheduledTasksRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ScheduledTasksResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsBatchDeleteRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsBatchDeleteResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdCompactContextRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdCompactContextResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdExportsResultImageRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdExportsResultImageResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdExportsTextRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdExportsTextResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdForkRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdForkResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdPermissionsRequestIdRespondResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdResultImageChunksRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdResultImageChunksResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdResultImageFilesRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdResultImageFilesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdStopRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdStopResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdTitleGenerationRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdTitleGenerationResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SessionsIdViewedRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SessionsIdViewedResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ShareDeploymentsAnalyzeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ShareDeploymentsAnalyzeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ShareDeploymentsCandidatesRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ShareDeploymentsCandidatesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1ShareDeploymentsNodeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ShareDeploymentsStaticRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1ShareDeploymentsStaticResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SkillsIdConfirmRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SkillsIdConfirmResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SkillsIdTestRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SkillsIdTestResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SkillsIdUpgradeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SkillsIdUpgradeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SkillsInstallRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SkillsInstallResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1SkillsSyncRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1SkillsSyncResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1WorkspacesRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1WorkspacesResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1WorkspacesWidFilesUploadRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1WorkspacesWidFilesUploadResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1WorkspacesWidUploadsIdCompleteRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1WorkspacesWidUploadsIdCompleteResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostApiV1WorkspacesWidUploadsRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostApiV1WorkspacesWidUploadsResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PostOauthAuthorizeRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PostOauthAuthorizeResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
         PreviewEvent: {
             previewSessionId: string;
             /** @enum {string} */
@@ -2538,6 +3724,90 @@ export interface components {
             configured: boolean;
             provider: string;
             secretRef?: string;
+        };
+        PutApiV1CoworkBootstrapRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1CoworkBootstrapResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1HtmlSharesIdRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1HtmlSharesIdResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1KvKeyRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1KvKeyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1ModelConfigRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1ModelConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1PluginsIdConfigRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1PluginsIdConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1RuntimeSessionPolicyRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1RuntimeSessionPolicyResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
+        };
+        PutApiV1SkillsIdConfigRequest: {
+            idempotencyKey?: string;
+            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        PutApiV1SkillsIdConfigResponse: {
+            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
+                [key: string]: string | number | boolean | null;
+            };
+            success: boolean;
         };
         QuotaBuckets: {
             overdraft: number;
@@ -2803,7 +4073,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1AgentsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -2824,8 +4094,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2853,17 +4141,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1AgentsRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1AgentsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -2884,8 +4172,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2921,7 +4227,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1AgentsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -2942,8 +4248,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2979,7 +4303,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1AgentsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3000,8 +4324,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3031,7 +4373,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1AgentsIdRequest"];
             };
         };
         responses: {
@@ -3041,7 +4383,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1AgentsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3062,8 +4404,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3097,7 +4457,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1AgentsPresetTemplatesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3118,8 +4478,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3153,7 +4531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1AgentsPresetsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3174,8 +4552,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3205,7 +4601,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1AgentsPresetsPresetIdInstallRequest"];
             };
         };
         responses: {
@@ -3215,7 +4611,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1AgentsPresetsPresetIdInstallResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3236,8 +4632,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3267,7 +4681,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ArtifactsArtifactIdPreviewRequest"];
             };
         };
         responses: {
@@ -3277,7 +4691,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ArtifactsArtifactIdPreviewResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3298,8 +4712,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3335,7 +4767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1ArtifactsPreviewSessionsPreviewSessionIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3356,8 +4788,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3390,7 +4840,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3416,61 +4866,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description INTERNAL_ERROR */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    post_api_v1_asr_sessions_asrSessionId_stream: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                asrSessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenericRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenericResponse"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description UNAUTHENTICATED */
-            401: {
+            /** @description PERMISSION_DENIED */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3480,6 +4877,24 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3513,7 +4928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1BillingAccountResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3534,8 +4949,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3563,7 +5005,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1BillingByokRequest"];
             };
         };
         responses: {
@@ -3573,7 +5015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1BillingByokResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3594,8 +5036,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3631,7 +5100,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1BillingByokProviderResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3652,8 +5121,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3687,7 +5183,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1BillingPlanResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3708,8 +5204,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3743,7 +5266,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1BillingUsageResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3764,8 +5287,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3799,7 +5349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ConfigAppInfoResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3820,8 +5370,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3855,7 +5423,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ConfigEnterpriseResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3876,8 +5444,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3911,7 +5497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkBootstrapResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3932,8 +5518,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3961,7 +5565,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1CoworkBootstrapRequest"];
             };
         };
         responses: {
@@ -3971,7 +5575,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1CoworkBootstrapResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -3992,8 +5596,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4027,7 +5649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4048,8 +5670,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4077,7 +5717,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1CoworkConfigRequest"];
             };
         };
         responses: {
@@ -4087,7 +5727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1CoworkConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4108,8 +5748,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4143,7 +5801,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkDreamingDiaryResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4164,8 +5822,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4199,7 +5875,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkDreamingStatusResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4220,8 +5896,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4255,7 +5949,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkMemoryEntriesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4276,8 +5970,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4305,7 +6017,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1CoworkMemoryEntriesRequest"];
             };
         };
         responses: {
@@ -4315,7 +6027,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1CoworkMemoryEntriesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4336,8 +6048,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4373,7 +6103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1CoworkMemoryEntriesIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4394,8 +6124,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4425,7 +6173,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1CoworkMemoryEntriesIdRequest"];
             };
         };
         responses: {
@@ -4435,7 +6183,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1CoworkMemoryEntriesIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4456,8 +6204,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4491,7 +6257,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1CoworkMemoryStatsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4512,8 +6278,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4547,7 +6331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1HtmlSharesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4568,8 +6352,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4597,17 +6399,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1HtmlSharesRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1HtmlSharesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4628,8 +6430,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4665,7 +6485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1HtmlSharesIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4686,8 +6506,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4717,7 +6555,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1HtmlSharesIdRequest"];
             };
         };
         responses: {
@@ -4727,7 +6565,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1HtmlSharesIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4748,8 +6586,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4779,7 +6635,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1HtmlSharesIdAccessModeRequest"];
             };
         };
         responses: {
@@ -4789,7 +6645,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1HtmlSharesIdAccessModeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4810,8 +6666,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4841,7 +6715,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1HtmlSharesIdStatusRequest"];
             };
         };
         responses: {
@@ -4851,7 +6725,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1HtmlSharesIdStatusResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4872,8 +6746,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4909,7 +6801,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1HtmlSharesShareIdDeploymentResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4930,8 +6822,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4967,7 +6877,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1KitsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4988,8 +6898,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5017,17 +6945,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1KitsInstallRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1KitsInstallResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5048,8 +6976,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5083,7 +7029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1KitsInstalledResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5104,8 +7050,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5139,7 +7103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1KitsMarketplaceResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5160,8 +7124,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5197,7 +7179,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1KvKeyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5218,8 +7200,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5249,7 +7249,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1KvKeyRequest"];
             };
         };
         responses: {
@@ -5259,7 +7259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1KvKeyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5280,8 +7280,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5317,7 +7335,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1KvKeyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5338,8 +7356,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5373,7 +7409,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1McpMarketplaceResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5394,8 +7430,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5429,7 +7483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1McpServersResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5450,8 +7504,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5479,17 +7551,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1McpServersRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1McpServersResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5510,8 +7582,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5547,7 +7637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1McpServersIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5568,8 +7658,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5599,7 +7707,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1McpServersIdRequest"];
             };
         };
         responses: {
@@ -5609,7 +7717,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1McpServersIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5630,8 +7738,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5661,7 +7787,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1McpServersIdLaunchResolutionRetryRequest"];
             };
         };
         responses: {
@@ -5671,7 +7797,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1McpServersIdLaunchResolutionRetryResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5692,8 +7818,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5750,8 +7894,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5812,8 +7983,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5847,7 +8045,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ModelConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5868,8 +8066,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5897,7 +8122,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1ModelConfigRequest"];
             };
         };
         responses: {
@@ -5907,7 +8132,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1ModelConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5928,8 +8153,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5957,17 +8209,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ModelConfigCheckRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ModelConfigCheckResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5988,8 +8240,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6017,17 +8296,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ModelProxyRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ModelProxyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6048,8 +8327,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6077,17 +8383,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ModelStreamRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ModelStreamResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6108,8 +8414,53 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STREAM_GAP */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description UNSUPPORTED_EVENT_TYPE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6139,17 +8490,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ModelStreamRequestIdAbortRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ModelStreamRequestIdAbortResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6170,8 +8521,53 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STREAM_GAP */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description UNSUPPORTED_EVENT_TYPE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6205,7 +8601,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ModelsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6226,8 +8622,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6284,8 +8707,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6319,7 +8769,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1PluginsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6340,8 +8790,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6377,7 +8845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1PluginsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6398,8 +8866,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6429,7 +8915,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1PluginsIdRequest"];
             };
         };
         responses: {
@@ -6439,7 +8925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1PluginsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6460,8 +8946,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6491,7 +8995,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1PluginsIdConfigRequest"];
             };
         };
         responses: {
@@ -6501,7 +9005,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1PluginsIdConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6522,8 +9026,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6559,7 +9081,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1PluginsIdConfigSchemaResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6580,8 +9102,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6611,7 +9151,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PluginsIdUpdateRequest"];
             };
         };
         responses: {
@@ -6621,7 +9161,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PluginsIdUpdateResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6642,8 +9182,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6671,7 +9229,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PluginsBatchSaveRequest"];
             };
         };
         responses: {
@@ -6681,7 +9239,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PluginsBatchSaveResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6702,8 +9260,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6731,7 +9307,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PluginsDetectRequest"];
             };
         };
         responses: {
@@ -6741,7 +9317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PluginsDetectResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6762,8 +9338,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6791,7 +9385,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PluginsInstallRequest"];
             };
         };
         responses: {
@@ -6801,7 +9395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PluginsInstallResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6822,8 +9416,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6851,7 +9463,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PluginsSyncRequest"];
             };
         };
         responses: {
@@ -6861,7 +9473,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PluginsSyncResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6882,8 +9494,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6917,7 +9547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1PluginsUpdatesCheckResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6938,8 +9568,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6994,8 +9642,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description QUOTA_EXCEEDED */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7023,17 +9698,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PrivacyDeletionsRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PrivacyDeletionsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7054,8 +9729,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7091,7 +9784,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1PrivacyDeletionsDeletionIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7112,8 +9805,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7141,17 +9852,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1PrivacyExportsRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1PrivacyExportsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7172,8 +9883,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7209,7 +9938,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1PrivacyExportsExportIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7230,8 +9959,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7259,17 +10006,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1RuntimeMigrationBackupsRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1RuntimeMigrationBackupsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7290,8 +10037,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7325,7 +10090,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1RuntimeMigrationLastRestoreResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7346,8 +10111,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7375,17 +10158,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1RuntimeMigrationRestoresRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1RuntimeMigrationRestoresResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7406,8 +10189,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7435,17 +10236,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1RuntimeProvisionRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1RuntimeProvisionResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7466,8 +10267,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7495,17 +10314,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1RuntimeRepairRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1RuntimeRepairResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7526,8 +10345,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7555,17 +10392,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1RuntimeRestartRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1RuntimeRestartResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7586,8 +10423,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7621,7 +10476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1RuntimeSessionPolicyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7642,8 +10497,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7671,7 +10544,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1RuntimeSessionPolicyRequest"];
             };
         };
         responses: {
@@ -7681,7 +10554,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1RuntimeSessionPolicyResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7702,8 +10575,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7737,7 +10628,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1RuntimeStatusResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7758,8 +10649,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7793,7 +10702,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7814,8 +10723,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7843,17 +10770,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ScheduledTasksRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ScheduledTasksResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7874,8 +10801,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7911,7 +10856,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7932,8 +10877,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7969,7 +10932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1ScheduledTasksIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7990,8 +10953,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8021,7 +11002,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1ScheduledTasksIdRequest"];
             };
         };
         responses: {
@@ -8031,7 +11012,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1ScheduledTasksIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8052,8 +11033,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8089,7 +11088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksIdRunsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8110,8 +11109,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8141,7 +11158,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ScheduledTasksIdRunsRequest"];
             };
         };
         responses: {
@@ -8151,7 +11168,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ScheduledTasksIdRunsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8172,8 +11189,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8209,7 +11244,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksIdRunsCountResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8230,8 +11265,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8261,7 +11314,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ScheduledTasksIdStopRequest"];
             };
         };
         responses: {
@@ -8271,7 +11324,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ScheduledTasksIdStopResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8292,8 +11345,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8327,7 +11398,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksChannelsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8348,8 +11419,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8385,7 +11474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksChannelsChConversationsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8406,8 +11495,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8441,7 +11548,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksRunsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8462,8 +11569,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8499,7 +11624,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ScheduledTasksRunsRunIdSessionResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8520,8 +11645,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8555,7 +11698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8576,8 +11719,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8610,7 +11780,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8636,8 +11806,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8673,7 +11870,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8694,61 +11891,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description INTERNAL_ERROR */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    post_api_v1_sessions_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenericRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenericResponse"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description UNAUTHENTICATED */
-            401: {
+            /** @description PERMISSION_DENIED */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8758,6 +11902,24 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8793,7 +11955,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1SessionsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8814,8 +11976,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8845,7 +12034,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1SessionsIdRequest"];
             };
         };
         responses: {
@@ -8855,7 +12044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1SessionsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8876,8 +12065,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8907,7 +12123,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdCompactContextRequest"];
             };
         };
         responses: {
@@ -8917,7 +12133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdCompactContextResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8938,8 +12154,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8975,7 +12218,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdContextUsageResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8996,8 +12239,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9027,7 +12297,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdExportsResultImageRequest"];
             };
         };
         responses: {
@@ -9037,7 +12307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdExportsResultImageResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9058,8 +12328,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9089,7 +12386,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdExportsTextRequest"];
             };
         };
         responses: {
@@ -9099,7 +12396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdExportsTextResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9120,8 +12417,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9151,7 +12475,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdForkRequest"];
             };
         };
         responses: {
@@ -9161,7 +12485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdForkResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9182,8 +12506,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9219,7 +12570,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdManagedResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9240,8 +12591,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9277,7 +12655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdMessagesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9298,8 +12676,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9340,7 +12745,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdPermissionsRequestIdRespondResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9361,8 +12766,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9398,7 +12830,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdRailIndexResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9419,8 +12851,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9450,7 +12909,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdResultImageChunksRequest"];
             };
         };
         responses: {
@@ -9460,7 +12919,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdResultImageChunksResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9481,8 +12940,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9512,7 +12998,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdResultImageFilesRequest"];
             };
         };
         responses: {
@@ -9522,7 +13008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdResultImageFilesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9543,6 +13029,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -9552,8 +13047,44 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9574,7 +13105,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1SessionsIdRuntimeRequest"];
             };
         };
         responses: {
@@ -9584,7 +13115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1SessionsIdRuntimeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9605,8 +13136,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9636,7 +13194,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdStopRequest"];
             };
         };
         responses: {
@@ -9646,7 +13204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdStopResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9667,8 +13225,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9704,7 +13289,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SessionsIdSubagentsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9725,8 +13310,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9756,7 +13368,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdTitleGenerationRequest"];
             };
         };
         responses: {
@@ -9766,7 +13378,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdTitleGenerationResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9787,8 +13399,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9823,7 +13462,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9849,8 +13488,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9880,7 +13546,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsIdViewedRequest"];
             };
         };
         responses: {
@@ -9890,7 +13556,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsIdViewedResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9911,8 +13577,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9940,7 +13633,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SessionsBatchDeleteRequest"];
             };
         };
         responses: {
@@ -9950,7 +13643,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SessionsBatchDeleteResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9971,8 +13664,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description SESSION_BUSY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10008,7 +13728,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1ShareDeploymentsDeploymentIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10029,8 +13749,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10058,7 +13796,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ShareDeploymentsAnalyzeRequest"];
             };
         };
         responses: {
@@ -10068,7 +13806,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ShareDeploymentsAnalyzeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10089,8 +13827,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10118,7 +13874,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ShareDeploymentsCandidatesRequest"];
             };
         };
         responses: {
@@ -10128,7 +13884,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ShareDeploymentsCandidatesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10149,8 +13905,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10178,19 +13952,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ShareDeploymentsNodeRequest"];
             };
         };
         responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenericResponse"];
-                };
-            };
             /** @description UNSUPPORTED_FEATURE */
             501: {
                 headers: {
@@ -10211,7 +13976,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1ShareDeploymentsStaticRequest"];
             };
         };
         responses: {
@@ -10221,7 +13986,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1ShareDeploymentsStaticResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10242,8 +14007,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10277,7 +14060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SkillsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10298,8 +14081,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10335,7 +14136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1SkillsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10356,8 +14157,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10387,7 +14206,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PatchApiV1SkillsIdRequest"];
             };
         };
         responses: {
@@ -10397,7 +14216,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PatchApiV1SkillsIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10418,8 +14237,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10455,7 +14292,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SkillsIdConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10476,8 +14313,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10507,7 +14362,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PutApiV1SkillsIdConfigRequest"];
             };
         };
         responses: {
@@ -10517,7 +14372,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PutApiV1SkillsIdConfigResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10538,8 +14393,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10569,7 +14442,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SkillsIdConfirmRequest"];
             };
         };
         responses: {
@@ -10579,7 +14452,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SkillsIdConfirmResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10600,8 +14473,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10631,7 +14522,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SkillsIdTestRequest"];
             };
         };
         responses: {
@@ -10641,7 +14532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SkillsIdTestResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10662,8 +14553,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10693,7 +14602,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SkillsIdUpgradeRequest"];
             };
         };
         responses: {
@@ -10703,7 +14612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SkillsIdUpgradeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10724,8 +14633,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10753,17 +14680,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SkillsInstallRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SkillsInstallResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10784,8 +14711,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10819,7 +14764,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SkillsMarketplaceResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10840,8 +14785,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10875,7 +14838,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SkillsRoutingPromptResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10896,8 +14859,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10925,7 +14906,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1SkillsSyncRequest"];
             };
         };
         responses: {
@@ -10935,7 +14916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1SkillsSyncResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10956,8 +14937,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11016,8 +15015,44 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description TICKET_ALREADY_USED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description UNSUPPORTED_EVENT_TYPE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11053,7 +15088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1SubagentsRunIdResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11074,8 +15109,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11111,7 +15164,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1SubagentsRunIdMessagesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11132,8 +15185,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11167,7 +15238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11188,8 +15259,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11217,7 +15306,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1WorkspacesRequest"];
             };
         };
         responses: {
@@ -11227,7 +15316,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1WorkspacesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11248,8 +15337,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11285,7 +15392,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["DeleteApiV1WorkspacesWidFilesResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11306,6 +15413,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11315,8 +15431,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11343,7 +15486,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesDownloadResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11364,6 +15507,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11373,8 +15525,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11401,7 +15580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesStatResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11422,6 +15601,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11431,8 +15619,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11459,7 +15674,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesThumbnailResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11480,6 +15695,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11489,8 +15713,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11517,7 +15768,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesTreeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11538,6 +15789,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11547,8 +15807,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11569,7 +15856,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1WorkspacesWidFilesUploadRequest"];
             };
         };
         responses: {
@@ -11579,7 +15866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1WorkspacesWidFilesUploadResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11600,6 +15887,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11609,8 +15905,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11631,17 +15954,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1WorkspacesWidUploadsRequest"];
             };
         };
         responses: {
             /** @description Successful response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1WorkspacesWidUploadsResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11662,6 +15985,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11671,8 +16003,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11694,7 +16053,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostApiV1WorkspacesWidUploadsIdCompleteRequest"];
             };
         };
         responses: {
@@ -11704,7 +16063,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostApiV1WorkspacesWidUploadsIdCompleteResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11725,6 +16084,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
                 headers: {
@@ -11734,8 +16102,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description STORAGE_QUOTA_EXCEEDED */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11760,7 +16155,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetApiV1WorkspacesRecentResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11781,59 +16176,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description INTERNAL_ERROR */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    post_auth_callback: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenericRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenericResponse"];
-                };
-            };
-            /** @description VALIDATION_FAILED */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description UNAUTHENTICATED */
-            401: {
+            /** @description PERMISSION_DENIED */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11843,6 +16187,15 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11892,17 +16245,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description UNAUTHENTICATED */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11961,8 +16305,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11996,7 +16358,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetAuthMeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12017,8 +16379,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12052,7 +16432,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["GetAuthProfileSummaryResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12073,8 +16453,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12133,8 +16531,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description PERMISSION_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12162,7 +16578,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenericRequest"];
+                "application/json": components["schemas"]["PostOauthAuthorizeRequest"];
             };
         };
         responses: {
@@ -12172,7 +16588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenericResponse"];
+                    "application/json": components["schemas"]["PostOauthAuthorizeResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12184,17 +16600,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description UNAUTHENTICATED */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12244,17 +16651,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description UNAUTHENTICATED */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description NOT_FOUND */
-            404: {
+            /** @description RATE_LIMITED */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12287,7 +16685,6 @@ export type ApiOperation =
   | { operationId: 'post_api_v1_artifacts_artifactId_preview'; method: 'POST'; path: '/api/v1/artifacts/{artifactId}/preview' }
   | { operationId: 'delete_api_v1_artifacts_preview_sessions_previewSessionId'; method: 'DELETE'; path: '/api/v1/artifacts/preview-sessions/{previewSessionId}' }
   | { operationId: 'post_api_v1_asr_sessions'; method: 'POST'; path: '/api/v1/asr/sessions' }
-  | { operationId: 'post_api_v1_asr_sessions_asrSessionId_stream'; method: 'POST'; path: '/api/v1/asr/sessions/{asrSessionId}/stream' }
   | { operationId: 'get_api_v1_billing_account'; method: 'GET'; path: '/api/v1/billing/account' }
   | { operationId: 'post_api_v1_billing_byok'; method: 'POST'; path: '/api/v1/billing/byok' }
   | { operationId: 'delete_api_v1_billing_byok_provider'; method: 'DELETE'; path: '/api/v1/billing/byok/{provider}' }
@@ -12379,7 +16776,6 @@ export type ApiOperation =
   | { operationId: 'delete_api_v1_sessions_id'; method: 'DELETE'; path: '/api/v1/sessions/{id}' }
   | { operationId: 'get_api_v1_sessions_id'; method: 'GET'; path: '/api/v1/sessions/{id}' }
   | { operationId: 'patch_api_v1_sessions_id'; method: 'PATCH'; path: '/api/v1/sessions/{id}' }
-  | { operationId: 'post_api_v1_sessions_id'; method: 'POST'; path: '/api/v1/sessions/{id}' }
   | { operationId: 'post_api_v1_sessions_id_compact_context'; method: 'POST'; path: '/api/v1/sessions/{id}/compact-context' }
   | { operationId: 'get_api_v1_sessions_id_context_usage'; method: 'GET'; path: '/api/v1/sessions/{id}/context-usage' }
   | { operationId: 'post_api_v1_sessions_id_exports_result_image'; method: 'POST'; path: '/api/v1/sessions/{id}/exports/result-image' }
@@ -12429,7 +16825,6 @@ export type ApiOperation =
   | { operationId: 'post_api_v1_workspaces_wid_uploads'; method: 'POST'; path: '/api/v1/workspaces/{wid}/uploads' }
   | { operationId: 'post_api_v1_workspaces_wid_uploads_id_complete'; method: 'POST'; path: '/api/v1/workspaces/{wid}/uploads/{id}/complete' }
   | { operationId: 'get_api_v1_workspaces_recent'; method: 'GET'; path: '/api/v1/workspaces/recent' }
-  | { operationId: 'post_auth_callback'; method: 'POST'; path: '/auth/callback' }
   | { operationId: 'post_auth_login'; method: 'POST'; path: '/auth/login' }
   | { operationId: 'post_auth_logout'; method: 'POST'; path: '/auth/logout' }
   | { operationId: 'get_auth_me'; method: 'GET'; path: '/auth/me' }

@@ -39,6 +39,15 @@ type ShareDeploymentResult = unknown;
 type SharedOpenClawEnginePhase = unknown;
 type ShellGetBrowserAppsInput = unknown;
 type ShellOpenFailureReason = unknown;
+type UserProfile = unknown;
+
+interface AuthQuota {
+  planName: string;
+  subscriptionStatus: string;
+  creditsLimit: number;
+  creditsUsed: number;
+  creditsRemaining: number;
+}
 
 interface ApiResponse {
   ok: boolean;
@@ -2013,18 +2022,18 @@ export interface ElectronBridge {
         }>;
         exchange: (code: string) => Promise<{
             success: boolean;
-            user?: any;
-            quota?: any;
+            user?: UserProfile;
+            quota?: AuthQuota;
             error?: string;
         }>;
         getUser: () => Promise<{
             success: boolean;
-            user?: any;
-            quota?: any;
+            user?: UserProfile;
+            quota?: AuthQuota;
         }>;
         getQuota: () => Promise<{
             success: boolean;
-            quota?: any;
+            quota?: AuthQuota;
         }>;
         logout: () => Promise<{
             success: boolean;

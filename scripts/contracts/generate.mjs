@@ -133,7 +133,7 @@ for (const route of RouteRegistry) {
     security: route.auth === 'access-token' ? [{ accessToken: [] }] : [],
     responses: {
       [String(route.successStatus)]: {
-        description: route.support === 'unsupported' ? 'Unsupported feature' : 'Successful response',
+        description: route.support === 'unsupported' ? 'UNSUPPORTED_FEATURE' : 'Successful response',
         content: { 'application/json': { schema: { $ref: `#/components/schemas/${route.responseName}` } } },
       },
     },
@@ -290,7 +290,7 @@ const streamEventsSource = `${tsHeader}\nexport type StreamEvent =\n${streamUnio
 const outputs = new Map([
   ['libs/shared/contracts/openapi.yaml', `${yamlHeader}\n${stringify(openapi, { sortMapEntries: true, lineWidth: 0 })}`],
   ['libs/shared/contracts/asyncapi.yaml', `${yamlHeader}\n${stringify(asyncapi, { sortMapEntries: true, lineWidth: 0 })}`],
-  ['libs/shared/contracts/generated/types.ts', `${tsHeader}\nimport { z } from 'zod';\nimport * as Schemas from '../src/index.schemas.js';\n${namedSchemaTypes}\n`],
+  ['libs/shared/contracts/generated/types.ts', `${tsHeader}\nimport { z } from 'zod';\n\nimport * as Schemas from '../src/index.schemas.js';\n${namedSchemaTypes}\n`],
   ['libs/shared/contracts/generated/validators.ts', `${tsHeader}\nexport * from '../src/index.schemas.js';\nexport * from '../src/envelope.schema.js';\n`],
   ['libs/shared/contracts/generated/error-codes.ts', `${tsHeader}\nexport const ErrorCode = ${JSON.stringify(Object.fromEntries(Object.keys(ErrorRegistry).map((code) => [code, code])), null, 2)} as const;\nexport type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];\n`],
   ['libs/client/bridge/src/electronBridge.ts', createElectronBridgeSource()],
