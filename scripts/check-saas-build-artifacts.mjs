@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import {
   existsSync,
+  lstatSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   renameSync,
   statSync,
@@ -42,7 +44,27 @@ if (
 
 const verifiedOutputs = [];
 const buildStartedAt = startReport?.startedAtEpochMs ?? Number.POSITIVE_INFINITY;
+const validationNow = Date.now();
+// Filesystems and build hosts can have small clock differences. Five minutes is
+// enough for expected skew while rejecting timestamps that cannot belong to this build.
+const maxFutureClockSkewMs = 5 * 60 * 1_000;
+const isWithin = (parentPath, childPath) => {
+  const relativePath = path.relative(parentPath, childPath);
+  return relativePath === '' || (!relativePath.startsWith(`..${path.sep}`) && relativePath !== '..' && !path.isAbsolute(relativePath));
+};
+const hasSymlinkComponent = (workspaceRoot, artifactPath) => {
+  const relativePath = path.relative(workspaceRoot, artifactPath);
+  if (!isWithin(workspaceRoot, artifactPath)) return true;
+  let currentPath = workspaceRoot;
+  for (const segment of relativePath.split(path.sep)) {
+    currentPath = path.join(currentPath, segment);
+    if (lstatSync(currentPath).isSymbolicLink()) return true;
+  }
+  return false;
+};
 for (const [workspace, patterns] of Object.entries(expectedWorkspaceArtifacts)) {
+  const workspaceRoot = path.join(repositoryRoot, workspace);
+  const realWorkspaceRoot = realpathSync(workspaceRoot);
   for (const pattern of patterns) {
     const wildcardMatch = pattern.match(/^(.*)\/\*\.([a-z0-9]+)$/i);
     let artifactPaths = [];
@@ -63,10 +85,26 @@ for (const [workspace, patterns] of Object.entries(expectedWorkspaceArtifacts)) 
       continue;
     }
     for (const artifactPath of artifactPaths) {
-      const metadata = statSync(artifactPath);
       const relativePath = path.relative(repositoryRoot, artifactPath).replaceAll(path.sep, '/');
+      const metadata = lstatSync(artifactPath);
+      if (hasSymlinkComponent(workspaceRoot, artifactPath)) {
+        errors.push(`symlink output is forbidden: ${relativePath}`);
+        continue;
+      }
+      if (!metadata.isFile()) {
+        errors.push(`output is not a regular file: ${relativePath}`);
+        continue;
+      }
+      const realArtifactPath = realpathSync(artifactPath);
+      if (!isWithin(repositoryRoot, realArtifactPath) || !isWithin(realWorkspaceRoot, realArtifactPath)) {
+        errors.push(`output resolves outside repository/workspace: ${relativePath}`);
+        continue;
+      }
       if (metadata.mtimeMs < buildStartedAt - 1_000) {
         errors.push(`stale output from before current build: ${relativePath}`);
+      }
+      if (metadata.mtimeMs > validationNow + maxFutureClockSkewMs) {
+        errors.push(`output timestamp exceeds 5 minute clock-skew tolerance: ${relativePath}`);
       }
       const bytes = readFileSync(artifactPath);
       verifiedOutputs.push({

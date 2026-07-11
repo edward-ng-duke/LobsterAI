@@ -3,7 +3,10 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateWorkspaceRegistry } from './saas-workspace-policy.mjs';
+import {
+  loadWorkspaceRegistry,
+  validateWorkspaceRegistry,
+} from './saas-workspace-policy.mjs';
 
 const defaultRepositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const expectedWorkspacePatterns = ['apps/*', 'libs/*/*'];
@@ -41,7 +44,7 @@ const requiredRootScripts = {
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':
-    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts',
+    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts tests/scaffold-tester-corners.test.ts tests/scaffold-json-duplicate-keys.test.ts',
   typecheck: 'tsc -b tsconfig.workspace.json --pretty false',
 };
 const requiredScaffoldFiles = [
@@ -69,6 +72,7 @@ const requiredScaffoldFiles = [
   'prisma/schema.prisma',
   'prisma/seed/README.md',
   'scripts/expect-saas-stage-gate.mjs',
+  'scripts/json-without-duplicate-keys.mjs',
   'scripts/check-saas-build-artifacts.mjs',
   'scripts/clean-saas-build.mjs',
   'scripts/run-saas-stage-gate.mjs',
@@ -223,12 +227,12 @@ const validateDirectories = (repositoryRoot, discoveredWorkspaces, errors) => {
       errors.push(taggedError('SCAF-1', `empty fixture ${relativePath}`));
     }
   }
-  const registry = readJson(
-    repositoryRoot,
-    'scripts/saas-workspace-registry.json',
-    errors,
-    'SCAF-1',
-  );
+  let registry;
+  try {
+    ({ registry } = loadWorkspaceRegistry(repositoryRoot));
+  } catch (error) {
+    errors.push(taggedError('SCAF-2', `cannot parse workspace registry: ${error.message}`));
+  }
   const registeredWorkspaces = new Set(Object.keys(registry?.workspaces ?? {}));
   for (const registryError of validateWorkspaceRegistry(registry)) {
     errors.push(taggedError('SCAF-2', `invalid workspace registry: ${registryError}`));

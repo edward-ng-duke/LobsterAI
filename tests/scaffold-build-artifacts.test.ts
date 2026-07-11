@@ -147,6 +147,20 @@ describe('P00 build artifact authenticity', () => {
     expect(runScript(staleRoot, 'scripts/check-saas-build-artifacts.mjs').status).not.toBe(0);
   });
 
+  test('rejects a registered output that is not a regular file', () => {
+    const root = createRepositoryCopy();
+    const registry = readRegistry(root);
+    expect(runScript(root, 'scripts/clean-saas-build.mjs').status).toBe(0);
+    for (const workspace of Object.keys(registry.workspaces)) {
+      expectedArtifacts(workspace).forEach((artifact) => writeArtifact(root, artifact));
+    }
+    const nonRegularOutput = path.join(root, 'apps/api/dist/index.js');
+    rmSync(nonRegularOutput);
+    mkdirSync(nonRegularOutput);
+
+    expect(runScript(root, 'scripts/check-saas-build-artifacts.mjs').status).not.toBe(0);
+  });
+
   test('clean build preflight removes outputs and incremental state together', () => {
     const root = createRepositoryCopy();
     const registry = readRegistry(root);

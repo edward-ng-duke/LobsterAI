@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { parseJsonRejectingDuplicateKeys } from './json-without-duplicate-keys.mjs';
+
 export const expectedWorkspaceArtifacts = {
   'apps/api': ['dist/index.js', 'dist/index.d.ts'],
   'apps/runtime-orchestrator': ['dist/index.js', 'dist/index.d.ts'],
@@ -25,7 +27,7 @@ export const loadWorkspaceRegistry = (repositoryRoot) => {
   const registryPath = path.join(repositoryRoot, 'scripts/saas-workspace-registry.json');
   const bytes = readFileSync(registryPath);
   return {
-    registry: JSON.parse(bytes.toString('utf8')),
+    registry: parseJsonRejectingDuplicateKeys(bytes.toString('utf8')),
     registrySha256: createHash('sha256').update(bytes).digest('hex'),
   };
 };

@@ -35,5 +35,6 @@ describe('duplicate-safe JSON parser', () => {
       nested: { a: 2 },
     });
     expect(() => parseJsonRejectingDuplicateKeys('{"a":')).toThrow(SyntaxError);
+    expect(() => parseJsonRejectingDuplicateKeys('{"a":1\u00a0}')).toThrow(SyntaxError);
   });
 });
