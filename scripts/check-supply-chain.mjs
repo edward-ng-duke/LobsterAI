@@ -292,8 +292,11 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
     const gracefulStopRequired = ['worker', 'runtime-orchestrator', 'openclaw-runtime']
       .includes(evidence.imageName);
     if (runtimeEvidence.gracefulStop?.required !== gracefulStopRequired
-      || (gracefulStopRequired && runtimeEvidence.gracefulStop?.exitCode !== 0)
+      || (gracefulStopRequired
+        && (runtimeEvidence.gracefulStop?.completedWithinTimeout !== true
+          || ![0, 143].includes(runtimeEvidence.gracefulStop?.exitCode)))
       || !Number.isInteger(runtimeEvidence.gracefulStop?.exitCode)
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.durationMs)
       || runtimeEvidence.gracefulStop?.oomKilled !== false
       || !Number.isInteger(runtimeEvidence.gracefulStop?.timeoutSeconds)
       || !digestPattern.test(runtimeEvidence.logsSha256 ?? '')) {

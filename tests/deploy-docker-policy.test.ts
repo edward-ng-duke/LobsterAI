@@ -91,7 +91,8 @@ describe('P03 production image policy', () => {
     expect(checker).toContain("networkMode: 'none'");
     expect(checker).toContain("capDrop: ['ALL']");
     expect(checker).toContain('imageHistoryScan');
-    expect(checker).toContain('state.ExitCode !== 0');
+    expect(checker).toContain('![0, 143].includes(state.ExitCode)');
+    expect(checker).toContain('completedWithinTimeout');
 
     const negative = spawnSync(process.execPath, [
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),

@@ -198,6 +198,8 @@ describe('P03 supply-chain inventory and evidence policy', () => {
         gracefulStop: {
           required: ['worker', 'runtime-orchestrator', 'openclaw-runtime'].includes(imageName),
           timeoutSeconds: 10,
+          durationMs: 250,
+          completedWithinTimeout: true,
           exitCode: 0,
           oomKilled: false,
         },
@@ -253,7 +255,7 @@ describe('P03 supply-chain inventory and evidence policy', () => {
       .toContain('history secret-scan evidence');
     const swallowedSignal = structuredClone(exact);
     const worker = swallowedSignal.imageEvidence.find(evidence => evidence.imageName === 'worker')!;
-    worker.runtimeEvidence.gracefulStop.required = false;
+    worker.runtimeEvidence.gracefulStop.completedWithinTimeout = false;
     worker.runtimeEvidence.gracefulStop.exitCode = 137;
     expect(validateEvidence(swallowedSignal, new Date(), expectedSourceSha).join('\n'))
       .toContain('graceful stop/log evidence');

@@ -180,13 +180,17 @@ const smokeImage = (imageName, tag, metadata) => {
     if (isOpenClaw && !/\[gateway\] ready/.test(combinedLogs)) {
       throw new Error(`${imageName}: healthy container logs do not contain gateway ready`);
     }
+    const stopStartedAt = Date.now();
     const stopped = run('docker', ['stop', `--time=${stopTimeoutSeconds}`, containerId]);
+    const stopDurationMs = Date.now() - stopStartedAt;
     if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
     const stateInspect = run('docker', ['inspect', '--format', '{{json .State}}', containerId]);
     if (stateInspect.status !== 0) throw new Error(`${imageName}: stopped container state inspect failed`);
     const state = JSON.parse(stateInspect.stdout);
+    const completedWithinTimeout = stopDurationMs <= (stopTimeoutSeconds + 2) * 1000;
     if (state.Status !== 'exited' || state.OOMKilled !== false
-      || (gracefulStopRequired && state.ExitCode !== 0)) {
+      || (gracefulStopRequired
+        && (!completedWithinTimeout || ![0, 143].includes(state.ExitCode)))) {
       throw new Error(`${imageName}: unhealthy stop state ${stateInspect.stdout.trim()}`);
     }
     return {
@@ -203,6 +207,8 @@ const smokeImage = (imageName, tag, metadata) => {
       gracefulStop: {
         required: gracefulStopRequired,
         timeoutSeconds: stopTimeoutSeconds,
+        durationMs: stopDurationMs,
+        completedWithinTimeout,
         exitCode: state.ExitCode,
         oomKilled: state.OOMKilled,
       },

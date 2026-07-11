@@ -159,11 +159,20 @@
         "gracefulStop": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["required", "timeoutSeconds", "exitCode", "oomKilled"],
+          "required": [
+            "required",
+            "timeoutSeconds",
+            "durationMs",
+            "completedWithinTimeout",
+            "exitCode",
+            "oomKilled"
+          ],
           "properties": {
             "required": { "type": "boolean" },
             "timeoutSeconds": { "type": "integer", "minimum": 1 },
-            "exitCode": { "type": "integer", "minimum": 0 },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "completedWithinTimeout": { "type": "boolean" },
+            "exitCode": { "enum": [0, 137, 143] },
             "oomKilled": { "const": false }
           }
         },
