@@ -1,21 +1,6 @@
 import { z } from 'zod';
 
 export const EmptyRequestSchema = z.strictObject({});
-const OperationScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-const OperationValueSchema = z.union([
-  OperationScalarSchema,
-  z.array(OperationScalarSchema),
-  z.record(z.string(), OperationScalarSchema),
-]);
-export const OperationRequestSchema = z.strictObject({
-  input: OperationValueSchema.optional(),
-  idempotencyKey: z.string().min(1).optional(),
-});
-export const OperationResponseSchema = z.strictObject({
-  success: z.boolean(),
-  data: OperationValueSchema.optional(),
-});
-
 const PkceLoginRequestSchema = z.strictObject({
   codeChallenge: z.string().min(43),
   redirectUri: z.url(),

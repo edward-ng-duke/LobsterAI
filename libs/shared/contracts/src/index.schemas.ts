@@ -16,8 +16,6 @@ export {
   MessageDtoSchema as MessageDto,
   MessageListResponseSchema as MessageListResponse,
   OAuthTokenRequestSchema as OAuthTokenRequest,
-  OperationRequestSchema as OperationRequest,
-  OperationResponseSchema as OperationResponse,
   PageInfoSchema as PageInfo,
   PermissionDismissEventSchema as PermissionDismissEvent,
   PermissionRespondRequestSchema as PermissionRespondRequest,
@@ -105,6 +103,7 @@ export {
   WorkspaceTreeRequestSchema as WorkspaceTreeRequest,
   WorkspaceTreeResponseSchema as WorkspaceTreeResponse,
 } from './domains/deferred.schema.js';
+export * from './domains/ga.schema.js';
 export {
   StreamTicketRequestSchema as StreamTicketRequest,
   StreamTicketResponseSchema as StreamTicketResponse,

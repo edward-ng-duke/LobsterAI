@@ -17,8 +17,11 @@ const route = (operationId: string) => {
 
 describe('Reviewer Round 2 field-level route mutations', () => {
   test('does not reuse operation placeholder schemas for any GA route', () => {
-    expect(RouteRegistry.filter((entry) => entry.request === Schemas.OperationRequest)).toEqual([]);
-    expect(RouteRegistry.filter((entry) => entry.response === Schemas.OperationResponse)).toEqual([]);
+    expect(schemaCatalog.OperationRequest).toBeUndefined();
+    expect(schemaCatalog.OperationResponse).toBeUndefined();
+    expect(RouteRegistry.some((entry) => /Operation(Request|Response)/.test(
+      `${entry.requestName}:${entry.responseName}`,
+    ))).toBe(false);
   });
 
   test('accepts canonical domain payloads and list response shapes', () => {

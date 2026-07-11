@@ -2116,6 +2116,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActionSuccessResponseSchema: {
+            /** @enum {boolean} */
+            success: true;
+        };
         AgentCreateRequest: {
             model?: string;
             name: string;
@@ -2127,6 +2131,18 @@ export interface components {
             model?: string;
             name: string;
             skillIds: string[];
+            workingDirectory?: string;
+        };
+        AgentListResponseSchema: {
+            agents: {
+                id: string;
+                model?: string;
+                name: string;
+                skillIds: string[];
+                workingDirectory?: string;
+            }[];
+        };
+        AgentPresetInstallRequestSchema: {
             workingDirectory?: string;
         };
         AgentUpdateRequest: {
@@ -2152,6 +2168,11 @@ export interface components {
         ApiStreamError: {
             error?: unknown;
             requestId: string;
+        };
+        AppInfoResponseSchema: {
+            arch: string;
+            platform: string;
+            version: string;
         };
         ArtifactDto: {
             id: string;
@@ -2204,6 +2225,17 @@ export interface components {
             code: string;
             requestId: string;
         };
+        AuthMeResponseSchema: {
+            /** Format: email */
+            email: string;
+            userId: string;
+        };
+        AuthProfileSummaryResponseSchema: {
+            /** Format: uri */
+            avatarUrl: string | null;
+            creditsRemaining: number;
+            nickname: string;
+        };
         BillingAccountResponse: {
             breakdown: {
                 daily: number;
@@ -2247,91 +2279,69 @@ export interface components {
             reason: "model_usage" | "media_generation" | "asr_transcription" | "usage_correction" | "payment_refund" | "chargeback" | "sandbox_cost";
             requestId: string;
         };
+        BillingPlanResponseSchema: {
+            planId: string;
+            planName: string;
+        };
         BillingSettleRequest: {
             credits: number;
             holdId: string;
             requestId: string;
         };
+        BillingUsageResponseSchema: {
+            creditsUsed: number;
+            period: string;
+        };
+        BootstrapFileResponseSchema: {
+            content: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BootstrapFileWriteRequestSchema: {
+            content: string;
+        };
+        ByokResponseSchema: {
+            configured: boolean;
+            provider: string;
+        };
+        ByokUpsertRequestSchema: {
+            provider: string;
+            secret: string;
+        };
         ContinueTurnRequest: {
             prompt: string;
         };
-        DeleteApiV1AgentsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
+        CoworkConfigSchema: {
+            /** @enum {string} */
+            executionMode: "auto" | "local" | "sandbox";
+            memoryEnabled: boolean;
+            workingDirectory: string;
         };
-        DeleteApiV1ArtifactsPreviewSessionsPreviewSessionIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1BillingByokProviderResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1CoworkMemoryEntriesIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1KitsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1KvKeyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1McpServersIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1PluginsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1ScheduledTasksIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1SkillsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1SubagentsRunIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        DeleteApiV1WorkspacesWidFilesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
+        CoworkConfigUpdateRequestSchema: {
+            /** @enum {string} */
+            executionMode?: "auto" | "local" | "sandbox";
+            memoryEnabled?: boolean;
+            workingDirectory?: string;
         };
         DeleteSessionResponse: {
             /** @enum {boolean} */
             deleted: true;
         };
+        DreamingDiaryResponseSchema: {
+            content: string;
+            /** Format: date */
+            date: string;
+        };
+        DreamingStatusResponseSchema: {
+            enabled: boolean;
+            running: boolean;
+        };
         EmptyRequest: Record<string, never>;
+        EnterpriseConfigResponseSchema: {
+            disableUpdate?: boolean;
+            name: string;
+            version: string;
+        };
         ErrorEnvelope: {
             error: {
                 /** @enum {string} */
@@ -2347,10 +2357,24 @@ export interface components {
             /** @enum {boolean} */
             deleted: true;
         };
+        FileDownloadResponseSchema: {
+            text?: string;
+            /** Format: uri */
+            url?: string;
+        };
+        FileStatResponseSchema: {
+            /** Format: date-time */
+            modifiedAt: string;
+            path: string;
+            sizeBytes: number;
+        };
         FileSyncStatus: {
             path: string;
             /** @enum {string} */
             status: "pending" | "synced" | "failed";
+        };
+        FileThumbnailResponseSchema: {
+            dataUrl: string;
         };
         FileUploadIntent: {
             mimeType: string;
@@ -2368,309 +2392,80 @@ export interface components {
             requestId: string;
             result?: unknown;
         };
-        GetApiV1AgentsPresetsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1AgentsPresetTemplatesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1BillingPlanResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1BillingUsageResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ConfigAppInfoResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ConfigEnterpriseResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1CoworkBootstrapResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1CoworkConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1CoworkDreamingDiaryResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1CoworkDreamingStatusResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1CoworkMemoryStatsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1HtmlSharesIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1HtmlSharesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1HtmlSharesShareIdDeploymentResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1KitsInstalledResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1KitsMarketplaceResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1KvKeyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1McpMarketplaceResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1McpServersResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ModelConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ModelsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1PluginsIdConfigSchemaResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1PluginsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1PluginsUpdatesCheckResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1PrivacyDeletionsDeletionIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1PrivacyExportsExportIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1RuntimeMigrationLastRestoreResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1RuntimeSessionPolicyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1RuntimeStatusResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ScheduledTasksChannelsChConversationsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ScheduledTasksChannelsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ScheduledTasksIdRunsCountResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ScheduledTasksRunsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ScheduledTasksRunsRunIdSessionResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SessionsIdContextUsageResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SessionsIdManagedResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SessionsIdRailIndexResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SessionsIdSubagentsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1ShareDeploymentsDeploymentIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SkillsIdConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SkillsMarketplaceResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SkillsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SkillsRoutingPromptResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1SubagentsRunIdMessagesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1WorkspacesRecentResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1WorkspacesWidFilesDownloadResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1WorkspacesWidFilesStatResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetApiV1WorkspacesWidFilesThumbnailResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetAuthMeResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        GetAuthProfileSummaryResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
         GoalUpdate: {
             goal?: unknown;
             sessionId: string;
+        };
+        HtmlShareCreateRequestSchema: {
+            artifactId?: string;
+            clientSourceKey: string;
+            sessionId?: string;
+            /** @enum {string} */
+            source: "html-file" | "artifact-file";
+            title?: string;
+        };
+        HtmlShareDtoSchema: {
+            /** @enum {string} */
+            accessMode: "public" | "code";
+            id: string;
+            /** @enum {string} */
+            status: "active" | "disabled";
+            /** Format: uri */
+            url: string;
+        };
+        HtmlShareListResponseSchema: {
+            shares: {
+                /** @enum {string} */
+                accessMode: "public" | "code";
+                id: string;
+                /** @enum {string} */
+                status: "active" | "disabled";
+                /** Format: uri */
+                url: string;
+            }[];
+        };
+        HtmlSharePatchAccessRequestSchema: {
+            /** @enum {string} */
+            accessMode: "public" | "code";
+            shareCode?: string;
+        };
+        HtmlSharePatchStatusRequestSchema: {
+            /** @enum {string} */
+            status: "active" | "disabled";
+        };
+        HtmlShareUpdateRequestSchema: {
+            artifactId?: string;
+            clientSourceKey?: string;
+            sessionId?: string;
+            /** @enum {string} */
+            source?: "html-file" | "artifact-file";
+            title?: string;
+        };
+        InstalledKitSchema: {
+            id: string;
+            skillIds: string[];
+            version: string;
+        };
+        KeyValueResponseSchema: {
+            key: string;
+            value: string;
+        };
+        KeyValueWriteRequestSchema: {
+            value: string;
+        };
+        KitInstallRequestSchema: {
+            /** Format: uri */
+            bundleUrl: string;
+            kitId: string;
+            skillListIds: string[];
+            version: string;
+        };
+        KitListResponseSchema: {
+            kits: {
+                id: string;
+                skillIds: string[];
+                version: string;
+            }[];
         };
         LoginRequest: {
             codeChallenge: string;
@@ -2696,11 +2491,22 @@ export interface components {
             riskLevel: "low" | "medium" | "high";
             serverId: string;
         };
+        McpLaunchRetryRequestSchema: {
+            force?: boolean;
+        };
         McpServerConfig: {
             command: string;
             enabled: boolean;
             id: string;
             secretRefs: string[];
+        };
+        McpServerListResponseSchema: {
+            servers: {
+                command: string;
+                enabled: boolean;
+                id: string;
+                secretRefs: string[];
+            }[];
         };
         MediaCancelResponse: {
             /** @enum {string} */
@@ -2737,6 +2543,30 @@ export interface components {
             tenantId: string;
             userId: string;
         };
+        MemoryEntryCreateRequestSchema: {
+            section?: string;
+            text: string;
+        };
+        MemoryEntryListResponseSchema: {
+            entries: {
+                id: string;
+                section?: string;
+                text: string;
+            }[];
+        };
+        MemoryEntrySchema: {
+            id: string;
+            section?: string;
+            text: string;
+        };
+        MemoryEntryUpdateRequestSchema: {
+            section?: string;
+            text?: string;
+        };
+        MemoryStatsResponseSchema: {
+            stale: number;
+            total: number;
+        };
         MessageCursor: string;
         MessageDto: {
             content: string;
@@ -2762,6 +2592,29 @@ export interface components {
                 nextCursor?: string;
             };
         };
+        ModelConfigCheckRequestSchema: {
+            model?: string;
+            probeModel?: boolean;
+            provider?: string;
+        };
+        ModelConfigCheckResponseSchema: {
+            model?: string;
+            valid: boolean;
+        };
+        ModelConfigResponseSchema: {
+            /** Format: uri */
+            baseUrl?: string;
+            configured: boolean;
+            model: string;
+            provider: string;
+        };
+        ModelConfigWriteRequestSchema: {
+            apiKeySecretRef?: string;
+            /** Format: uri */
+            baseUrl?: string;
+            model: string;
+            provider: string;
+        };
         ModelDetailResponse: {
             capabilities: string[];
             costMultiplier: number;
@@ -2780,111 +2633,58 @@ export interface components {
             kind: "text" | "image" | "video";
             name: string;
         };
+        ModelListResponseSchema: {
+            models: {
+                costMultiplier: number;
+                id: string;
+                /** @enum {string} */
+                kind: "text" | "image" | "video";
+                name: string;
+            }[];
+        };
+        ModelProxyRequestSchema: {
+            maxTokens?: number;
+            messages: {
+                content: string;
+                /** @enum {string} */
+                role: "system" | "user" | "assistant" | "tool";
+            }[];
+            model: string;
+        };
+        ModelProxyResponseSchema: {
+            content: string;
+            inputTokens: number;
+            outputTokens: number;
+        };
+        ModelStreamAbortRequestSchema: {
+            reason?: string;
+        };
+        ModelStreamAbortResponseSchema: {
+            /** @enum {boolean} */
+            aborted: true;
+        };
+        ModelStreamAcceptedResponseSchema: {
+            requestId: string;
+        };
+        ModelStreamRequestSchema: {
+            maxTokens?: number;
+            messages: {
+                content: string;
+                /** @enum {string} */
+                role: "system" | "user" | "assistant" | "tool";
+            }[];
+            model: string;
+            requestId: string;
+        };
         OAuthTokenRequest: {
             code: string;
             /** Format: uri */
             redirectUri: string;
             verifier: string;
         };
-        OperationRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        OperationResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
         PageInfo: {
             hasMore: boolean;
             nextCursor?: string;
-        };
-        PatchApiV1CoworkConfigRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1CoworkConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1CoworkMemoryEntriesIdRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1CoworkMemoryEntriesIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1HtmlSharesIdAccessModeRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1HtmlSharesIdAccessModeResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1HtmlSharesIdStatusRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1HtmlSharesIdStatusResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1PluginsIdRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1PluginsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1SessionsIdRuntimeRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1SessionsIdRuntimeResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PatchApiV1SkillsIdRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PatchApiV1SkillsIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
         };
         PermissionDismissEvent: {
             requestId: string;
@@ -2933,503 +2733,71 @@ export interface components {
             allow: boolean;
             toolName: string;
         };
+        PluginBatchSaveRequestSchema: {
+            configs?: {
+                config: {
+                    [key: string]: string;
+                };
+                pluginId: string;
+            }[];
+            toggles?: {
+                enabled: boolean;
+                pluginId: string;
+            }[];
+        };
+        PluginConfigRequestSchema: {
+            config: {
+                [key: string]: string;
+            };
+        };
+        PluginConfigSchemaResponseSchema: {
+            fields: {
+                key: string;
+                sensitive: boolean;
+            }[];
+        };
+        PluginDtoSchema: {
+            enabled: boolean;
+            id: string;
+            name: string;
+            version: string;
+        };
+        PluginInstallRequestSchema: {
+            integrity?: string;
+            source: string;
+        };
+        PluginListResponseSchema: {
+            plugins: {
+                enabled: boolean;
+                id: string;
+                name: string;
+                version: string;
+            }[];
+        };
+        PluginMutationResponseSchema: {
+            plugin?: {
+                enabled: boolean;
+                id: string;
+                name: string;
+                version: string;
+            };
+            success: boolean;
+        };
+        PluginUpdateRequestSchema: {
+            enabled?: boolean;
+            version?: string;
+        };
+        PluginUpdatesResponseSchema: {
+            updates: {
+                pluginId: string;
+                version: string;
+            }[];
+        };
         PodLease: {
             /** Format: date-time */
             expiresAt: string;
             holderId: string;
             workspaceId: string;
-        };
-        PostApiV1AgentsPresetsPresetIdInstallRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1AgentsPresetsPresetIdInstallResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1BillingByokRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1BillingByokResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1CoworkMemoryEntriesRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1CoworkMemoryEntriesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1HtmlSharesRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1HtmlSharesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1KitsInstallRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1KitsInstallResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1McpServersIdLaunchResolutionRetryRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1McpServersIdLaunchResolutionRetryResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ModelConfigCheckRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ModelConfigCheckResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ModelProxyRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ModelProxyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ModelStreamRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ModelStreamRequestIdAbortRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ModelStreamRequestIdAbortResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ModelStreamResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PluginsBatchSaveRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PluginsBatchSaveResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PluginsDetectRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PluginsDetectResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PluginsIdUpdateRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PluginsIdUpdateResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PluginsInstallRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PluginsInstallResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PluginsSyncRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PluginsSyncResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PrivacyDeletionsRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PrivacyDeletionsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1PrivacyExportsRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1PrivacyExportsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1RuntimeMigrationBackupsRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1RuntimeMigrationBackupsResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1RuntimeMigrationRestoresRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1RuntimeMigrationRestoresResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1RuntimeProvisionRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1RuntimeProvisionResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1RuntimeRepairRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1RuntimeRepairResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1RuntimeRestartRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1RuntimeRestartResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ScheduledTasksIdStopRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ScheduledTasksIdStopResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsBatchDeleteRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsBatchDeleteResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdCompactContextRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdCompactContextResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdExportsResultImageRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdExportsResultImageResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdExportsTextRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdExportsTextResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdForkRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdForkResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdPermissionsRequestIdRespondResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdResultImageChunksRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdResultImageChunksResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdResultImageFilesRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdResultImageFilesResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdStopRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdStopResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdTitleGenerationRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdTitleGenerationResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SessionsIdViewedRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SessionsIdViewedResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1ShareDeploymentsNodeRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ShareDeploymentsStaticRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1ShareDeploymentsStaticResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SkillsIdConfirmRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SkillsIdConfirmResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SkillsIdTestRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SkillsIdTestResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SkillsIdUpgradeRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SkillsIdUpgradeResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SkillsInstallRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SkillsInstallResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostApiV1SkillsSyncRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostApiV1SkillsSyncResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PostOauthAuthorizeRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PostOauthAuthorizeResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
         };
         PreviewEvent: {
             previewSessionId: string;
@@ -3472,94 +2840,19 @@ export interface components {
                 name: string;
             }[];
         };
+        PrivacyJobRequestSchema: {
+            /** @enum {boolean} */
+            confirmation: true;
+        };
+        PrivacyJobResponseSchema: {
+            jobId: string;
+            /** @enum {string} */
+            status: "queued" | "running" | "completed" | "failed";
+        };
         ProviderConfig: {
             configured: boolean;
             provider: string;
             secretRef?: string;
-        };
-        PutApiV1CoworkBootstrapRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1CoworkBootstrapResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1HtmlSharesIdRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1HtmlSharesIdResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1KvKeyRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1KvKeyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1ModelConfigRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1ModelConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1PluginsIdConfigRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1PluginsIdConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1RuntimeSessionPolicyRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1RuntimeSessionPolicyResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
-        };
-        PutApiV1SkillsIdConfigRequest: {
-            idempotencyKey?: string;
-            input?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-        };
-        PutApiV1SkillsIdConfigResponse: {
-            data?: string | number | boolean | null | (string | number | boolean | null)[] | {
-                [key: string]: string | number | boolean | null;
-            };
-            success: boolean;
         };
         QuotaBucketDeltas: {
             daily: number;
@@ -3580,8 +2873,19 @@ export interface components {
         RefreshRequest: {
             refreshToken?: string;
         };
+        ResultImageChunkRequestSchema: {
+            chunkBase64: string;
+            index: number;
+        };
+        ResultImageFileRequestSchema: {
+            dataBase64: string;
+            fileName: string;
+        };
         /** @enum {string} */
         Role: "owner" | "admin" | "member" | "viewer";
+        RuntimeActionRequestSchema: {
+            force?: boolean;
+        };
         /** @enum {string} */
         RuntimeClass: "gvisor" | "kata";
         RuntimeHealthEvent: {
@@ -3589,10 +2893,27 @@ export interface components {
             /** @enum {string} */
             runtimeClassName: "gvisor" | "kata";
         };
+        RuntimeMigrationRequestSchema: {
+            backupPath?: string;
+        };
+        RuntimeMigrationResponseSchema: {
+            backupPath: string;
+            /** Format: date-time */
+            completedAt: string;
+        };
         RuntimeSessionClaim: {
             sessionId: string;
             sessionKeys: string[];
             tenantId: string;
+        };
+        RuntimeSessionPolicySchema: {
+            /** @enum {string} */
+            keepAlive: "1d" | "7d" | "30d" | "365d";
+        };
+        RuntimeStatusResponseSchema: {
+            /** @enum {string} */
+            status: "stopped" | "starting" | "ready" | "error";
+            version?: string;
         };
         SaveInlineFileRequest: {
             cwd: string;
@@ -3610,6 +2931,25 @@ export interface components {
             name: string;
             schedule: string;
         };
+        ScheduledTaskListResponseSchema: {
+            tasks: {
+                enabled: boolean;
+                id: string;
+                name: string;
+                schedule: string;
+            }[];
+        };
+        SessionBatchDeleteRequestSchema: {
+            sessionIds: string[];
+        };
+        SessionCompactRequestSchema: {
+            reason?: string;
+        };
+        SessionContextUsageResponseSchema: {
+            contextTokens: number;
+            percent: number;
+            usedTokens: number;
+        };
         SessionDetail: {
             agentId: string;
             capsule?: unknown;
@@ -3624,15 +2964,54 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        SessionExportRequestSchema: {
+            format?: string;
+        };
+        SessionExportResponseSchema: {
+            path: string;
+        };
+        SessionForkRequestSchema: {
+            messageId?: string;
+            /** @enum {string} */
+            mode?: "conversation" | "worktree";
+        };
+        SessionForkResponseSchema: {
+            sessionId: string;
+        };
+        SessionListResponseSchema: {
+            sessions: {
+                id: string;
+                /** @enum {string} */
+                status: "idle" | "running" | "completed" | "error";
+                title: string;
+            }[];
+        };
+        SessionManagedResponseSchema: {
+            managed: boolean;
+        };
         SessionPatchRequest: {
             goal?: unknown;
             pinned?: boolean;
             title?: string;
         };
+        SessionRailIndexResponseSchema: {
+            items: {
+                index: number;
+                messageId: string;
+            }[];
+        };
+        SessionRuntimePatchRequestSchema: {
+            /** @enum {string} */
+            executionMode?: "auto" | "local" | "sandbox";
+            model?: string;
+        };
         SessionStopped: {
             sessionId: string;
             /** @enum {boolean} */
             stopped: true;
+        };
+        SessionStopRequestSchema: {
+            reason?: string;
         };
         SessionSummary: {
             capsule?: unknown;
@@ -3646,6 +3025,16 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        SessionTitleRequestSchema: {
+            userInput: string | null;
+        };
+        SessionTitleResponseSchema: {
+            title: string;
+        };
+        SessionViewedRequestSchema: {
+            /** Format: date-time */
+            viewedAt: string;
+        };
         ShareAbuseReport: {
             reason: string;
             shareId: string;
@@ -3654,6 +3043,15 @@ export interface components {
             /** @enum {string} */
             accessMode: "private" | "unlisted" | "public";
             sourceKey: string;
+        };
+        ShareDeploymentRequestSchema: {
+            projectPath: string;
+            shareId?: string;
+        };
+        ShareDeploymentResponseSchema: {
+            deploymentId: string;
+            /** @enum {string} */
+            status: "queued" | "deploying" | "ready" | "failed";
         };
         ShareDto: {
             id: string;
@@ -3669,17 +3067,86 @@ export interface components {
             /** @enum {string} */
             status: "takedown";
         };
+        SkillConfigRequestSchema: {
+            config: {
+                [key: string]: string;
+            };
+        };
+        SkillConfigResponseSchema: {
+            config: {
+                [key: string]: string;
+            };
+        };
+        SkillConfirmRequestSchema: {
+            /** @enum {string} */
+            action: "install" | "cancel";
+            pendingId: string;
+        };
+        SkillDtoSchema: {
+            enabled: boolean;
+            id: string;
+            integrity: string;
+            name: string;
+            registry: string;
+            version: string;
+        };
+        SkillInstallRequestSchema: {
+            integrity?: string;
+            source: string;
+        };
+        SkillListResponseSchema: {
+            skills: {
+                enabled: boolean;
+                id: string;
+                integrity: string;
+                name: string;
+                registry: string;
+                version: string;
+            }[];
+        };
         SkillManifest: {
             id: string;
             integrity: string;
             registry: string;
             version: string;
         };
+        SkillMarketplaceResponseSchema: {
+            skills: {
+                enabled: boolean;
+                id: string;
+                integrity: string;
+                name: string;
+                registry: string;
+                version: string;
+            }[];
+        };
+        SkillRoutingPromptResponseSchema: {
+            prompt: string | null;
+        };
         SkillScanResult: {
             allowed: boolean;
             lifecycleScripts: string[];
             /** @enum {string} */
             riskLevel: "low" | "medium" | "high";
+        };
+        SkillSyncRequestSchema: {
+            force?: boolean;
+        };
+        SkillTestRequestSchema: {
+            config: {
+                [key: string]: string;
+            };
+        };
+        SkillTestResponseSchema: {
+            checks: string[];
+            success: boolean;
+        };
+        SkillUpdateRequestSchema: {
+            enabled: boolean;
+        };
+        SkillUpgradeRequestSchema: {
+            /** Format: uri */
+            downloadUrl: string;
         };
         StartSessionRequest: {
             agentId: string;
@@ -3712,6 +3179,12 @@ export interface components {
             expiresAt: string;
             ticket: string;
         };
+        SubagentListResponseSchema: {
+            subagents: {
+                runId: string;
+                status: string;
+            }[];
+        };
         SupplyChainPolicyError: {
             /** @enum {string} */
             code: "PERMISSION_DENIED";
@@ -3722,10 +3195,22 @@ export interface components {
         SwitchTenantRequest: {
             tenantId: string;
         };
+        TaskChannelListResponseSchema: {
+            channels: string[];
+        };
+        TaskConversationListResponseSchema: {
+            conversations: {
+                id: string;
+                title: string;
+            }[];
+        };
         TaskCreateRequest: {
             enabled: boolean;
             name: string;
             schedule: string;
+        };
+        TaskRunCountResponseSchema: {
+            count: number;
         };
         TaskRunDto: {
             runId: string;
@@ -3739,9 +3224,23 @@ export interface components {
             status: "queued" | "running" | "succeeded" | "failed" | "stopped";
             taskId: string;
         };
+        TaskRunListResponseSchema: {
+            runs: {
+                runId: string;
+                /** @enum {string} */
+                status: "queued" | "running" | "succeeded" | "failed" | "stopped";
+                taskId: string;
+            }[];
+        };
+        TaskSessionResponseSchema: {
+            sessionId: string;
+        };
         TaskStatusEvent: {
             status: string;
             taskId: string;
+        };
+        TaskStopRequestSchema: {
+            reason?: string;
         };
         TaskUpdateRequest: {
             enabled?: boolean;
@@ -3793,6 +3292,13 @@ export interface components {
                 name: string;
             }[];
         };
+        WorkspaceRecentResponseSchema: {
+            workspaces: {
+                /** Format: date-time */
+                lastUsedAt: string;
+                path: string;
+            }[];
+        };
         WorkspaceTreeRequest: {
             cursor?: string;
             depth?: number;
@@ -3831,7 +3337,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentDto"];
+                    "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4061,7 +3567,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1AgentsIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4215,7 +3721,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1AgentsPresetTemplatesResponse"];
+                    "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4289,7 +3795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1AgentsPresetsResponse"];
+                    "application/json": components["schemas"]["AgentListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4359,7 +3865,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1AgentsPresetsPresetIdInstallRequest"];
+                "application/json": components["schemas"]["AgentPresetInstallRequestSchema"];
             };
         };
         responses: {
@@ -4369,7 +3875,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1AgentsPresetsPresetIdInstallResponse"];
+                    "application/json": components["schemas"]["AgentDto"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4525,7 +4031,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1ArtifactsPreviewSessionsPreviewSessionIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4754,7 +4260,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1BillingByokRequest"];
+                "application/json": components["schemas"]["ByokUpsertRequestSchema"];
             };
         };
         responses: {
@@ -4764,7 +4270,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1BillingByokResponse"];
+                    "application/json": components["schemas"]["ByokResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4849,7 +4355,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1BillingByokProviderResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -4932,7 +4438,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1BillingPlanResponse"];
+                    "application/json": components["schemas"]["BillingPlanResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5015,7 +4521,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1BillingUsageResponse"];
+                    "application/json": components["schemas"]["BillingUsageResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5098,7 +4604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ConfigAppInfoResponse"];
+                    "application/json": components["schemas"]["AppInfoResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5172,7 +4678,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ConfigEnterpriseResponse"];
+                    "application/json": components["schemas"]["EnterpriseConfigResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5246,7 +4752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1CoworkBootstrapResponse"];
+                    "application/json": components["schemas"]["BootstrapFileResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5314,7 +4820,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1CoworkBootstrapRequest"];
+                "application/json": components["schemas"]["BootstrapFileWriteRequestSchema"];
             };
         };
         responses: {
@@ -5324,7 +4830,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1CoworkBootstrapResponse"];
+                    "application/json": components["schemas"]["BootstrapFileResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5398,7 +4904,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1CoworkConfigResponse"];
+                    "application/json": components["schemas"]["CoworkConfigSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5466,7 +4972,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1CoworkConfigRequest"];
+                "application/json": components["schemas"]["CoworkConfigUpdateRequestSchema"];
             };
         };
         responses: {
@@ -5476,7 +4982,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1CoworkConfigResponse"];
+                    "application/json": components["schemas"]["CoworkConfigSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5550,7 +5056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1CoworkDreamingDiaryResponse"];
+                    "application/json": components["schemas"]["DreamingDiaryResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5624,7 +5130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1CoworkDreamingStatusResponse"];
+                    "application/json": components["schemas"]["DreamingStatusResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5698,7 +5204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageListResponse"];
+                    "application/json": components["schemas"]["MemoryEntryListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5766,7 +5272,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1CoworkMemoryEntriesRequest"];
+                "application/json": components["schemas"]["MemoryEntryCreateRequestSchema"];
             };
         };
         responses: {
@@ -5776,7 +5282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1CoworkMemoryEntriesResponse"];
+                    "application/json": components["schemas"]["MemoryEntrySchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5852,7 +5358,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1CoworkMemoryEntriesIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -5922,7 +5428,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1CoworkMemoryEntriesIdRequest"];
+                "application/json": components["schemas"]["MemoryEntryUpdateRequestSchema"];
             };
         };
         responses: {
@@ -5932,7 +5438,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1CoworkMemoryEntriesIdResponse"];
+                    "application/json": components["schemas"]["MemoryEntrySchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6006,7 +5512,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1CoworkMemoryStatsResponse"];
+                    "application/json": components["schemas"]["MemoryStatsResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6080,7 +5586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1HtmlSharesResponse"];
+                    "application/json": components["schemas"]["HtmlShareListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6148,7 +5654,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1HtmlSharesRequest"];
+                "application/json": components["schemas"]["HtmlShareCreateRequestSchema"];
             };
         };
         responses: {
@@ -6158,7 +5664,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1HtmlSharesResponse"];
+                    "application/json": components["schemas"]["HtmlShareDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6234,7 +5740,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1HtmlSharesIdResponse"];
+                    "application/json": components["schemas"]["HtmlShareDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6304,7 +5810,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1HtmlSharesIdRequest"];
+                "application/json": components["schemas"]["HtmlShareUpdateRequestSchema"];
             };
         };
         responses: {
@@ -6314,7 +5820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1HtmlSharesIdResponse"];
+                    "application/json": components["schemas"]["HtmlShareDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6384,7 +5890,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1HtmlSharesIdAccessModeRequest"];
+                "application/json": components["schemas"]["HtmlSharePatchAccessRequestSchema"];
             };
         };
         responses: {
@@ -6394,7 +5900,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1HtmlSharesIdAccessModeResponse"];
+                    "application/json": components["schemas"]["HtmlShareDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6464,7 +5970,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1HtmlSharesIdStatusRequest"];
+                "application/json": components["schemas"]["HtmlSharePatchStatusRequestSchema"];
             };
         };
         responses: {
@@ -6474,7 +5980,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1HtmlSharesIdStatusResponse"];
+                    "application/json": components["schemas"]["HtmlShareDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6550,7 +6056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1HtmlSharesShareIdDeploymentResponse"];
+                    "application/json": components["schemas"]["ShareDeploymentResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6626,7 +6132,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1KitsIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6694,7 +6200,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1KitsInstallRequest"];
+                "application/json": components["schemas"]["KitInstallRequestSchema"];
             };
         };
         responses: {
@@ -6704,7 +6210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1KitsInstallResponse"];
+                    "application/json": components["schemas"]["InstalledKitSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6778,7 +6284,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1KitsInstalledResponse"];
+                    "application/json": components["schemas"]["KitListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6852,7 +6358,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1KitsMarketplaceResponse"];
+                    "application/json": components["schemas"]["KitListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6928,7 +6434,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1KvKeyResponse"];
+                    "application/json": components["schemas"]["KeyValueResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -6998,7 +6504,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1KvKeyRequest"];
+                "application/json": components["schemas"]["KeyValueWriteRequestSchema"];
             };
         };
         responses: {
@@ -7008,7 +6514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1KvKeyResponse"];
+                    "application/json": components["schemas"]["KeyValueResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7084,7 +6590,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1KvKeyResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7158,7 +6664,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1McpMarketplaceResponse"];
+                    "application/json": components["schemas"]["McpServerListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7232,7 +6738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1McpServersResponse"];
+                    "application/json": components["schemas"]["McpServerListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7386,7 +6892,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1McpServersIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7536,7 +7042,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1McpServersIdLaunchResolutionRetryRequest"];
+                "application/json": components["schemas"]["McpLaunchRetryRequestSchema"];
             };
         };
         responses: {
@@ -7546,7 +7052,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1McpServersIdLaunchResolutionRetryResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7794,7 +7300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ModelConfigResponse"];
+                    "application/json": components["schemas"]["ModelConfigResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7871,7 +7377,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1ModelConfigRequest"];
+                "application/json": components["schemas"]["ModelConfigWriteRequestSchema"];
             };
         };
         responses: {
@@ -7881,7 +7387,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1ModelConfigResponse"];
+                    "application/json": components["schemas"]["ModelConfigResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -7958,7 +7464,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ModelConfigCheckRequest"];
+                "application/json": components["schemas"]["ModelConfigCheckRequestSchema"];
             };
         };
         responses: {
@@ -7968,7 +7474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ModelConfigCheckResponse"];
+                    "application/json": components["schemas"]["ModelConfigCheckResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8045,7 +7551,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ModelProxyRequest"];
+                "application/json": components["schemas"]["ModelProxyRequestSchema"];
             };
         };
         responses: {
@@ -8055,7 +7561,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ModelProxyResponse"];
+                    "application/json": components["schemas"]["ModelProxyResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8132,7 +7638,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ModelStreamRequest"];
+                "application/json": components["schemas"]["ModelStreamRequestSchema"];
             };
         };
         responses: {
@@ -8142,7 +7648,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ModelStreamResponse"];
+                    "application/json": components["schemas"]["ModelStreamAcceptedResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8239,7 +7745,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ModelStreamRequestIdAbortRequest"];
+                "application/json": components["schemas"]["ModelStreamAbortRequestSchema"];
             };
         };
         responses: {
@@ -8249,7 +7755,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ModelStreamRequestIdAbortResponse"];
+                    "application/json": components["schemas"]["ModelStreamAbortResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8350,7 +7856,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ModelsResponse"];
+                    "application/json": components["schemas"]["ModelListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8518,7 +8024,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1PluginsResponse"];
+                    "application/json": components["schemas"]["PluginListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8594,7 +8100,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1PluginsIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8664,7 +8170,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1PluginsIdRequest"];
+                "application/json": components["schemas"]["PluginUpdateRequestSchema"];
             };
         };
         responses: {
@@ -8674,7 +8180,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1PluginsIdResponse"];
+                    "application/json": components["schemas"]["PluginMutationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8744,7 +8250,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1PluginsIdConfigRequest"];
+                "application/json": components["schemas"]["PluginConfigRequestSchema"];
             };
         };
         responses: {
@@ -8754,7 +8260,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1PluginsIdConfigResponse"];
+                    "application/json": components["schemas"]["PluginMutationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8830,7 +8336,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1PluginsIdConfigSchemaResponse"];
+                    "application/json": components["schemas"]["PluginConfigSchemaResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8900,7 +8406,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PluginsIdUpdateRequest"];
+                "application/json": components["schemas"]["PluginUpdateRequestSchema"];
             };
         };
         responses: {
@@ -8910,7 +8416,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PluginsIdUpdateResponse"];
+                    "application/json": components["schemas"]["PluginMutationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -8978,7 +8484,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PluginsBatchSaveRequest"];
+                "application/json": components["schemas"]["PluginBatchSaveRequestSchema"];
             };
         };
         responses: {
@@ -8988,7 +8494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PluginsBatchSaveResponse"];
+                    "application/json": components["schemas"]["PluginMutationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9056,7 +8562,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PluginsDetectRequest"];
+                "application/json": components["schemas"]["RuntimeActionRequestSchema"];
             };
         };
         responses: {
@@ -9066,7 +8572,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PluginsDetectResponse"];
+                    "application/json": components["schemas"]["PluginListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9134,7 +8640,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PluginsInstallRequest"];
+                "application/json": components["schemas"]["PluginInstallRequestSchema"];
             };
         };
         responses: {
@@ -9144,7 +8650,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PluginsInstallResponse"];
+                    "application/json": components["schemas"]["PluginMutationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9212,7 +8718,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PluginsSyncRequest"];
+                "application/json": components["schemas"]["RuntimeActionRequestSchema"];
             };
         };
         responses: {
@@ -9222,7 +8728,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PluginsSyncResponse"];
+                    "application/json": components["schemas"]["PluginListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9296,7 +8802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1PluginsUpdatesCheckResponse"];
+                    "application/json": components["schemas"]["PluginUpdatesResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9447,7 +8953,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PrivacyDeletionsRequest"];
+                "application/json": components["schemas"]["PrivacyJobRequestSchema"];
             };
         };
         responses: {
@@ -9457,7 +8963,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PrivacyDeletionsResponse"];
+                    "application/json": components["schemas"]["PrivacyJobResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9533,7 +9039,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1PrivacyDeletionsDeletionIdResponse"];
+                    "application/json": components["schemas"]["PrivacyJobResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9601,7 +9107,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1PrivacyExportsRequest"];
+                "application/json": components["schemas"]["PrivacyJobRequestSchema"];
             };
         };
         responses: {
@@ -9611,7 +9117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1PrivacyExportsResponse"];
+                    "application/json": components["schemas"]["PrivacyJobResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9687,7 +9193,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1PrivacyExportsExportIdResponse"];
+                    "application/json": components["schemas"]["PrivacyJobResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9755,7 +9261,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1RuntimeMigrationBackupsRequest"];
+                "application/json": components["schemas"]["RuntimeMigrationRequestSchema"];
             };
         };
         responses: {
@@ -9765,7 +9271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1RuntimeMigrationBackupsResponse"];
+                    "application/json": components["schemas"]["RuntimeMigrationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9839,7 +9345,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1RuntimeMigrationLastRestoreResponse"];
+                    "application/json": components["schemas"]["RuntimeMigrationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9907,7 +9413,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1RuntimeMigrationRestoresRequest"];
+                "application/json": components["schemas"]["RuntimeMigrationRequestSchema"];
             };
         };
         responses: {
@@ -9917,7 +9423,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1RuntimeMigrationRestoresResponse"];
+                    "application/json": components["schemas"]["RuntimeMigrationResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -9985,7 +9491,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1RuntimeProvisionRequest"];
+                "application/json": components["schemas"]["RuntimeActionRequestSchema"];
             };
         };
         responses: {
@@ -9995,7 +9501,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1RuntimeProvisionResponse"];
+                    "application/json": components["schemas"]["RuntimeStatusResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10063,7 +9569,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1RuntimeRepairRequest"];
+                "application/json": components["schemas"]["RuntimeActionRequestSchema"];
             };
         };
         responses: {
@@ -10073,7 +9579,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1RuntimeRepairResponse"];
+                    "application/json": components["schemas"]["RuntimeStatusResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10141,7 +9647,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1RuntimeRestartRequest"];
+                "application/json": components["schemas"]["RuntimeActionRequestSchema"];
             };
         };
         responses: {
@@ -10151,7 +9657,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1RuntimeRestartResponse"];
+                    "application/json": components["schemas"]["RuntimeStatusResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10225,7 +9731,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1RuntimeSessionPolicyResponse"];
+                    "application/json": components["schemas"]["RuntimeSessionPolicySchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10293,7 +9799,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1RuntimeSessionPolicyRequest"];
+                "application/json": components["schemas"]["RuntimeSessionPolicySchema"];
             };
         };
         responses: {
@@ -10303,7 +9809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1RuntimeSessionPolicyResponse"];
+                    "application/json": components["schemas"]["RuntimeSessionPolicySchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10377,7 +9883,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1RuntimeStatusResponse"];
+                    "application/json": components["schemas"]["RuntimeStatusResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10451,7 +9957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScheduledTaskDto"];
+                    "application/json": components["schemas"]["ScheduledTaskListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10681,7 +10187,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1ScheduledTasksIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10837,7 +10343,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TaskRunDto"];
+                    "application/json": components["schemas"]["TaskRunListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -10993,7 +10499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ScheduledTasksIdRunsCountResponse"];
+                    "application/json": components["schemas"]["TaskRunCountResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11063,7 +10569,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ScheduledTasksIdStopRequest"];
+                "application/json": components["schemas"]["TaskStopRequestSchema"];
             };
         };
         responses: {
@@ -11073,7 +10579,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ScheduledTasksIdStopResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11156,7 +10662,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ScheduledTasksChannelsResponse"];
+                    "application/json": components["schemas"]["TaskChannelListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11232,7 +10738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ScheduledTasksChannelsChConversationsResponse"];
+                    "application/json": components["schemas"]["TaskConversationListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11306,7 +10812,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ScheduledTasksRunsResponse"];
+                    "application/json": components["schemas"]["TaskRunListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11382,7 +10888,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ScheduledTasksRunsRunIdSessionResponse"];
+                    "application/json": components["schemas"]["TaskSessionResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11456,7 +10962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionSummary"];
+                    "application/json": components["schemas"]["SessionListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11845,7 +11351,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdCompactContextRequest"];
+                "application/json": components["schemas"]["SessionCompactRequestSchema"];
             };
         };
         responses: {
@@ -11855,7 +11361,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdCompactContextResponse"];
+                    "application/json": components["schemas"]["SessionContextUsageResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -11940,7 +11446,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SessionsIdContextUsageResponse"];
+                    "application/json": components["schemas"]["SessionContextUsageResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12010,7 +11516,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdExportsResultImageRequest"];
+                "application/json": components["schemas"]["SessionExportRequestSchema"];
             };
         };
         responses: {
@@ -12020,7 +11526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdExportsResultImageResponse"];
+                    "application/json": components["schemas"]["SessionExportResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12090,7 +11596,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdExportsTextRequest"];
+                "application/json": components["schemas"]["SessionExportRequestSchema"];
             };
         };
         responses: {
@@ -12100,7 +11606,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdExportsTextResponse"];
+                    "application/json": components["schemas"]["SessionExportResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12170,7 +11676,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdForkRequest"];
+                "application/json": components["schemas"]["SessionForkRequestSchema"];
             };
         };
         responses: {
@@ -12180,7 +11686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdForkResponse"];
+                    "application/json": components["schemas"]["SessionForkResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12265,7 +11771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SessionsIdManagedResponse"];
+                    "application/json": components["schemas"]["SessionManagedResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12422,7 +11928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdPermissionsRequestIdRespondResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12498,7 +12004,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SessionsIdRailIndexResponse"];
+                    "application/json": components["schemas"]["SessionRailIndexResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12568,7 +12074,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdResultImageChunksRequest"];
+                "application/json": components["schemas"]["ResultImageChunkRequestSchema"];
             };
         };
         responses: {
@@ -12578,7 +12084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdResultImageChunksResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12648,7 +12154,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdResultImageFilesRequest"];
+                "application/json": components["schemas"]["ResultImageFileRequestSchema"];
             };
         };
         responses: {
@@ -12658,7 +12164,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdResultImageFilesResponse"];
+                    "application/json": components["schemas"]["SessionExportResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12746,7 +12252,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1SessionsIdRuntimeRequest"];
+                "application/json": components["schemas"]["SessionRuntimePatchRequestSchema"];
             };
         };
         responses: {
@@ -12756,7 +12262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1SessionsIdRuntimeResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12826,7 +12332,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdStopRequest"];
+                "application/json": components["schemas"]["SessionStopRequestSchema"];
             };
         };
         responses: {
@@ -12836,7 +12342,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdStopResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12921,7 +12427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SessionsIdSubagentsResponse"];
+                    "application/json": components["schemas"]["SubagentListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -12991,7 +12497,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdTitleGenerationRequest"];
+                "application/json": components["schemas"]["SessionTitleRequestSchema"];
             };
         };
         responses: {
@@ -13001,7 +12507,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdTitleGenerationResponse"];
+                    "application/json": components["schemas"]["SessionTitleResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13160,7 +12666,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsIdViewedRequest"];
+                "application/json": components["schemas"]["SessionViewedRequestSchema"];
             };
         };
         responses: {
@@ -13170,7 +12676,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsIdViewedResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13238,7 +12744,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SessionsBatchDeleteRequest"];
+                "application/json": components["schemas"]["SessionBatchDeleteRequestSchema"];
             };
         };
         responses: {
@@ -13248,7 +12754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SessionsBatchDeleteResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13324,7 +12830,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1ShareDeploymentsDeploymentIdResponse"];
+                    "application/json": components["schemas"]["ShareDeploymentResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13548,7 +13054,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ShareDeploymentsNodeRequest"];
+                "application/json": components["schemas"]["ShareDeploymentRequestSchema"];
             };
         };
         responses: {
@@ -13572,7 +13078,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1ShareDeploymentsStaticRequest"];
+                "application/json": components["schemas"]["ShareDeploymentRequestSchema"];
             };
         };
         responses: {
@@ -13582,7 +13088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1ShareDeploymentsStaticResponse"];
+                    "application/json": components["schemas"]["ShareDeploymentResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13656,7 +13162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SkillsResponse"];
+                    "application/json": components["schemas"]["SkillListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13732,7 +13238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1SkillsIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13802,7 +13308,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchApiV1SkillsIdRequest"];
+                "application/json": components["schemas"]["SkillUpdateRequestSchema"];
             };
         };
         responses: {
@@ -13812,7 +13318,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PatchApiV1SkillsIdResponse"];
+                    "application/json": components["schemas"]["SkillDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13888,7 +13394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SkillsIdConfigResponse"];
+                    "application/json": components["schemas"]["SkillConfigResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -13958,7 +13464,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutApiV1SkillsIdConfigRequest"];
+                "application/json": components["schemas"]["SkillConfigRequestSchema"];
             };
         };
         responses: {
@@ -13968,7 +13474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PutApiV1SkillsIdConfigResponse"];
+                    "application/json": components["schemas"]["SkillConfigResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14038,7 +13544,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SkillsIdConfirmRequest"];
+                "application/json": components["schemas"]["SkillConfirmRequestSchema"];
             };
         };
         responses: {
@@ -14048,7 +13554,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SkillsIdConfirmResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14118,7 +13624,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SkillsIdTestRequest"];
+                "application/json": components["schemas"]["SkillTestRequestSchema"];
             };
         };
         responses: {
@@ -14128,7 +13634,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SkillsIdTestResponse"];
+                    "application/json": components["schemas"]["SkillTestResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14198,7 +13704,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SkillsIdUpgradeRequest"];
+                "application/json": components["schemas"]["SkillUpgradeRequestSchema"];
             };
         };
         responses: {
@@ -14208,7 +13714,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SkillsIdUpgradeResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14276,7 +13782,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SkillsInstallRequest"];
+                "application/json": components["schemas"]["SkillInstallRequestSchema"];
             };
         };
         responses: {
@@ -14286,7 +13792,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SkillsInstallResponse"];
+                    "application/json": components["schemas"]["SkillDtoSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14360,7 +13866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SkillsMarketplaceResponse"];
+                    "application/json": components["schemas"]["SkillMarketplaceResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14434,7 +13940,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SkillsRoutingPromptResponse"];
+                    "application/json": components["schemas"]["SkillRoutingPromptResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14502,7 +14008,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostApiV1SkillsSyncRequest"];
+                "application/json": components["schemas"]["SkillSyncRequestSchema"];
             };
         };
         responses: {
@@ -14512,7 +14018,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostApiV1SkillsSyncResponse"];
+                    "application/json": components["schemas"]["SkillListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14684,7 +14190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1SubagentsRunIdResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14760,7 +14266,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1SubagentsRunIdMessagesResponse"];
+                    "application/json": components["schemas"]["MemoryEntryListResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -14988,7 +14494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteApiV1WorkspacesWidFilesResponse"];
+                    "application/json": components["schemas"]["ActionSuccessResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -15082,7 +14588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesDownloadResponse"];
+                    "application/json": components["schemas"]["FileDownloadResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -15176,7 +14682,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesStatResponse"];
+                    "application/json": components["schemas"]["FileStatResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -15270,7 +14776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1WorkspacesWidFilesThumbnailResponse"];
+                    "application/json": components["schemas"]["FileThumbnailResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -15751,7 +15257,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetApiV1WorkspacesRecentResponse"];
+                    "application/json": components["schemas"]["WorkspaceRecentResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -15945,7 +15451,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetAuthMeResponse"];
+                    "application/json": components["schemas"]["AuthMeResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -16019,7 +15525,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetAuthProfileSummaryResponse"];
+                    "application/json": components["schemas"]["AuthProfileSummaryResponseSchema"];
                 };
             };
             /** @description VALIDATION_FAILED */
@@ -16147,7 +15653,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PostOauthAuthorizeRequest"];
+                "application/json": components["schemas"]["LoginRequest"];
             };
         };
         responses: {
@@ -16157,7 +15663,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostOauthAuthorizeResponse"];
+                    "application/json": components["schemas"]["LoginResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */

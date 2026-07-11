@@ -79,6 +79,22 @@ const checkRoutes = () => {
     assert('routes', !route.requestName.startsWith('Generic'), `generic request schema ${route.operationId}`);
     assert('routes', !route.responseName.startsWith('Generic'), `generic response schema ${route.operationId}`);
   }
+  assert('routes', !('OperationRequest' in Schemas) && !('OperationResponse' in Schemas), 'operation placeholder schema exported');
+  const routeSource = readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/src/registry/routes.ts'), 'utf8');
+  for (const heuristic of ['routeErrors', 'const accepted =', 'const created =']) {
+    assert('routes', !routeSource.includes(heuristic), `route policy heuristic remains: ${heuristic}`);
+  }
+  const byOperation = new Map(RouteRegistry.map((route) => [route.operationId, route]));
+  assert('routes', byOperation.get('post_api_v1_html_shares')?.request.safeParse({ source: 'html-file', clientSourceKey: 'workspace:index.html' }).success, 'html share DTO rejected');
+  assert('routes', byOperation.get('post_api_v1_billing_byok')?.request.safeParse({ provider: 'openai', secret: 'secret-ref' }).success, 'BYOK DTO rejected');
+  assert('routes', byOperation.get('get_api_v1_agents')?.response.safeParse({ agents: [] }).success, 'agent list DTO rejected');
+  assert('routes', byOperation.get('get_api_v1_sessions')?.response.safeParse({ sessions: [] }).success, 'session list DTO rejected');
+  assert('routes', byOperation.get('post_auth_refresh')?.auth === 'refresh-cookie', 'refresh route auth drifted');
+  assert('routes', byOperation.get('post_auth_login')?.errors.includes('UNAUTHENTICATED'), 'login credential error missing');
+  assert('routes', byOperation.get('post_api_v1_model_proxy')?.successStatus === 200, 'model proxy status drifted');
+  assert('routes', byOperation.get('post_api_v1_model_config_check')?.successStatus === 200, 'model config check status drifted');
+  assert('routes', byOperation.get('post_api_v1_model_stream')?.successStatus === 202, 'model stream status drifted');
+  assert('routes', !byOperation.get('get_api_v1_sessions_id')?.errors.includes('SESSION_BUSY'), 'session read inherited mutation errors');
   summaries.routeCount = RouteRegistry.length;
 };
 
