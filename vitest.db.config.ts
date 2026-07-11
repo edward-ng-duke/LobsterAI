@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: [
       'tests/integration/db/rls.test.ts',
+      'tests/integration/db/tester-corners.test.ts',
       'tests/integration/db/tenant-context.test.ts',
       'tests/integration/db/tenant-extension.test.ts',
     ],
