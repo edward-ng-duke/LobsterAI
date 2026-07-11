@@ -268,7 +268,6 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   return {
     imageName,
     image: `${tag}@${imageDigest}`,
-    tag,
     digest: imageDigest,
     sourceSha,
     buildEvidence: {

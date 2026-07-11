@@ -17,6 +17,18 @@ const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
 export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
+const allowedImageEvidenceFields = new Set([
+  'image',
+  'imageName',
+  'digest',
+  'sourceSha',
+  'buildEvidence',
+  'runtimeEvidence',
+  'imageHistoryScan',
+  'sbom',
+  'vulnerabilityScan',
+  'criticalFindings',
+]);
 
 const sha256 = (content) => `sha256:${createHash('sha256').update(content).digest('hex')}`;
 
@@ -257,6 +269,9 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
     if (!requiredProductionImages.includes(actual)) errors.push(`unexpected image evidence: ${actual}`);
   }
   for (const evidence of manifest.imageEvidence ?? []) {
+    for (const field of Object.keys(evidence)) {
+      if (!allowedImageEvidenceFields.has(field)) errors.push(`${evidence.image}: unexpected evidence field ${field}`);
+    }
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
     const buildEvidence = evidence.buildEvidence ?? {};

@@ -253,6 +253,12 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     leakedHistory.imageEvidence[0].imageHistoryScan.secretLikeFindings = 1;
     expect(validateEvidence(leakedHistory, new Date(), expectedSourceSha).join('\n'))
       .toContain('history secret-scan evidence');
+    const unknownField = structuredClone(exact) as typeof exact & {
+      imageEvidence: Array<(typeof exact.imageEvidence)[number] & { tag?: string }>;
+    };
+    unknownField.imageEvidence[0].tag = 'internal-only:latest';
+    expect(validateEvidence(unknownField, new Date(), expectedSourceSha).join('\n'))
+      .toContain('unexpected evidence field tag');
     const swallowedSignal = structuredClone(exact);
     const worker = swallowedSignal.imageEvidence.find(evidence => evidence.imageName === 'worker')!;
     worker.runtimeEvidence.gracefulStop.completedWithinTimeout = false;
