@@ -79,7 +79,7 @@
     "prebuild": "node scripts/generate-keyfrom-build-info.cjs",
     "build": "tsc && vite build",
     "lint": "eslint src/ \"apps/*/src/**/*.{ts,tsx}\" \"libs/*/*/src/**/*.ts\" \"tests/scaffold*.test.ts\"",
-    "lint:saas": "eslint \"apps/*/src/**/*.{ts,tsx}\" \"libs/*/*/src/**/*.ts\" \"tests/scaffold*.test.ts\" \"tests/contracts/**/*.test.ts\" \"tests/deploy-*.test.ts\"",
+    "lint:saas": "eslint \"apps/*/src/**/*.{ts,tsx}\" \"libs/*/*/src/**/*.ts\" \"tests/scaffold*.test.ts\" \"tests/contracts/**/*.test.ts\" \"tests/db/**/*.test.ts\" \"tests/integration/db/**/*.ts\" \"tests/deploy-*.test.ts\"",
     "typecheck": "tsc -b tsconfig.workspace.json --pretty false",
     "scaffold:check": "node scripts/check-saas-scaffold.mjs",
     "test:scaffold": "vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts tests/scaffold-tester-corners.test.ts tests/scaffold-json-duplicate-keys.test.ts",
@@ -89,7 +89,13 @@
     "contracts:validate": "npm run build --workspace @lobsterai/shared-contracts && node scripts/contracts/check.mjs",
     "contracts:check": "node scripts/run-saas-stage-gate.mjs contracts:check",
     "test:contract": "npm run build --workspace @lobsterai/shared-contracts && node scripts/contracts/check.mjs --only",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:validate:active": "node scripts/db/validate.mjs",
     "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate",
+    "test:db:preflight": "node scripts/db/preflight.mjs",
+    "test:db:unit": "vitest run tests/db/**/*.test.ts",
+    "test:db:integration": "node scripts/db/run-integration.mjs",
     "supply-chain:validate": "node scripts/check-supply-chain.mjs",
     "supply-chain:check": "node scripts/run-saas-stage-gate.mjs supply-chain:check",
     "docker:build:validate": "node scripts/check-docker-build.mjs",
@@ -115,7 +121,7 @@
     "start:electron": "cross-env NODE_ENV=development ELECTRON_START_URL=http://localhost:5175 electron .",
     "electron:dev": "rimraf dist-electron && npm run compile:electron && concurrently \"vite --port 5175\" \"wait-on -v -t 120000 -d 20000 http://localhost:5175 dist-electron/.electron-ready && npm run start:electron\"",
     "electron:dev:openclaw": "npm run openclaw:runtime:host && npm run electron:dev",
-    "postinstall": "patch-package && electron-builder install-app-deps",
+    "postinstall": "patch-package && electron-builder install-app-deps && npm run prisma:generate",
     "pack": "npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --dir --config scripts/electron-builder-config.cjs",
     "dist": "npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --config scripts/electron-builder-config.cjs",
     "dist:mac": "electron-builder --mac --config scripts/electron-builder-config.cjs",
@@ -148,6 +154,9 @@
     "openclaw:runtime:linux-arm64": "npm run openclaw:ensure && npm run openclaw:patch && node scripts/run-build-openclaw-runtime.cjs linux-arm64 && node scripts/sync-openclaw-runtime-current.cjs linux-arm64 && npm run openclaw:bundle && npm run openclaw:plugins && npm run openclaw:extensions:local && npm run openclaw:precompile && npm run openclaw:channel-deps && npm run openclaw:prune",
     "regenerate:icon": "bash scripts/regenerate-mac-icon.sh",
     "fix:mac-icon": "bash scripts/fix-mac-icon-display.sh"
+  },
+  "prisma": {
+    "seed": "node --experimental-strip-types prisma/seed/index.ts"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",
