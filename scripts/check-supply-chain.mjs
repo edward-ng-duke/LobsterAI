@@ -22,6 +22,30 @@ const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
 export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
+const imageBuildInputFiles = new Set([
+  '.dockerignore',
+  'package.json',
+  'package-lock.json',
+  'tsconfig.base.json',
+  'tsconfig.workspace.json',
+  'vite.config.ts',
+]);
+const imageBuildInputDirectories = [
+  'apps/',
+  'docker/',
+  'libs/',
+  'openclaw-extensions/',
+  'resources/',
+  'scripts/',
+  'SKILLs/',
+];
+const frozenNonImageDirectories = [
+  '.github/',
+  'charts/',
+  'docs/',
+  'tests/',
+  '改造计划/',
+];
 const allowedImageEvidenceFields = new Set([
   'image', 'imageName', 'digest', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
   'imageHistoryScan', 'sbom', 'vulnerabilityScan', 'criticalFindings', 'pluginInstallations',
@@ -48,13 +72,41 @@ const gitOutput = (root, args) => {
   return result.status === 0 ? result.stdout.trim() : undefined;
 };
 
-export const resolveProductSourceSha = (root = repositoryRoot) => gitOutput(root, [
-  'log', '-1', '--format=%H', 'HEAD', '--', '.',
-  ':(exclude,glob)tests/**',
-  ':(exclude,glob)**/开发记录.md',
-  ':(exclude,glob)**/审核意见.md',
-  ':(exclude,glob)**/测试报告.md',
-]);
+const isImageBuildInput = relativePath => imageBuildInputFiles.has(relativePath)
+  || imageBuildInputDirectories.some(directory => relativePath.startsWith(directory));
+
+const isFrozenNonImagePath = relativePath => frozenNonImageDirectories
+  .some(directory => relativePath.startsWith(directory));
+
+const changedPathsAgainstFirstParent = (root, commit) => {
+  const commitLine = gitOutput(root, ['rev-list', '--parents', '--max-count=1', commit]);
+  if (!commitLine) return undefined;
+  const [, firstParent] = commitLine.split(/\s+/);
+  const args = firstParent
+    ? ['diff', '--name-status', '--find-renames', firstParent, commit]
+    : ['diff-tree', '--root', '--no-commit-id', '--name-status', '-r', '--find-renames', commit];
+  const output = gitOutput(root, args);
+  if (output === undefined) return undefined;
+  return output.split(/\r?\n/).filter(Boolean).flatMap((line) => {
+    const [status, ...paths] = line.split('\t');
+    if (!status || paths.length === 0) return [];
+    return /^[RC]/.test(status) ? paths.slice(0, 2) : paths.slice(0, 1);
+  });
+};
+
+export const resolveProductSourceSha = (root = repositoryRoot) => {
+  const commits = gitOutput(root, ['rev-list', '--first-parent', 'HEAD'])?.split(/\r?\n/).filter(Boolean);
+  if (!commits?.length) return undefined;
+  for (const commit of commits) {
+    const changedPaths = changedPathsAgainstFirstParent(root, commit);
+    if (changedPaths === undefined) return commit;
+    if (changedPaths.some(relativePath => isImageBuildInput(relativePath)
+      || !isFrozenNonImagePath(relativePath))) {
+      return commit;
+    }
+  }
+  return commits.at(-1);
+};
 
 const readJson = (root, relativePath) =>
   JSON.parse(readFileSync(path.join(root, relativePath), 'utf8'));
