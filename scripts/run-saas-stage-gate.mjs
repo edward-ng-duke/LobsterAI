@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +12,10 @@ const runnerPath = fileURLToPath(import.meta.url);
 const runnerSha256 = createHash('sha256').update(readFileSync(runnerPath)).digest('hex');
 const gateName = process.argv[2];
 const gate = manifest.gates?.[gateName];
+const reportDirectory = path.join(repositoryRoot, '.reports/saas-gates');
+const reportPath = gateName
+  ? path.join(reportDirectory, `${gateName.replaceAll(':', '-')}.json`)
+  : undefined;
 
 if (!gateName || !gate) {
   console.error(JSON.stringify({ status: 'ERROR', gate: gateName ?? null, reason: 'unknown gate' }));
@@ -41,6 +45,21 @@ if (fixtureErrors.length > 0) {
   process.exit(1);
 }
 
+if (reportPath) rmSync(reportPath, { force: true });
+
+const gitResult = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' });
+const gitSourceSha = gitResult.status === 0 ? gitResult.stdout.trim() : undefined;
+const providedSourceSha = process.env.SAAS_SOURCE_SHA || process.env.GITHUB_SHA;
+if (providedSourceSha && gitSourceSha && providedSourceSha !== gitSourceSha) {
+  console.error(JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'source SHA does not match checkout HEAD' }));
+  process.exit(1);
+}
+const sourceSha = providedSourceSha ?? gitSourceSha;
+if (!sourceSha || !/^[a-f0-9]{40}$/.test(sourceSha)) {
+  console.error(JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'unable to bind report to source SHA' }));
+  process.exit(1);
+}
+
 const exitCode = manifest.statuses?.[gate.status];
 if (!Number.isInteger(exitCode) || exitCode < 0) {
   console.error(JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'invalid stage status' }));
@@ -60,7 +79,7 @@ if (gate.status === 'PASS') {
   if (commandResult.status !== 0) {
     process.stdout.write(commandResult.stdout);
     process.stderr.write(commandResult.stderr);
-    process.exit(commandResult.status ?? 1);
+    process.exit(commandResult.status === 78 ? 1 : (commandResult.status ?? 1));
   }
 }
 
@@ -74,17 +93,16 @@ const report = {
   fixturesChecked: gate.fixtures,
   invocationId: randomUUID(),
   generatedAt: new Date().toISOString(),
+  sourceSha,
   runnerSha256,
   command: gate.command ?? null,
   commandOutputSha256: commandResult
-    ? createHash('sha256').update(commandResult.stdout).digest('hex')
+    ? createHash('sha256').update(`${commandResult.stdout}\n${commandResult.stderr}`).digest('hex')
     : null,
 };
-const reportDirectory = path.join(repositoryRoot, '.reports/saas-gates');
 mkdirSync(reportDirectory, { recursive: true });
-const reportPath = path.join(reportDirectory, `${gateName.replaceAll(':', '-')}.json`);
 const temporaryReportPath = `${reportPath}.${report.invocationId}.tmp`;
-writeFileSync(temporaryReportPath, `${JSON.stringify(report, null, 2)}\n`);
+writeFileSync(temporaryReportPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
 renameSync(temporaryReportPath, reportPath);
 console.log(JSON.stringify(report));
 process.exit(exitCode);

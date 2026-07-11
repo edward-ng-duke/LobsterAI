@@ -22,11 +22,12 @@ interface StageGate {
   activationTask: string;
   reason: string;
   fixtures: string[];
+  command?: string[];
 }
 
 interface StageManifest {
   schemaVersion: number;
-  currentStage: 'P01';
+  currentStage: 'P03';
   statuses: Record<string, number>;
   gates: Record<string, StageGate>;
 }
@@ -35,12 +36,15 @@ const createRepositoryCopy = (): string => {
   const target = mkdtempSync(path.join(tmpdir(), 'lobsterai-p00-stage-gate-'));
   temporaryRoots.push(target);
   for (const relativePath of [
+    '.dockerignore',
     '.github/workflows/saas-scaffold.yml',
     'apps',
     'charts',
     'docker',
     'docs/poc',
     'docs/supply-chain',
+    'SKILLs',
+    'openclaw-extensions',
     'libs',
     'package-lock.json',
     'package.json',
@@ -48,6 +52,9 @@ const createRepositoryCopy = (): string => {
     'scripts/check-saas-build-artifacts.mjs',
     'scripts/clean-saas-build.mjs',
     'scripts/check-saas-scaffold.mjs',
+    'scripts/check-docker-build.mjs',
+    'scripts/check-helm.mjs',
+    'scripts/check-supply-chain.mjs',
     'scripts/contracts',
     'scripts/expect-saas-stage-gate.mjs',
     'scripts/json-without-duplicate-keys.mjs',
@@ -56,6 +63,8 @@ const createRepositoryCopy = (): string => {
     'scripts/saas-workspace-registry.json',
     'scripts/saas-workspace-policy.mjs',
     'src/renderer/types/electron.d.ts',
+    'src/main/computerUse/computerUseRuntime.ts',
+    'src/renderer/data/mcpRegistry.json',
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
@@ -66,9 +75,20 @@ const createRepositoryCopy = (): string => {
     mkdirSync(path.dirname(destination), { recursive: true });
     cpSync(source, destination, {
       recursive: true,
-      filter: (candidate) => !/(?:^|\/)(?:dist|dist-types)(?:\/|$)/.test(candidate),
+      filter: (candidate) => !/(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(candidate),
     });
   }
+  const manifestPath = path.join(target, 'scripts/saas-stage-gates.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as StageManifest;
+  manifest.gates['contracts:check'].command = [
+    process.execPath,
+    '-e',
+    "console.log(JSON.stringify({ status: 'PASSED', check: 'contracts-test-double' }))",
+  ];
+  manifest.gates['supply-chain:check'].command = ['node', 'scripts/check-supply-chain.mjs'];
+  manifest.gates['docker:build:check'].command = ['node', 'scripts/check-docker-build.mjs', '--static'];
+  manifest.gates['helm:lint'].command = ['node', 'scripts/check-helm.mjs', '--static'];
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(target, 'node_modules'), 'dir');
   return target;
 };
@@ -77,7 +97,11 @@ const readManifest = (root: string): StageManifest =>
   JSON.parse(readFileSync(path.join(root, 'scripts/saas-stage-gates.json'), 'utf8')) as StageManifest;
 
 const runNodeScript = (root: string, script: string, gate: string) =>
-  spawnSync(process.execPath, [script, gate], { cwd: root, encoding: 'utf8' });
+  spawnSync(process.execPath, [script, gate], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, SAAS_SOURCE_SHA: '0123456789abcdef0123456789abcdef01234567' },
+  });
 
 const parseReport = (output: string): Record<string, unknown> =>
   JSON.parse(
@@ -91,7 +115,7 @@ afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
 
-describe('P01 active and deferred stage gate integrity', () => {
+describe('P03 active and deferred stage gate integrity', () => {
   test('each gate returns its declared status and atomically writes a complete fresh report', () => {
     const root = createRepositoryCopy();
     const manifest = readManifest(root);
@@ -117,6 +141,7 @@ describe('P01 active and deferred stage gate integrity', () => {
       expect(stdoutReport.invocationId).toEqual(expect.any(String));
       expect(stdoutReport.invocationId).not.toBe('stale');
       expect(stdoutReport.generatedAt).toEqual(expect.any(String));
+      expect(stdoutReport.sourceSha).toBe('0123456789abcdef0123456789abcdef01234567');
     }
   });
 

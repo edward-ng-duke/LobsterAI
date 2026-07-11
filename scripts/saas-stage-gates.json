@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "currentStage": "P01",
-  "runnerSha256": "6e752d9b58b9b698f82db949dc937bfdfffbcf0bfdde50fc70706fde6511063b",
+  "currentStage": "P03",
+  "runnerSha256": "652f21fdb05bc52287fd189e1d7799cc3fcccad7443e11c944b5b223dd540d05",
   "statuses": {
     "PASS": 0,
     "NOT_APPLICABLE": 78,
@@ -39,34 +39,61 @@
       ]
     },
     "supply-chain:check": {
-      "status": "NOT_APPLICABLE",
+      "status": "PASS",
       "activationTask": "P03-PR3部署供应链",
-      "reason": "P00 freezes schema/manifest locations; PR-3 activates complete inventory and SBOM checks.",
+      "reason": "P03 executes deterministic asset discovery, inventory reconciliation, finding, waiver, digest, SBOM, and signature policy checks.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "supply-chain:validate"
+      ],
       "fixtures": [
         "docs/supply-chain/skills-and-plugins.manifest.json",
-        "libs/shared/contracts/assets/supply-chain-inventory.schema.json"
+        "libs/shared/contracts/assets/supply-chain-inventory.schema.json",
+        "scripts/check-supply-chain.mjs",
+        "tests/fixtures/supply_chain/critical-finding.json"
       ]
     },
     "docker:build:check": {
-      "status": "NOT_APPLICABLE",
+      "status": "PASS",
       "activationTask": "P03-PR3部署供应链",
-      "reason": "P00 freezes image boundaries; PR-3 adds Dockerfiles and image validation.",
+      "reason": "P03 builds all five production images, verifies non-root offline smoke behavior, scans image history, and generates digest-bound SPDX SBOM evidence.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "docker:build:validate"
+      ],
       "fixtures": [
-        "docker/web/README.md",
-        "docker/api/README.md",
-        "docker/worker/README.md",
-        "docker/runtime-orchestrator/README.md",
-        "docker/openclaw-runtime/README.md"
+        ".dockerignore",
+        "docker/web/Dockerfile",
+        "docker/api/Dockerfile",
+        "docker/worker/Dockerfile",
+        "docker/runtime-orchestrator/Dockerfile",
+        "docker/openclaw-runtime/Dockerfile",
+        "docker/openclaw-runtime/Dockerfile.debug",
+        "scripts/check-docker-build.mjs"
       ]
     },
     "helm:lint": {
-      "status": "NOT_APPLICABLE",
+      "status": "PASS",
       "activationTask": "P03-PR3部署供应链",
-      "reason": "P00 freezes the chart boundary; PR-3 activates full chart/schema lint.",
+      "reason": "P03 executes strict values schema validation, Helm lint/template, rendered security scans, and negative mutation checks.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "helm:validate"
+      ],
       "fixtures": [
         "charts/lobsterai/Chart.yaml",
         "charts/lobsterai/values.yaml",
-        "charts/lobsterai/templates/sandbox-pod.yaml"
+        "charts/lobsterai/values.schema.json",
+        "charts/lobsterai/templates/sandbox-pod.yaml",
+        "charts/lobsterai/templates/networkpolicies.yaml",
+        "charts/lobsterai/templates/resourcequota.yaml",
+        "scripts/check-helm.mjs"
       ]
     },
     "poc:v1:check": {

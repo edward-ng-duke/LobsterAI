@@ -21,7 +21,7 @@ const expectedWorkspaces = [
   'libs/shared/contracts',
   'libs/shared/types',
 ];
-const deferredGates = [
+const allStageGates = [
   'test:e2e',
   'contracts:check',
   'prisma:validate',
@@ -30,18 +30,25 @@ const deferredGates = [
   'helm:lint',
   'poc:v1:check',
 ];
+const activeGates = new Set(['contracts:check', 'supply-chain:check', 'docker:build:check', 'helm:lint']);
+const deferredGates = allStageGates.filter(gate => !activeGates.has(gate));
 const requiredRootScripts = {
   'build:saas':
     'node scripts/clean-saas-build.mjs && npm run build --workspaces && node scripts/check-saas-build-artifacts.mjs',
   'contracts:check': 'node scripts/run-saas-stage-gate.mjs contracts:check',
   'docker:build:check': 'node scripts/run-saas-stage-gate.mjs docker:build:check',
+  'docker:build:validate': 'node scripts/check-docker-build.mjs',
+  'docker:static': 'node scripts/check-docker-build.mjs --static',
   'helm:lint': 'node scripts/run-saas-stage-gate.mjs helm:lint',
+  'helm:static': 'node scripts/check-helm.mjs --static',
+  'helm:validate': 'node scripts/check-helm.mjs',
   'lint:saas':
-    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts"',
+    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts" "tests/deploy-*.test.ts"',
   'poc:v1:check': 'node scripts/run-saas-stage-gate.mjs poc:v1:check',
   'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate',
   'scaffold:check': 'node scripts/check-saas-scaffold.mjs',
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
+  'supply-chain:validate': 'node scripts/check-supply-chain.mjs',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':
     'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts tests/scaffold-tester-corners.test.ts tests/scaffold-json-duplicate-keys.test.ts',
@@ -309,11 +316,11 @@ const validateCommandsAndCi = (
     'SCAF-2',
   );
   if (
-    stageManifest?.currentStage !== 'P01' ||
+    stageManifest?.currentStage !== 'P03' ||
     stageManifest?.statuses?.NOT_APPLICABLE !== 78 ||
     stageManifest?.statuses?.PASS !== 0
   ) {
-    errors.push(taggedError('SCAF-2', 'stage gate manifest must activate P01 PASS while preserving deferred exit 78'));
+    errors.push(taggedError('SCAF-2', 'stage gate manifest must activate P01/P03 PASS while preserving deferred exit 78'));
   }
   const runnerPath = path.join(repositoryRoot, 'scripts/run-saas-stage-gate.mjs');
   if (existsSync(runnerPath)) {
@@ -322,9 +329,9 @@ const validateCommandsAndCi = (
       errors.push(taggedError('SCAF-2', 'stage runner integrity does not match its frozen SHA-256'));
     }
   }
-  for (const gateName of deferredGates) {
+  for (const gateName of allStageGates) {
     const gate = stageManifest?.gates?.[gateName];
-    const expectedStatus = gateName === 'contracts:check' ? 'PASS' : 'NOT_APPLICABLE';
+    const expectedStatus = activeGates.has(gateName) ? 'PASS' : 'NOT_APPLICABLE';
     if (
       gate?.status !== expectedStatus ||
       typeof gate?.activationTask !== 'string' ||
@@ -334,7 +341,7 @@ const validateCommandsAndCi = (
       !Array.isArray(gate?.fixtures) ||
       gate.fixtures.length === 0
     ) {
-      errors.push(taggedError('SCAF-2', `${gateName} lacks an honest P01 stage declaration`));
+      errors.push(taggedError('SCAF-2', `${gateName} lacks an honest P03 stage declaration`));
     }
   }
   const workflowPath = '.github/workflows/saas-scaffold.yml';
@@ -348,6 +355,9 @@ const validateCommandsAndCi = (
     'npm run scaffold:check',
     'npm run contracts:generate',
     'npm run contracts:check',
+    'npm run supply-chain:check',
+    'npm run docker:build:check',
+    'npm run helm:lint',
     'npm run lint:saas',
     'npm run typecheck',
     'npm run test:scaffold',

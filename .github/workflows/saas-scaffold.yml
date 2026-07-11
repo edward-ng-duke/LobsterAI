@@ -13,6 +13,9 @@ on:
       - 'scripts/check-saas-build-artifacts.mjs'
       - 'scripts/clean-saas-build.mjs'
       - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/check-docker-build.mjs'
+      - 'scripts/check-helm.mjs'
+      - 'scripts/check-supply-chain.mjs'
       - 'scripts/expect-saas-stage-gate.mjs'
       - 'scripts/json-without-duplicate-keys.mjs'
       - 'scripts/run-saas-stage-gate.mjs'
@@ -21,6 +24,7 @@ on:
       - 'scripts/saas-workspace-policy.mjs'
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
+      - 'tests/deploy-*.test.ts'
       - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
@@ -37,6 +41,9 @@ on:
       - 'scripts/check-saas-build-artifacts.mjs'
       - 'scripts/clean-saas-build.mjs'
       - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/check-docker-build.mjs'
+      - 'scripts/check-helm.mjs'
+      - 'scripts/check-supply-chain.mjs'
       - 'scripts/expect-saas-stage-gate.mjs'
       - 'scripts/json-without-duplicate-keys.mjs'
       - 'scripts/run-saas-stage-gate.mjs'
@@ -45,6 +52,7 @@ on:
       - 'scripts/saas-workspace-policy.mjs'
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
+      - 'tests/deploy-*.test.ts'
       - 'prisma/**'
       - 'package.json'
       - 'package-lock.json'
@@ -63,18 +71,25 @@ jobs:
         with:
           node-version: '24.15.0'
           cache: npm
+      - name: Install pinned Helm
+        uses: Azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.21.0
+      - name: Install pinned Syft
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          syft-version: v1.44.0
       - run: npm ci
       - run: npm run scaffold:check
       - run: npm run contracts:generate
       - run: npm run contracts:check
+      - run: npm run supply-chain:check
+      - run: npm run docker:build:check
+      - run: npm run helm:lint
       - name: Verify active and deferred stage gate entry points are explicit
         run: |
           node scripts/expect-saas-stage-gate.mjs test:e2e
-          node scripts/expect-saas-stage-gate.mjs contracts:check
           node scripts/expect-saas-stage-gate.mjs prisma:validate
-          node scripts/expect-saas-stage-gate.mjs supply-chain:check
-          node scripts/expect-saas-stage-gate.mjs docker:build:check
-          node scripts/expect-saas-stage-gate.mjs helm:lint
           node scripts/expect-saas-stage-gate.mjs poc:v1:check
       - run: npm run lint:saas
       - run: npm run typecheck
