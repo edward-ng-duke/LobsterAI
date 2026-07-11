@@ -44,6 +44,7 @@ const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
 const evidenceValidator = read('scripts/db/validate-evidence.mjs');
 const evidenceBootstrap = read('scripts/db/evidence-bootstrap.mjs');
+const evidenceTrustLauncher = read('scripts/db/evidence-trust-launcher.mjs');
 const evidenceProvenance = read('scripts/db/evidence-provenance.mjs');
 const evidenceSchema = read('scripts/db/evidence-bundle.schema.json');
 const evidenceSnapshot = read('scripts/db/snapshot-evidence.mjs');
@@ -76,11 +77,14 @@ for (const [script, fragment] of Object.entries({
     errors.push(`root script ${script} must execute ${fragment}`);
   }
 }
-if (!packageJson.scripts?.['prisma:validate:active']?.includes('validate-evidence.mjs')) {
+if (!packageJson.scripts?.['prisma:validate:active']?.includes('evidence-trust-launcher.mjs')) {
   errors.push('active Prisma gate must validate committed native evidence');
 }
 for (const required of ['additionalProperties', 'codeEvidenceSha', 'stageEvidenceSha']) {
   if (!evidenceSchema.includes(required)) errors.push(`evidence JSON schema lacks ${required}`);
+}
+if (!evidenceSchema.includes('manifestSha256')) {
+  errors.push('evidence JSON schema must bind the outer gate manifest digest');
 }
 for (const required of ['unknown property', 'source SHA', 'runner SHA mismatch']) {
   if (!evidenceValidator.includes(required)) errors.push(`evidence validator lacks ${required}`);
@@ -93,10 +97,27 @@ for (const required of [
   if (!evidenceBootstrap.includes(required)) errors.push(`evidence bootstrap lacks ${required}`);
 }
 for (const required of [
-  'node --import ./scripts/db/evidence-bootstrap.mjs scripts/db/validate-evidence.mjs',
+  'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256',
 ]) {
   if (!packageJson.scripts?.['prisma:validate:active']?.includes(required)) {
     errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
+  }
+}
+for (const required of [
+  'external bootstrap digest is required',
+  'bootstrap integrity mismatch',
+  '--expected-bootstrap-sha256',
+]) {
+  if (!evidenceTrustLauncher.includes(required)) {
+    errors.push(`evidence trust launcher lacks ${required}`);
+  }
+}
+for (const relativePath of [
+  'scripts/db/evidence-bootstrap.mjs',
+  'scripts/db/evidence-trust-launcher.mjs',
+]) {
+  if (!stageManifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]) {
+    errors.push(`Prisma stage must externally pin ${relativePath}`);
   }
 }
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {

@@ -5,9 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifest = JSON.parse(
-  readFileSync(path.join(repositoryRoot, 'scripts/saas-stage-gates.json'), 'utf8'),
+const manifestContent = readFileSync(
+  path.join(repositoryRoot, 'scripts/saas-stage-gates.json'),
 );
+const manifest = JSON.parse(manifestContent.toString('utf8'));
+const manifestSha256 = createHash('sha256').update(manifestContent).digest('hex');
 const runnerPath = fileURLToPath(import.meta.url);
 const runnerSha256 = createHash('sha256').update(readFileSync(runnerPath)).digest('hex');
 const gateName = process.argv[2];
@@ -38,9 +40,25 @@ const fixtureErrors = gate.fixtures.flatMap((relativePath) => {
   return [];
 });
 
-if (fixtureErrors.length > 0) {
+const trustedFileErrors = Object.entries(gate.trustedFiles ?? {}).flatMap(
+  ([relativePath, expectedSha256]) => {
+    const absolutePath = path.join(repositoryRoot, relativePath);
+    if (!existsSync(absolutePath)) return [`missing trusted file: ${relativePath}`];
+    const actualSha256 = createHash('sha256').update(readFileSync(absolutePath)).digest('hex');
+    return actualSha256 === expectedSha256
+      ? []
+      : [`trusted file integrity mismatch: ${relativePath}`];
+  },
+);
+
+if (fixtureErrors.length > 0 || trustedFileErrors.length > 0) {
   console.error(
-    JSON.stringify({ status: 'ERROR', gate: gateName, stage: manifest.currentStage, errors: fixtureErrors }),
+    JSON.stringify({
+      status: 'ERROR',
+      gate: gateName,
+      stage: manifest.currentStage,
+      errors: [...fixtureErrors, ...trustedFileErrors],
+    }),
   );
   process.exit(1);
 }
@@ -95,6 +113,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   sourceSha,
   runnerSha256,
+  manifestSha256,
   command: gate.command ?? null,
   commandOutputSha256: commandResult
     ? createHash('sha256').update(`${commandResult.stdout}\n${commandResult.stderr}`).digest('hex')

@@ -123,6 +123,12 @@ if (existsSync(stageFile)) {
   if (entry?.sourceSha !== stage.sourceSha || entry?.sha256 !== sha256File(stageFile)) {
     errors.push('prisma-stage-gate.json: manifest provenance mismatch');
   }
+  if (
+    stage.runnerSha256 !== sha256File(path.join(root, 'scripts/run-saas-stage-gate.mjs')) ||
+    stage.manifestSha256 !== sha256File(path.join(root, 'scripts/saas-stage-gates.json'))
+  ) {
+    errors.push('prisma-stage-gate.json: outer runner or gate manifest digest mismatch');
+  }
 } else if (manifest.stageEvidenceSha || manifest.reports?.['prisma-stage-gate.json']) {
   errors.push('stage evidence manifest entry exists without prisma-stage-gate.json');
 }

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +28,14 @@ if (target.endsWith(path.join('scripts', 'db', 'validate-evidence.mjs'))) {
     'scripts/db/evidence-provenance.mjs',
     'scripts/db/evidence-bundle.schema.json',
   ];
+  for (const relativePath of [
+    'package.json',
+    'scripts/db/evidence-trust-launcher.mjs',
+    'scripts/run-saas-stage-gate.mjs',
+    'scripts/saas-stage-gates.json',
+  ]) {
+    if (existsSync(path.join(root, relativePath))) protectedFiles.push(relativePath);
+  }
   const bootstrapRelativePath = path.relative(root, fileURLToPath(import.meta.url));
   if (!bootstrapRelativePath.startsWith('..')) protectedFiles.push(bootstrapRelativePath);
   for (const relativePath of protectedFiles) {

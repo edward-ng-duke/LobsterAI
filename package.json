@@ -91,7 +91,7 @@
     "test:contract": "npm run build --workspace @lobsterai/shared-contracts && node scripts/contracts/check.mjs --only",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
-    "prisma:validate:active": "node scripts/db/validate.mjs && node --import ./scripts/db/evidence-bootstrap.mjs scripts/db/validate-evidence.mjs",
+    "prisma:validate:active": "node scripts/db/validate.mjs && node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23",
     "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate",
     "test:db:preflight": "node scripts/db/preflight.mjs",
     "test:db:core": "vitest run tests/db/p02-red.test.ts tests/db/seed.test.ts tests/db/tenant-scope.test.ts",

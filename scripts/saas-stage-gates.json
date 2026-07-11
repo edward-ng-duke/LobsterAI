@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currentStage": "P03",
-  "runnerSha256": "652f21fdb05bc52287fd189e1d7799cc3fcccad7443e11c944b5b223dd540d05",
+  "runnerSha256": "540a94fdc33b98ff1df54b919df6121aff33a632262733586e930fb4bc03adbb",
   "statuses": {
     "PASS": 0,
     "NOT_APPLICABLE": 78,
@@ -32,6 +32,10 @@
       "activationTask": "P02-PR2数据库脚手架",
       "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
+      "trustedFiles": {
+        "scripts/db/evidence-bootstrap.mjs": "3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23",
+        "scripts/db/evidence-trust-launcher.mjs": "3c1346227841f91f872991f7e69d45c679c6d645afb48bf922c1a5bde1f63509"
+      },
       "fixtures": [
         "prisma/schema.prisma",
         "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
@@ -42,6 +46,7 @@
         "scripts/db/validate.mjs",
         "scripts/db/validate-evidence.mjs",
         "scripts/db/evidence-bootstrap.mjs",
+        "scripts/db/evidence-trust-launcher.mjs",
         "scripts/db/evidence-provenance.mjs",
         "scripts/db/evidence-bundle.schema.json",
         "scripts/db/snapshot-evidence.mjs",
