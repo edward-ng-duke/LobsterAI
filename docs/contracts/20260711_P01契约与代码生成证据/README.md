@@ -131,3 +131,9 @@ exit 1; 5 tests failed
 - `4d1e4fd2` / `9a95a446`：formal path 拒绝明文/percent-encoded dot segment、编码 slash/backslash、重复斜杠、反斜杠、query/hash/control 字符；保留 `{param}`、canonical cancel 和既有 colon-action 精确诊断。
 - `e9149751`：删除早期 Generic/fake bootstrap spec；`policy.json` 显式 allowlist `cde584c0` 为 pre-contract commit，并绑定受版本控制的空 canonical OpenAPI/AsyncAPI bootstrap。非 allowlist ref 不再静默 fallback：缺契约或坏 ref 为 BLOCKED/2，真实契约 ref 仍执行 breaking 比较。
 - 最终：Tester 10/10 PASS；Tester + 旧 Reviewer targeted 90/90；contracts 15/15；Vitest 195 files / 2101 passed / 1 skipped；typecheck、SaaS 9/18、Renderer、Electron 均 exit 0。Gate invocationId `60cc2acf-242a-468a-8ded-1cb72c55b329`；契约 counts/hash 未因 checker/bootstrap 修复变化。
+
+## Round 8 Reviewer 退回修复（2026-07-11 18:01 +0800）
+
+- Red `3b2866e3`：2 tests 中 1 failed / 1 passed；Green 后 2/2 PASS。隔离 mutation 覆盖 raw space/tab、`; @ ! +`、未闭合/多余/连写 brace、brace traversal、非 identifier param、非 ASCII/大写静态段和非 canonical hyphen。
+- grammar 仅放行首段 `.well-known`、ASCII lowercase/digit kebab 静态段、完整 `{[A-Za-z][A-Za-z0-9]*}` 参数段；编码、反斜杠、query/hash/control、dot/empty segment 仍 fail closed。
+- 最终：92/92 targeted、contracts 15/15、typecheck、changed-file ESLint、196-file Vitest（2103 passed / 1 skipped）、SaaS 9/18、Renderer、Electron 均 exit 0。Gate invocationId `7a087aa3-4a4e-47b3-84c4-98cf6ea2f3ae`。
