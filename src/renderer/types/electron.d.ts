@@ -464,7 +464,7 @@ interface HtmlShareResult {
   warnings?: string[];
 }
 
-interface IElectronAPI {
+export interface IElectronAPI {
   platform: string;
   arch: string;
   store: {

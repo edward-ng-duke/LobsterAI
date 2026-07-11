@@ -18,7 +18,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { generateDtsBundle } from 'dts-bundle-generator';
 import openapiTypeScript, { astToString } from 'openapi-typescript';
 import { stringify } from 'yaml';
 import { z } from 'zod';
@@ -250,50 +250,32 @@ const namedSchemaTypes = Object.keys(SchemaCatalog)
 const routeUnion = RouteRegistry.map(
   (route) => `  | { operationId: '${route.operationId}'; method: '${route.method}'; path: '${route.path}' }`,
 ).join('\n');
+const streamSchemaDocument = {
+  openapi: '3.1.0',
+  info: { title: 'LobsterAI Stream Payloads', version: ContractVersion },
+  paths: {},
+  components: {
+    schemas: Object.fromEntries(
+      ChannelRegistry.map((channel) => [channel.messageType, schemaJson(channel.schema, channel.messageType)]),
+    ),
+  },
+};
+const generatedStreamTypes = astToString(
+  await openapiTypeScript(streamSchemaDocument, { alphabetize: true }),
+);
 const streamUnion = ChannelRegistry.map(
-  (channel) => `  | { type: '${channel.messageType}'; data: unknown }`,
+  (channel) => `  | { type: '${channel.messageType}'; data: components['schemas']['${channel.messageType}'] }`,
 ).join('\n');
 
 const createElectronBridgeSource = () => {
-  const inputPath = path.join(repositoryRoot, 'src/renderer/types/electron.d.ts');
-  const sourceText = readFileSync(inputPath, 'utf8');
-  const sourceFile = ts.createSourceFile(inputPath, sourceText, ts.ScriptTarget.Latest, true);
-  const importedNames = [];
-  const statements = [];
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement)) {
-      const clause = statement.importClause;
-      if (clause?.name) importedNames.push(clause.name.text);
-      for (const element of clause?.namedBindings?.elements ?? []) importedNames.push(element.name.text);
-      continue;
-    }
-    if (ts.isModuleDeclaration(statement) || ts.isExportDeclaration(statement)) continue;
-    let text = statement.getText(sourceFile);
-    if (ts.isInterfaceDeclaration(statement) && statement.name.text === 'IElectronAPI') {
-      const seenProperties = new Set();
-      const members = statement.members.filter((member) => {
-        if (!('name' in member) || !member.name) return true;
-        const name = member.name.getText(sourceFile);
-        if (seenProperties.has(name)) return false;
-        seenProperties.add(name);
-        return true;
-      });
-      const electronBridge = ts.factory.updateInterfaceDeclaration(
-        statement,
-        [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-        ts.factory.createIdentifier('ElectronBridge'),
-        statement.typeParameters,
-        statement.heritageClauses,
-        members,
-      );
-      text = printer.printNode(ts.EmitHint.Unspecified, electronBridge, sourceFile);
-    }
-    text = text.replace(/import\([^)]*\)\.[A-Za-z0-9_]+/g, 'unknown');
-    statements.push(text);
-  }
-  const aliases = [...new Set(importedNames)].sort().map((name) => `type ${name} = unknown;`).join('\n');
-  return `${tsHeader}\n${aliases}\n\n${statements.join('\n\n')}\n`;
+  const [bundle] = generateDtsBundle(
+    [{
+      filePath: path.join(repositoryRoot, 'libs/client/bridge/codegen/electron-bridge-entry.ts'),
+      output: { exportReferencedTypes: false, noBanner: true, sortNodes: true },
+    }],
+    { preferredConfigPath: path.join(repositoryRoot, 'tsconfig.json') },
+  );
+  return `${tsHeader}\n/* eslint-disable @typescript-eslint/no-unused-vars -- bundled type declarations retain const companions */\n${bundle}`;
 };
 
 const bridgeMapSource = `${tsHeader}\nexport const ElectronBridgeMap = ${JSON.stringify(
@@ -302,7 +284,7 @@ const bridgeMapSource = `${tsHeader}\nexport const ElectronBridgeMap = ${JSON.st
   2,
 )} as const;\n`;
 const apiClientSource = `${tsHeader}\n${generatedOpenapiTypes}\nexport type ApiOperation =\n${routeUnion};\n`;
-const streamEventsSource = `${tsHeader}\nexport type StreamEvent =\n${streamUnion};\n`;
+const streamEventsSource = `${tsHeader}\n${generatedStreamTypes}\nexport type StreamEvent =\n${streamUnion};\n`;
 
 const outputs = new Map([
   ['libs/shared/contracts/openapi.yaml', `${yamlHeader}\n${stringify(openapi, { sortMapEntries: true, lineWidth: 0 })}`],
