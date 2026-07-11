@@ -259,6 +259,48 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
   for (const evidence of manifest.imageEvidence ?? []) {
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
+    const buildEvidence = evidence.buildEvidence ?? {};
+    if (buildEvidence.noCache !== true || buildEvidence.pull !== false) {
+      errors.push(`${evidence.image}: build must record --no-cache and --pull=false`);
+    }
+    if (buildEvidence.dockerfile !== `docker/${evidence.imageName}/Dockerfile`) {
+      errors.push(`${evidence.image}: Dockerfile evidence mismatch`);
+    }
+    if (!['linux/amd64', 'linux/arm64'].includes(buildEvidence.platform)) {
+      errors.push(`${evidence.image}: invalid build platform evidence`);
+    }
+    const runtimeEvidence = evidence.runtimeEvidence ?? {};
+    if (runtimeEvidence.status !== 'PASSED'
+      || !/^[1-9][0-9]*:[1-9][0-9]*$/.test(runtimeEvidence.effectiveUser ?? '')
+      || runtimeEvidence.platform !== buildEvidence.platform
+      || runtimeEvidence.networkMode !== 'none'
+      || runtimeEvidence.readOnlyRootFilesystem !== true
+      || !(runtimeEvidence.capDrop ?? []).includes('ALL')
+      || runtimeEvidence.noNewPrivileges !== true
+      || runtimeEvidence.health !== 'healthy') {
+      errors.push(`${evidence.image}: incomplete hardened runtime smoke evidence`);
+    }
+    if (!(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/tmp:'))) {
+      errors.push(`${evidence.image}: runtime smoke must record a restricted /tmp tmpfs`);
+    }
+    if (evidence.imageName === 'openclaw-runtime'
+      && (runtimeEvidence.gatewayReady !== true
+        || !(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/state:'))
+        || !(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/workspace:')))) {
+      errors.push(`${evidence.image}: OpenClaw gateway/state/workspace runtime evidence is incomplete`);
+    }
+    if (runtimeEvidence.gracefulStop?.exitCode !== 0
+      || runtimeEvidence.gracefulStop?.oomKilled !== false
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.timeoutSeconds)
+      || !digestPattern.test(runtimeEvidence.logsSha256 ?? '')) {
+      errors.push(`${evidence.image}: graceful stop/log evidence is incomplete`);
+    }
+    const historyScan = evidence.imageHistoryScan ?? {};
+    if (historyScan.status !== 'PASSED'
+      || historyScan.secretLikeFindings !== 0
+      || !digestPattern.test(historyScan.sha256 ?? '')) {
+      errors.push(`${evidence.image}: image history secret-scan evidence is incomplete`);
+    }
     if (evidence.sbom?.imageDigest !== evidence.digest) errors.push(`${evidence.image}: SBOM digest mismatch`);
     if (evidence.sbom?.sourceSha !== evidence.sourceSha) errors.push(`${evidence.image}: SBOM source SHA mismatch`);
     if (expectedSourceSha && evidence.sourceSha !== expectedSourceSha) errors.push(`${evidence.image}: source SHA mismatch`);

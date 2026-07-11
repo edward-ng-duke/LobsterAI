@@ -84,9 +84,14 @@ describe('P03 production image policy', () => {
 
     const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
     expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
-    expect(checker).toContain('--tmpfs=/state');
-    expect(checker).toContain('--tmpfs=/workspace');
+    expect(checker).toContain('/state:rw,noexec,nosuid');
+    expect(checker).toContain('/workspace:rw,noexec,nosuid');
     expect(checker).toContain('waitForHealthy(containerId');
+    expect(checker).toContain("readOnlyRootFilesystem: true");
+    expect(checker).toContain("networkMode: 'none'");
+    expect(checker).toContain("capDrop: ['ALL']");
+    expect(checker).toContain('imageHistoryScan');
+    expect(checker).toContain('state.ExitCode !== 0');
 
     const negative = spawnSync(process.execPath, [
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),

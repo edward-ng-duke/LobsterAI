@@ -92,6 +92,9 @@
         "imageName",
         "digest",
         "sourceSha",
+        "buildEvidence",
+        "runtimeEvidence",
+        "imageHistoryScan",
         "sbom",
         "vulnerabilityScan",
         "criticalFindings"
@@ -103,9 +106,77 @@
         },
         "digest": { "$ref": "#/$defs/digest" },
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "buildEvidence": { "$ref": "#/$defs/buildEvidence" },
+        "runtimeEvidence": { "$ref": "#/$defs/runtimeEvidence" },
+        "imageHistoryScan": { "$ref": "#/$defs/imageHistoryScan" },
         "sbom": { "$ref": "#/$defs/sbom" },
         "vulnerabilityScan": { "$ref": "#/$defs/vulnerabilityScan" },
         "criticalFindings": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "buildEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dockerfile", "noCache", "pull", "platform"],
+      "properties": {
+        "dockerfile": { "type": "string", "pattern": "^docker/[^/]+/Dockerfile$" },
+        "noCache": { "const": true },
+        "pull": { "const": false },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] }
+      }
+    },
+    "runtimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "effectiveUser",
+        "platform",
+        "networkMode",
+        "readOnlyRootFilesystem",
+        "capDrop",
+        "noNewPrivileges",
+        "tmpfs",
+        "health",
+        "gracefulStop",
+        "logsSha256"
+      ],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "effectiveUser": { "pattern": "^[1-9][0-9]*:[1-9][0-9]*$" },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] },
+        "networkMode": { "const": "none" },
+        "readOnlyRootFilesystem": { "const": true },
+        "capDrop": {
+          "type": "array",
+          "minItems": 1,
+          "contains": { "const": "ALL" }
+        },
+        "noNewPrivileges": { "const": true },
+        "tmpfs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "health": { "const": "healthy" },
+        "gatewayReady": { "type": "boolean" },
+        "gracefulStop": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["timeoutSeconds", "exitCode", "oomKilled"],
+          "properties": {
+            "timeoutSeconds": { "type": "integer", "minimum": 1 },
+            "exitCode": { "const": 0 },
+            "oomKilled": { "const": false }
+          }
+        },
+        "logsSha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "imageHistoryScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "secretLikeFindings", "sha256"],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "secretLikeFindings": { "const": 0 },
+        "sha256": { "$ref": "#/$defs/digest" }
       }
     },
     "vulnerabilityScan": {

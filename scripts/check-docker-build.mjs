@@ -153,6 +153,63 @@ const waitForHealthy = (containerId, timeoutMs = 45_000) => {
   throw new Error(`container did not become healthy within ${timeoutMs}ms`);
 };
 
+const smokeImage = (imageName, tag, metadata) => {
+  const isOpenClaw = imageName === 'openclaw-runtime';
+  const stopTimeoutSeconds = isOpenClaw ? 15 : 10;
+  const tmpfs = isOpenClaw
+    ? ['/tmp:rw,noexec,nosuid,size=16m', '/state:rw,noexec,nosuid,size=256m', '/workspace:rw,noexec,nosuid,size=1g']
+    : ['/tmp:rw,noexec,nosuid,size=16m'];
+  const args = [
+    'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
+    '--security-opt=no-new-privileges', '--user=10001:10001',
+    ...tmpfs.map(mount => `--tmpfs=${mount}`),
+  ];
+  if (isOpenClaw) {
+    args.push('--env=OPENCLAW_GATEWAY_TOKEN=p03-offline-smoke-token', '--env=OPENCLAW_GATEWAY_PORT=18789');
+  }
+  args.push(tag);
+  const started = run('docker', args);
+  if (started.status !== 0) throw new Error(`${imageName}: offline production entrypoint failed: ${started.stderr}`);
+  const containerId = started.stdout.trim();
+  try {
+    waitForHealthy(containerId, isOpenClaw ? 90_000 : 45_000);
+    const logs = run('docker', ['logs', containerId]);
+    if (logs.status !== 0) throw new Error(`${imageName}: unable to capture healthy-container logs`);
+    const combinedLogs = `${logs.stdout}\n${logs.stderr}`;
+    if (isOpenClaw && !/\[gateway\] ready/.test(combinedLogs)) {
+      throw new Error(`${imageName}: healthy container logs do not contain gateway ready`);
+    }
+    const stopped = run('docker', ['stop', `--time=${stopTimeoutSeconds}`, containerId]);
+    if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
+    const stateInspect = run('docker', ['inspect', '--format', '{{json .State}}', containerId]);
+    if (stateInspect.status !== 0) throw new Error(`${imageName}: stopped container state inspect failed`);
+    const state = JSON.parse(stateInspect.stdout);
+    if (state.Status !== 'exited' || state.ExitCode !== 0 || state.OOMKilled !== false) {
+      throw new Error(`${imageName}: unhealthy stop state ${stateInspect.stdout.trim()}`);
+    }
+    return {
+      status: 'PASSED',
+      effectiveUser: metadata.Config.User,
+      platform: `${metadata.Os}/${metadata.Architecture}`,
+      networkMode: 'none',
+      readOnlyRootFilesystem: true,
+      capDrop: ['ALL'],
+      noNewPrivileges: true,
+      tmpfs,
+      health: 'healthy',
+      gatewayReady: isOpenClaw ? true : undefined,
+      gracefulStop: {
+        timeoutSeconds: stopTimeoutSeconds,
+        exitCode: state.ExitCode,
+        oomKilled: state.OOMKilled,
+      },
+      logsSha256: `sha256:${createHash('sha256').update(combinedLogs).digest('hex')}`,
+    };
+  } finally {
+    run('docker', ['rm', '--force', containerId]);
+  }
+};
+
 const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers) => {
   const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
   const dockerfile = `docker/${imageName}/Dockerfile`;
@@ -168,43 +225,9 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
     throw new Error(`${imageName}: image must contain Linux amd64/arm64 content`);
   }
   const history = run('docker', ['history', '--no-trunc', '--format', '{{.CreatedBy}}', tag]);
+  if (history.status !== 0) throw new Error(`${imageName}: image history scan failed`);
   if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
-
-  if (imageName === 'openclaw-runtime') {
-    const started = run('docker', [
-      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
-      '--security-opt=no-new-privileges', '--user=10001:10001',
-      '--tmpfs=/tmp:rw,noexec,nosuid,size=16m', '--tmpfs=/state:rw,noexec,nosuid,size=256m',
-      '--tmpfs=/workspace:rw,noexec,nosuid,size=1g',
-      '--env=OPENCLAW_GATEWAY_TOKEN=p03-offline-smoke-token', '--env=OPENCLAW_GATEWAY_PORT=18789',
-      tag,
-    ]);
-    if (started.status !== 0) throw new Error(`${imageName}: production entrypoint failed: ${started.stderr}`);
-    const containerId = started.stdout.trim();
-    try {
-      waitForHealthy(containerId, 90_000);
-      const stopped = run('docker', ['stop', '--time=15', containerId]);
-      if (stopped.status !== 0) throw new Error(`${imageName}: graceful gateway stop failed`);
-    } finally {
-      run('docker', ['rm', '--force', containerId]);
-    }
-  } else {
-    const args = [
-      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
-      '--security-opt=no-new-privileges', '--user=10001:10001', '--tmpfs=/tmp:rw,noexec,nosuid,size=16m',
-      tag,
-    ];
-    const started = run('docker', args);
-    if (started.status !== 0) throw new Error(`${imageName}: offline start smoke failed: ${started.stderr}`);
-    const containerId = started.stdout.trim();
-    try {
-      waitForHealthy(containerId);
-      const stopped = run('docker', ['stop', '--time=10', containerId]);
-      if (stopped.status !== 0) throw new Error(`${imageName}: graceful stop failed`);
-    } finally {
-      run('docker', ['rm', '--force', containerId]);
-    }
-  }
+  const runtimeEvidence = smokeImage(imageName, tag, metadata);
 
   const imageDigest = metadata.Id;
   const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
@@ -239,6 +262,18 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
     tag,
     digest: imageDigest,
     sourceSha,
+    buildEvidence: {
+      dockerfile,
+      noCache: true,
+      pull: false,
+      platform: `${metadata.Os}/${metadata.Architecture}`,
+    },
+    runtimeEvidence,
+    imageHistoryScan: {
+      status: 'PASSED',
+      secretLikeFindings: 0,
+      sha256: `sha256:${createHash('sha256').update(history.stdout).digest('hex')}`,
+    },
     sbom: { format: 'spdx-json', path: sbomPath, sha256: sbomSha256, imageDigest, sourceSha },
     vulnerabilityScan: {
       scanner: scannerPolicy.scanner,
