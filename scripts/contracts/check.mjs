@@ -370,6 +370,7 @@ const checkEnvelope = () => {
 };
 
 const checkCoreDto = () => {
+  assert('core-dto', Schemas.LoginRequest.safeParse({ email: 'user@example.com', password: 'password123' }).success, 'password login rejected');
   assert('core-dto', Schemas.StartSessionRequest.safeParse({ agentId: 'main', prompt: '' }).success === false, 'empty prompt accepted');
   assert('core-dto', Schemas.ContinueTurnRequest.safeParse({ prompt: 'next' }).success, 'continue rejected');
   assert('core-dto', Schemas.TurnAcceptedResponse.safeParse({ requestId: 'r' }).success, 'requestId missing from response contract');
