@@ -9,16 +9,27 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const readCurrent = (relativePath) =>
   parseYaml(readFileSync(path.join(repositoryRoot, relativePath), 'utf8'));
 
-const readBase = (baseRef, relativePath, bootstrapPath) => {
+const bootstrapPolicy = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'libs/shared/contracts/baselines/bootstrap/policy.json'),
+  'utf8',
+));
+
+const readBase = (baseRef, resolvedCommit, relativePath, bootstrapKey) => {
+  const isPreContractRef = bootstrapPolicy.preContractRefs.some(
+    (candidate) => baseRef === candidate || resolvedCommit.startsWith(candidate),
+  );
+  if (isPreContractRef) {
+    return {
+      document: parseYaml(readFileSync(path.join(repositoryRoot, bootstrapPolicy[bootstrapKey]), 'utf8')),
+      mode: 'bootstrap',
+    };
+  }
   const show = spawnSync('git', ['show', `${baseRef}:${relativePath}`], {
     cwd: repositoryRoot,
     encoding: 'utf8',
   });
   if (show.status === 0) return { document: parseYaml(show.stdout), mode: 'git' };
-  return {
-    document: parseYaml(readFileSync(path.join(repositoryRoot, bootstrapPath), 'utf8')),
-    mode: 'bootstrap',
-  };
+  return { blockedReason: `base contract unavailable at ${baseRef}:${relativePath}` };
 };
 
 const operations = (document) =>
@@ -217,16 +228,24 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.error(JSON.stringify({ status: 'BLOCKED', reason: `base ref unavailable: ${baseRef}` }));
     process.exit(2);
   }
+  const resolvedCommit = verify.stdout.trim();
   const baseOpenapi = readBase(
     baseRef,
+    resolvedCommit,
     'libs/shared/contracts/openapi.yaml',
-    'libs/shared/contracts/baselines/bootstrap/openapi.yaml',
+    'openapi',
   );
   const baseAsyncapi = readBase(
     baseRef,
+    resolvedCommit,
     'libs/shared/contracts/asyncapi.yaml',
-    'libs/shared/contracts/baselines/bootstrap/asyncapi.yaml',
+    'asyncapi',
   );
+  const blockedReason = baseOpenapi.blockedReason ?? baseAsyncapi.blockedReason;
+  if (blockedReason) {
+    console.error(JSON.stringify({ status: 'BLOCKED', reason: blockedReason }));
+    process.exit(2);
+  }
   const breaking = analyzeBreakingDiff(
     baseOpenapi.document,
     readCurrent('libs/shared/contracts/openapi.yaml'),
@@ -242,5 +261,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     baseRef,
     openapiBaseMode: baseOpenapi.mode,
     asyncapiBaseMode: baseAsyncapi.mode,
-  }));
+  }, null, 2));
 }
