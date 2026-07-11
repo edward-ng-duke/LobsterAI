@@ -63,7 +63,9 @@ const createRepositoryCopy = (): string => {
     'scripts/saas-workspace-registry.json',
     'scripts/saas-workspace-policy.mjs',
     'src/renderer/types/electron.d.ts',
+    'src/main/computerUse/computerUseKit.ts',
     'src/main/computerUse/computerUseRuntime.ts',
+    'src/shared/computerUse/constants.ts',
     'src/renderer/data/mcpRegistry.json',
     'tests',
     'tsconfig.base.json',
@@ -85,7 +87,11 @@ const createRepositoryCopy = (): string => {
     '-e',
     "console.log(JSON.stringify({ status: 'PASSED', check: 'contracts-test-double' }))",
   ];
-  manifest.gates['supply-chain:check'].command = ['node', 'scripts/check-supply-chain.mjs'];
+  manifest.gates['supply-chain:check'].command = [
+    process.execPath,
+    '-e',
+    "console.log(JSON.stringify({ status: 'PASSED', check: 'supply-chain-test-double' }))",
+  ];
   manifest.gates['docker:build:check'].command = ['node', 'scripts/check-docker-build.mjs', '--static'];
   manifest.gates['helm:lint'].command = ['node', 'scripts/check-helm.mjs', '--static'];
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

@@ -204,6 +204,24 @@ export const scanRenderedManifests = (rendered) => {
 
 const runHelm = (args) => spawnSync('helm', args, { cwd: repositoryRoot, encoding: 'utf8' });
 
+const readGitState = () => {
+  const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  });
+  const status = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  });
+  if (sourceSha.status !== 0 || !/^[a-f0-9]{40}$/.test(sourceSha.stdout.trim())) {
+    throw new Error('unable to resolve the source Git SHA');
+  }
+  if (status.status !== 0 || status.stdout.trim() !== '') {
+    throw new Error('Helm evidence requires a clean Git worktree');
+  }
+  return sourceSha.stdout.trim();
+};
+
 const writeReport = (report) => {
   const directory = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据');
   mkdirSync(directory, { recursive: true });
@@ -225,6 +243,7 @@ const main = () => {
     console.log(JSON.stringify({ status: 'PASSED', check: 'helm-static', chart: chartRelativePath }));
     return;
   }
+  const sourceSha = readGitState();
   const version = runHelm(['version', '--short']);
   if (version.status !== 0) {
     console.error(JSON.stringify({ status: 'BLOCKED', check: 'helm', reason: 'missing or unusable helm binary' }));
@@ -250,6 +269,7 @@ const main = () => {
     status: 'PASSED',
     invocationId: randomUUID(),
     generatedAt: new Date().toISOString(),
+    sourceSha,
     helmVersion: version.stdout.trim(),
     chart: chartRelativePath,
     renderedDocuments: template.stdout.split(/^---$/m).length,

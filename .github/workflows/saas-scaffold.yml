@@ -79,12 +79,16 @@ jobs:
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           syft-version: v1.44.0
+      - name: Install pinned Grype
+        uses: anchore/scan-action/download-grype@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          grype-version: v0.112.0
       - run: npm ci
       - run: npm run scaffold:check
       - run: npm run contracts:generate
       - run: npm run contracts:check
-      - run: npm run supply-chain:check
       - run: npm run docker:build:check
+      - run: npm run supply-chain:check
       - run: npm run helm:lint
       - name: Verify active and deferred stage gate entry points are explicit
         run: |

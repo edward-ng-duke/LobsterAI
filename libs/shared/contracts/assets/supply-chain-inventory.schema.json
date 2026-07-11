@@ -27,6 +27,8 @@
     },
     "imageEvidence": {
       "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
       "items": { "$ref": "#/$defs/imageEvidence" }
     },
     "signature": { "$ref": "#/$defs/signaturePolicy" },
@@ -85,13 +87,60 @@
     "imageEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["image", "digest", "sourceSha", "sbom", "criticalFindings"],
+      "required": [
+        "image",
+        "imageName",
+        "digest",
+        "sourceSha",
+        "sbom",
+        "vulnerabilityScan",
+        "criticalFindings"
+      ],
       "properties": {
         "image": { "type": "string", "minLength": 1, "not": { "pattern": ":latest(?:$|@)" } },
+        "imageName": {
+          "enum": ["api", "openclaw-runtime", "runtime-orchestrator", "web", "worker"]
+        },
         "digest": { "$ref": "#/$defs/digest" },
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
         "sbom": { "$ref": "#/$defs/sbom" },
-        "criticalFindings": { "type": "integer", "minimum": 0, "maximum": 0 }
+        "vulnerabilityScan": { "$ref": "#/$defs/vulnerabilityScan" },
+        "criticalFindings": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "vulnerabilityScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scanner",
+        "scannerVersion",
+        "path",
+        "sha256",
+        "imageDigest",
+        "sourceSha",
+        "findings"
+      ],
+      "properties": {
+        "scanner": { "enum": ["grype", "trivy"] },
+        "scannerVersion": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/digest" },
+        "imageDigest": { "$ref": "#/$defs/digest" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["id", "severity"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "severity": {
+                "enum": ["Unknown", "Negligible", "Low", "Medium", "High", "Critical"]
+              }
+            }
+          }
+        }
       }
     },
     "signaturePolicy": {
@@ -108,9 +157,10 @@
     "waiver": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["findingId", "owner", "reason", "expiresAt"],
+      "required": ["findingId", "imageDigest", "owner", "reason", "expiresAt"],
       "properties": {
         "findingId": { "type": "string", "minLength": 1 },
+        "imageDigest": { "$ref": "#/$defs/digest" },
         "owner": { "type": "string", "minLength": 1 },
         "reason": { "type": "string", "minLength": 1 },
         "expiresAt": { "type": "string", "format": "date-time" }

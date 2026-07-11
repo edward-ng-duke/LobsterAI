@@ -50,8 +50,12 @@
       ],
       "fixtures": [
         "docs/supply-chain/skills-and-plugins.manifest.json",
+        "docs/supply-chain/scanner-policy.json",
         "libs/shared/contracts/assets/supply-chain-inventory.schema.json",
         "scripts/check-supply-chain.mjs",
+        "src/main/computerUse/computerUseKit.ts",
+        "src/main/computerUse/computerUseRuntime.ts",
+        "src/shared/computerUse/constants.ts",
         "tests/fixtures/supply_chain/critical-finding.json"
       ]
     },
