@@ -70,6 +70,7 @@ describe('P03 production image policy', () => {
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile'),
       'utf8',
     );
+    expect(dockerfile).toMatch(/^RUN corepack enable$/m);
     expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
 
     const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');

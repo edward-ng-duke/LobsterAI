@@ -10,6 +10,7 @@ COPY resources ./resources
 COPY SKILLs ./SKILLs
 RUN apk add --no-cache bash ca-certificates git python3 make g++ pkgconfig
 RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN corepack enable
 RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;; *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
  && node scripts/ensure-openclaw-version.cjs \
  && node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC" \
