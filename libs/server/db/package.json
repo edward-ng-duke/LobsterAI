@@ -5,12 +5,19 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "@lobsterai/shared-contracts": "0.0.0",
     "pg": "8.22.0"
   }
 }
