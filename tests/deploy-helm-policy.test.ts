@@ -109,4 +109,25 @@ spec:
 `;
     expect(scanRenderedManifests(missingPort).join('\n')).toContain('explicit TCP port');
   });
+
+  test('render scan rejects missing resources, probes and container security controls together', () => {
+    const insecureDeployment = `
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: insecure-web }
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - name: web
+          image: registry.internal/lobster/web@sha256:${'a'.repeat(64)}
+`;
+    const errors = scanRenderedManifests(insecureDeployment).join('\n');
+    expect(errors).toContain('service account token must not automount');
+    expect(errors).toContain('pod securityContext is incomplete');
+    expect(errors).toContain('container securityContext is incomplete');
+    expect(errors).toContain('resources are required');
+    expect(errors).toContain('readiness/liveness probes are required');
+  });
 });

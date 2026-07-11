@@ -119,4 +119,19 @@ describe('P03 production image policy', () => {
     await closed;
     expect(server.listening).toBe(false);
   });
+
+  test('runtime orchestrator handles repeated termination signals idempotently', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+    signals.emit('SIGINT');
+
+    await closed;
+    expect(server.listening).toBe(false);
+    expect(signals.listenerCount('SIGTERM')).toBe(0);
+    expect(signals.listenerCount('SIGINT')).toBe(0);
+  });
 });
