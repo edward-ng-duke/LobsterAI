@@ -222,6 +222,22 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     }], new Date()).join('\n')).toContain('finding mismatch');
   });
 
+  test('real DingTalk form-data Critical scan is rejected without a waiver', async () => {
+    const policy = await import('../scripts/check-supply-chain.mjs') as Record<string, unknown>;
+    const validate = policy.validateVulnerabilityReport as (
+      report: Record<string, unknown>,
+      waivers: Array<Record<string, unknown>>,
+      now: Date,
+    ) => string[];
+    const report = JSON.parse(readFileSync(path.join(
+      repositoryRoot,
+      'tests/fixtures/supply_chain/dingtalk-form-data-critical.json',
+    ), 'utf8')) as Record<string, unknown>;
+    expect(validate(report, [], new Date()).join('\n')).toContain(
+      'unwaived Critical finding GHSA-fjxv-7rqg-78g4',
+    );
+  });
+
   test('asset discovery rejects a skill symlink that escapes the repository', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-inventory-'));
     temporaryRoots.push(root);

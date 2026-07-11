@@ -1,0 +1,13 @@
+{
+  "imageDigest": "sha256:448bb7a79d384bb69ecccd774824e9c92561d1dab63814c9764b31122b5722c9",
+  "findings": [
+    {
+      "id": "GHSA-fjxv-7rqg-78g4",
+      "severity": "Critical",
+      "package": "form-data",
+      "version": "4.0.0",
+      "fixedVersion": "4.0.4",
+      "path": "/opt/openclaw/third-party-extensions/dingtalk-connector/node_modules/form-data/package.json"
+    }
+  ]
+}

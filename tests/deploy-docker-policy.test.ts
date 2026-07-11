@@ -74,6 +74,7 @@ describe('P03 production image policy', () => {
     expect(dockerfile).toMatch(/^FROM ubuntu:26\.04@sha256:[a-f0-9]{64} AS production$/m);
     expect(dockerfile).toMatch(/^RUN corepack enable$/m);
     expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
+    expect(dockerfile).toContain('node scripts/harden-openclaw-runtime-dependencies.cjs');
     const entrypoint = readFileSync(
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'entrypoint.sh'),
       'utf8',
