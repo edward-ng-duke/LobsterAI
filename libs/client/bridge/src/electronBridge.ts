@@ -397,6 +397,7 @@ interface AuthQuota {
 	creditsLimit: number;
 	creditsUsed: number;
 	creditsRemaining: number;
+	hasPaidCredits?: boolean;
 }
 interface BrowserDiagnosticResult {
 	success: boolean;
@@ -2495,19 +2496,25 @@ interface IElectronAPI {
 			error?: string;
 		}>;
 		exchange: (code: string) => Promise<{
-			success: boolean;
-			user?: UserProfile;
-			quota?: AuthQuota;
+			success: true;
+			user: UserProfile;
+			quota: AuthQuota;
+		} | {
+			success: false;
 			error?: string;
 		}>;
 		getUser: () => Promise<{
-			success: boolean;
-			user?: UserProfile;
-			quota?: AuthQuota;
+			success: true;
+			user: UserProfile;
+			quota: AuthQuota | null;
+		} | {
+			success: false;
 		}>;
 		getQuota: () => Promise<{
-			success: boolean;
-			quota?: AuthQuota;
+			success: true;
+			quota: AuthQuota;
+		} | {
+			success: false;
 		}>;
 		logout: () => Promise<{
 			success: boolean;

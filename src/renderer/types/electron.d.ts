@@ -61,6 +61,7 @@ interface AuthQuota {
   creditsLimit: number;
   creditsUsed: number;
   creditsRemaining: number;
+  hasPaidCredits?: boolean;
 }
 
 interface ApiResponse {
@@ -1533,9 +1534,18 @@ export interface IElectronAPI {
     login: (loginUrl?: string) => Promise<{ success: boolean; error?: string }>;
     exchange: (
       code: string,
-    ) => Promise<{ success: boolean; user?: UserProfile; quota?: AuthQuota; error?: string }>;
-    getUser: () => Promise<{ success: boolean; user?: UserProfile; quota?: AuthQuota }>;
-    getQuota: () => Promise<{ success: boolean; quota?: AuthQuota }>;
+    ) => Promise<
+      | { success: true; user: UserProfile; quota: AuthQuota }
+      | { success: false; error?: string }
+    >;
+    getUser: () => Promise<
+      | { success: true; user: UserProfile; quota: AuthQuota | null }
+      | { success: false }
+    >;
+    getQuota: () => Promise<
+      | { success: true; quota: AuthQuota }
+      | { success: false }
+    >;
     logout: () => Promise<{ success: boolean }>;
     refreshToken: () => Promise<{ success: boolean; accessToken?: string }>;
     getAccessToken: () => Promise<string | null>;
