@@ -2,9 +2,9 @@
 
 - 状态：`REVIEW_PENDING`（Reviewer Round 4）
 - Developer：`/root/p02_developer`
-- codeEvidenceSha：`20b95e3c1324fd368e8345d2b362d972c43c745c`
-- code evidence-only commit：`b07694d936097c0d91fd6e2b6aca48abe80cbfb1`
-- stageEvidenceSha：`b07694d936097c0d91fd6e2b6aca48abe80cbfb1`
+- codeEvidenceSha：`21e141d47240988306fec7f45a7b23ae54a5f992`
+- code evidence-only commit：`c49b66cd479f1906586806c1cdd9043a11650656`
+- stageEvidenceSha：`c49b66cd479f1906586806c1cdd9043a11650656`
 - 环境：macOS arm64 / Node `v24.15.0` / PostgreSQL `17.10 (Debian 17.10-1.pgdg12+1)`
 - 镜像：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`
 - P01 接受 SHA：`a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28`
@@ -15,8 +15,8 @@
 
 报告不能把包含自身的提交 SHA 写进自身内容。本目录采用可机器验证的两段 evidence-only descendant 链：
 
-1. 四份 code report 由 P03 accepted merge 后的实现提交 `20b95e3c...` 原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`b07694d9...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
-2. 正式 `prisma:validate` stage 在 `b07694d9...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
+1. 四份 code report 由最终 P03 source resolver/exact-five 稳定后的集成提交 `21e141d4...` 原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；该 source 的祖先包含 P03 最终产品提交 `f93fdd59...`，`c49b66cd...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
+2. 正式 `prisma:validate` stage 在 `c49b66cd...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
 3. `validate-evidence.mjs` 用严格 schema 拒绝未知字段，核对每份报告内容 SHA-256 与 runner SHA-256，并要求 code/stage SHA 位于最终 HEAD 的 first-parent 链。
 4. validator 从 source SHA 的下一提交起到 HEAD，逐个审计 first-parent commit；每个 commit 都与其唯一父提交做 `--name-status -z -M` 比较。A/M/D 路径和 R/C 的旧、新两端都必须在严格 allowlist，任何 merge commit 均 fail-closed。
 5. mutation 测试覆盖 add、modify、delete、code→evidence rename、code→revert、merge 与 source 仅在 non-first-parent 可达。后续 revert 不能再洗掉历史代码提交。
@@ -39,11 +39,11 @@
 
 | 文件 | 原生标识 | source SHA | 结果 |
 |---|---|---|---|
-| `contracts-preflight.json` | runId `150f5ba5-1628-4d80-9efb-07c9ab826672` | `20b95e3c...` | PASS |
-| `preflight.json` | runId `f6c65487-b55a-4765-9344-6ea40abe2a3c` | `20b95e3c...` | PASS；container removed |
-| `integration.json` | runId `d524744f-44f2-4689-84c9-3ddbe2045e64` | `20b95e3c...` | PASS；24/24；skipped=0；container removed |
-| `validation.json` | runId `88a78d74-90d9-4e4c-9e9e-5887389c235c` | `20b95e3c...` | PASS；原生 `commands[]` 共 8 项 |
-| `prisma-stage-gate.json` | invocationId `bb9fab84-6c45-4b90-9972-dd58877906f4` | `b07694d9...` | PASS；outer digests 一致 |
+| `contracts-preflight.json` | runId `4ef139d8-37f2-4c67-9d54-7a6f906fb7bc` | `21e141d4...` | PASS |
+| `preflight.json` | runId `fcd664b8-9d87-40df-b093-12f45da8e2c3` | `21e141d4...` | PASS；container removed |
+| `integration.json` | runId `26c451e3-9683-40a9-90fd-0e8e9e8bfca5` | `21e141d4...` | PASS；24/24；skipped=0；container removed |
+| `validation.json` | runId `4d73b8f7-ba20-4b5b-add8-d66990b6f731` | `21e141d4...` | PASS；原生 `commands[]` 共 8 项 |
+| `prisma-stage-gate.json` | invocationId `4b004aa6-706f-452e-a608-7f292ae45bf5` | `c49b66cd...` | PASS；outer digests 一致 |
 
 `evidence-manifest.json` 保存上述文件摘要、source SHA、runner 路径和 runner 摘要。当前实现与报告中的 generated Prisma client hash 均为 `c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441`。
 
@@ -109,14 +109,14 @@
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `20b95e3c...` 与 `b07694d9...`；implementation SHA 位于 P03 accepted merge `43665ce1...` 之后；不声称报告与包含报告的提交自引用同 SHA。
+原生机器报告以本目录 JSON 与 manifest 为准。最终冻结证据链由 manifest 指向 `21e141d4...` 与 `c49b66cd...`；implementation SHA 包含 P03 最终 resolver `f93fdd59...`、source-boundary 测试和 exact-five 角色记录的全部祖先；不声称报告与包含报告的提交自引用同 SHA。
 
-### P03 shared evidence 集成阻断
+### P03 shared evidence 集成阻断（历史，已解除）
 
 - P03 不依赖 exact-five raw 目录的 4 个 targeted 文件共 34 tests PASS；Docker/Helm static checker PASS。
 - `tests/deploy-supply-chain-evidence-files.test.ts` 需要 ignored `.reports/supply-chain/20260712_PR3部署供应链证据`，共享 worktree 不存在该目录；36 项因 ENOENT 失败。
 - 另 1 项正确发现 P03 product-source resolver 已把本 P02 `docs/db` evidence commit `613bbe91...` 当作镜像产品 source，而 accepted P03 evidence source 仍为 `187da9a...`。这会使 Reviewer/Tester 文档继续无意义推进 P03 source。
-- 因此不能把 full `npm test` 写成 PASS，也不能复制旧 exact-five 证据伪绿。协调者将交同一 P03 Developer 把 source 收敛到实际 Docker image inputs 并重跑 exact-five；随后 P02 再做最终 rebaseline。
+- P03 Developer 已将 resolver 收敛为实际 Docker image inputs；最终 product source 稳定为 `f93fdd59...`，exact-five invocation `5673b88b...` 在共享 worktree 存在，formal checker PASS。本轮因而以 `21e141d4...` 完成最后 rebaseline。
 
 ## 已知非 P02 风险
 
