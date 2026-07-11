@@ -11,7 +11,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateVulnerabilityReport } from './check-supply-chain.mjs';
+import { resolveProductSourceSha, validateVulnerabilityReport } from './check-supply-chain.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const productionImages = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'];
@@ -372,13 +372,12 @@ const main = () => {
     path.join(repositoryRoot, 'docs/supply-chain/skills-and-plugins.manifest.json'),
     'utf8',
   ));
-  const git = run('git', ['rev-parse', 'HEAD']);
-  if (git.status !== 0 || !/^[a-f0-9]{40}\s*$/.test(git.stdout)) throw new Error('unable to bind build to source SHA');
+  const sourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!/^[a-f0-9]{40}$/.test(sourceSha ?? '')) throw new Error('unable to bind build to product source SHA');
   const worktree = run('git', ['status', '--porcelain', '--untracked-files=all']);
   if (worktree.status !== 0 || worktree.stdout.trim()) {
     throw new Error('Docker evidence requires a clean checkout with no tracked or untracked changes');
   }
-  const sourceSha = git.stdout.trim();
   const invocationId = randomUUID();
   const { reportDirectory } = writeReport({
     schemaVersion: 1,
