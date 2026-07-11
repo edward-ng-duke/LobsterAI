@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "P02_PRISMA_STAGE_GATE",
+  "runId": "2e7332cf-5a60-40a3-933e-ad1d0ab31e7a",
+  "generatedAt": "2026-07-11T12:02:45.983Z",
+  "sourceSha": "dc98a77d153fd24f8f8376f10909deaa302126fa",
+  "nodeVersion": "v24.15.0",
+  "platform": "darwin/arm64",
+  "status": "PASS",
+  "generatedClientHash": "c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441",
+  "commandExitCodes": {
+    "validate-static": 0,
+    "contracts-preflight": 0,
+    "prisma-validate": 0,
+    "prisma-generate-first": 0,
+    "prisma-generate-second": 0,
+    "db-unit": 0,
+    "db-preflight": 0,
+    "db-integration": 0
+  }
+}

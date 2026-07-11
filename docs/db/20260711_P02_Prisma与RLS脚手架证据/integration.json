@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "P02_DATABASE_INTEGRATION",
+  "runId": "23213c88-868c-4bc4-9db1-a81002d47c1e",
+  "generatedAt": "2026-07-11T12:02:55.763Z",
+  "sourceSha": "dc98a77d153fd24f8f8376f10909deaa302126fa",
+  "nodeVersion": "v24.15.0",
+  "platform": "darwin/arm64",
+  "status": "PASS",
+  "skipped": 0,
+  "checks": {
+    "provider": {
+      "dockerPlatform": "linux/arm64",
+      "image": "postgres:17.10-bookworm",
+      "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "containerId": "a0cbea3001d7b035c2a32ee679e6bab7a37431077ccf34e2f919525a59a00cbd",
+      "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)"
+    },
+    "migrations": [
+      { "migration_name": "20260711000000_init_prisma_rls_scaffold", "finished": true }
+    ],
+    "rls": [
+      {
+        "relrowsecurity": true,
+        "relforcerowsecurity": true,
+        "table_owner": "p02_admin",
+        "policyname": "agents_tenant_isolation",
+        "qual": "(tenant_id = (current_setting('app.tenant_id'::text))::uuid)",
+        "with_check": "(tenant_id = (current_setting('app.tenant_id'::text))::uuid)"
+      }
+    ],
+    "roles": [
+      { "rolname": "p02_admin", "rolsuper": true, "rolbypassrls": true },
+      { "rolname": "p02_app", "rolsuper": false, "rolbypassrls": false }
+    ],
+    "seed": [
+      {
+        "tenant_id": "10000000-0000-4000-8000-000000000001",
+        "logical_id": "main",
+        "id": "a0000000-0000-4000-8000-000000000001"
+      },
+      {
+        "tenant_id": "20000000-0000-4000-8000-000000000002",
+        "logical_id": "main",
+        "id": "b0000000-0000-4000-8000-000000000002"
+      }
+    ],
+    "testOutputSha256": "4bbe23bb56516c53e3df0d85a8ec5ddfa10630907a76b6e3e7358db5939dfcba"
+  },
+  "cleanup": {
+    "containerId": "a0cbea3001d7b035c2a32ee679e6bab7a37431077ccf34e2f919525a59a00cbd",
+    "removed": true
+  }
+}
