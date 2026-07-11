@@ -219,7 +219,43 @@ const smokeImage = (imageName, tag, metadata) => {
   }
 };
 
-const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers) => {
+const inspectPluginInstallations = (imageName, tag, declaredPlugins) => {
+  if (imageName !== 'openclaw-runtime') return undefined;
+  const ids = declaredPlugins.map(plugin => plugin.id);
+  const script = [
+    "const fs = require('node:fs');",
+    "const root = '/opt/openclaw/third-party-extensions';",
+    'const ids = JSON.parse(process.argv[1]);',
+    'process.stdout.write(JSON.stringify(ids.filter(id => fs.existsSync(`${root}/${id}/package.json`))));',
+  ].join(' ');
+  const inspected = run('docker', [
+    'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+    '--security-opt=no-new-privileges', '--user=10001:10001',
+    '--entrypoint=/usr/local/bin/node', tag, '-e', script, JSON.stringify(ids),
+  ]);
+  if (inspected.status !== 0) {
+    throw new Error(`${imageName}: unable to inspect final-image plugin installations: ${inspected.stderr}`);
+  }
+  let installedIds;
+  try {
+    installedIds = JSON.parse(inspected.stdout);
+  } catch {
+    throw new Error(`${imageName}: plugin installation inspection returned invalid JSON`);
+  }
+  const installedSet = new Set(installedIds);
+  const evidence = declaredPlugins.map(plugin => ({
+    id: plugin.id,
+    optional: Boolean(plugin.optional),
+    status: installedSet.has(plugin.id) ? 'installed' : 'skipped',
+  }));
+  const missingRequired = evidence.filter(plugin => !plugin.optional && plugin.status !== 'installed');
+  if (missingRequired.length > 0) {
+    throw new Error(`${imageName}: required plugins missing from final image: ${missingRequired.map(plugin => plugin.id).join(', ')}`);
+  }
+  return evidence;
+};
+
+const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers, declaredPlugins) => {
   const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
   const dockerfile = `docker/${imageName}/Dockerfile`;
   const build = run('docker', ['build', '--no-cache', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
@@ -237,6 +273,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   if (history.status !== 0) throw new Error(`${imageName}: image history scan failed`);
   if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
   const runtimeEvidence = smokeImage(imageName, tag, metadata);
+  const pluginInstallations = inspectPluginInstallations(imageName, tag, declaredPlugins);
 
   const imageDigest = metadata.Id;
   const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
@@ -282,17 +319,24 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
       secretLikeFindings: 0,
       sha256: `sha256:${createHash('sha256').update(history.stdout).digest('hex')}`,
     },
-    sbom: { format: 'spdx-json', path: sbomPath, sha256: sbomSha256, imageDigest, sourceSha },
+    sbom: {
+      format: 'spdx-json',
+      path: path.basename(sbomPath),
+      sha256: sbomSha256,
+      imageDigest,
+      sourceSha,
+    },
     vulnerabilityScan: {
       scanner: scannerPolicy.scanner,
       scannerVersion: scannerPolicy.version,
-      path: scanPath,
+      path: path.basename(scanPath),
       sha256: scanSha256,
       imageDigest,
       sourceSha,
       findings,
     },
     criticalFindings: findings.filter(finding => String(finding.severity).toLowerCase() === 'critical').length,
+    ...(pluginInstallations ? { pluginInstallations } : {}),
   };
 };
 
@@ -350,7 +394,16 @@ const main = () => {
   const images = [];
   try {
     for (const imageName of productionImages) {
-      images.push(buildAndSmoke(imageName, sourceSha, reportDirectory, scannerPolicy, inventoryManifest.waivers ?? []));
+      images.push(buildAndSmoke(
+        imageName,
+        sourceSha,
+        reportDirectory,
+        scannerPolicy,
+        inventoryManifest.waivers ?? [],
+        inventoryManifest.assets
+          .filter(asset => asset.kind === 'openclaw-plugin')
+          .map(asset => ({ id: asset.id.replace(/^openclaw-plugin:/, ''), optional: asset.optional })),
+      ));
     }
     const report = {
       schemaVersion: 1,

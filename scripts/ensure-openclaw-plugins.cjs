@@ -621,6 +621,8 @@ function main() {
   ensureDir(pluginCacheBase);
 
   log(`Processing ${plugins.length} plugin(s)...`);
+  const installed = [];
+  const skipped = [];
 
   for (const plugin of plugins) {
     const { id, npm: npmSpec, version } = plugin;
@@ -730,6 +732,7 @@ function main() {
         if (optional) {
           log(`WARNING: Failed to install optional plugin ${id}: ${err.message}`);
           log(`Skipping ${id} — it may not be available from this network.`);
+          skipped.push(id);
           continue;
         }
         die(`Failed to install plugin ${id}: ${err.message}`);
@@ -747,6 +750,7 @@ function main() {
     if (!fs.existsSync(cacheDir)) {
       if (optional) {
         log(`Skipping ${id} — cache not available (optional plugin).`);
+        skipped.push(id);
         continue;
       }
       die(`Plugin cache directory missing after install: ${cacheDir}`);
@@ -765,9 +769,14 @@ function main() {
     }
 
     log(`Installed ${id} -> ${path.relative(rootDir, targetDir)}`);
+    installed.push(id);
   }
 
-  log(`All ${plugins.length} plugin(s) installed successfully.`);
+  const requiredCount = plugins.filter(plugin => !shouldSkipPluginInstallFailure(plugin)).length;
+  log(
+    `Plugin summary: required=${requiredCount}, installed=${installed.length}, ` +
+    `skipped=${skipped.length}${skipped.length > 0 ? ` (${skipped.join(', ')})` : ''}.`
+  );
 
   applyOpenClawPluginPatches({ runtimeExtensionsDir, log });
 }
