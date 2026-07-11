@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_INTEGRATION",
-  "runId": "3aaf2faa-f882-4b2f-b89b-2b29e12297f3",
-  "generatedAt": "2026-07-11T16:09:10.050Z",
-  "sourceSha": "c3b625243b76a34aef6e8936bc3f09c50131ae6f",
+  "runId": "d524744f-44f2-4689-84c9-3ddbe2045e64",
+  "generatedAt": "2026-07-11T18:25:21.339Z",
+  "sourceSha": "20b95e3c1324fd368e8345d2b362d972c43c745c",
   "nodeVersion": "v24.15.0",
   "platform": "darwin/arm64",
   "status": "PASS",
@@ -14,7 +14,7 @@
       "image": "postgres:17.10-bookworm",
       "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
       "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-      "containerId": "ae7c127d6d713bc66c749d7f497e6f41624945f4aacb0de541f5fd33b8febbe8",
+      "containerId": "1fb7a8517446497f44184a5f89ebfb7665314e6556f13be0a24835544ddef057",
       "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)"
     },
     "migrations": [
@@ -57,10 +57,10 @@
         "id": "b0000000-0000-4000-8000-000000000002"
       }
     ],
-    "testOutputSha256": "235d693c99b10b1636112fb727f3a2e22d446fd77700ce992571b489a606074f"
+    "testOutputSha256": "5bf3c37987cf07f6b8a430d5e3b9d8f8b8d0a8c0acd6d9aabc74c714e3fb4a0f"
   },
   "cleanup": {
-    "containerId": "ae7c127d6d713bc66c749d7f497e6f41624945f4aacb0de541f5fd33b8febbe8",
+    "containerId": "1fb7a8517446497f44184a5f89ebfb7665314e6556f13be0a24835544ddef057",
     "removed": true
   }
 }

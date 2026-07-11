@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_CONTRACT_PREFLIGHT",
-  "runId": "53c25a50-2092-4bcd-a759-989250af8b21",
-  "generatedAt": "2026-07-11T16:09:10.107Z",
-  "sourceSha": "c3b625243b76a34aef6e8936bc3f09c50131ae6f",
+  "runId": "150f5ba5-1628-4d80-9efb-07c9ab826672",
+  "generatedAt": "2026-07-11T18:25:21.402Z",
+  "sourceSha": "20b95e3c1324fd368e8345d2b362d972c43c745c",
   "nodeVersion": "v24.15.0",
   "platform": "darwin/arm64",
   "status": "PASS",
