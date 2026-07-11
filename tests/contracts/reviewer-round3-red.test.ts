@@ -59,9 +59,9 @@ describe('Reviewer Round 3 parameter contract mutations', () => {
 
 describe('Reviewer Round 3 authoritative error policy mutations', () => {
   test.each([
-    ['get_api_v1_billing_account', ['INTERNAL_ERROR', 'PERMISSION_DENIED', 'RATE_LIMITED', 'UNAUTHENTICATED', 'VALIDATION_FAILED']],
+    ['get_api_v1_billing_account', ['INTERNAL_ERROR', 'PERMISSION_DENIED', 'RATE_LIMITED', 'UNAUTHENTICATED']],
     ['get_api_v1_workspaces_wid_files_stat', ['INTERNAL_ERROR', 'NOT_FOUND', 'PERMISSION_DENIED', 'RATE_LIMITED', 'UNAUTHENTICATED', 'VALIDATION_FAILED']],
-    ['get_api_v1_scheduled_tasks', ['INTERNAL_ERROR', 'PERMISSION_DENIED', 'RATE_LIMITED', 'UNAUTHENTICATED', 'VALIDATION_FAILED']],
+    ['get_api_v1_scheduled_tasks', ['INTERNAL_ERROR', 'PERMISSION_DENIED', 'RATE_LIMITED', 'UNAUTHENTICATED']],
     ['post_oauth_token', ['INTERNAL_ERROR', 'RATE_LIMITED', 'UNAUTHENTICATED', 'VALIDATION_FAILED']],
   ])('matches independent %s errors', (operationId, expected) => {
     expect([...route(operationId).errors].sort()).toEqual(expected);
