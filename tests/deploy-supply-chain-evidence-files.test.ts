@@ -16,7 +16,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const evidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
-const evidenceSourceSha = 'b350c9de135cb2890106507e708f9dca12d2e04c';
+const evidenceSourceSha = '3026eb03a5fc012279165bf8af5e25ec1a890dd3';
 const temporaryRoots: string[] = [];
 
 const sha256File = (filePath: string) =>
