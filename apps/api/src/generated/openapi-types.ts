@@ -2356,7 +2356,7 @@ export interface components {
         ErrorEnvelope: {
             error: {
                 /** @enum {string} */
-                code: "VALIDATION_FAILED" | "UNAUTHENTICATED" | "PERMISSION_DENIED" | "NOT_FOUND" | "SESSION_BUSY" | "IN_PROGRESS" | "TICKET_EXPIRED" | "TICKET_ALREADY_USED" | "PAYLOAD_TOO_LARGE" | "QUOTA_EXCEEDED" | "TASK_LIMIT_EXCEEDED" | "RATE_LIMITED" | "STORAGE_QUOTA_EXCEEDED" | "UNSUPPORTED_EVENT_TYPE" | "STREAM_GAP" | "UNSUPPORTED_FEATURE" | "INTERNAL_ERROR";
+                code: "VALIDATION_FAILED" | "UNAUTHENTICATED" | "PERMISSION_DENIED" | "NOT_FOUND" | "SESSION_BUSY" | "IN_PROGRESS" | "TICKET_EXPIRED" | "TICKET_ALREADY_USED" | "PAYLOAD_TOO_LARGE" | "QUOTA_EXCEEDED" | "TASK_LIMIT_EXCEEDED" | "NO_RUNNING_TASK_RUN" | "CANCEL_NOT_OWNED" | "CANCEL_FAILED" | "RATE_LIMITED" | "STORAGE_QUOTA_EXCEEDED" | "UNSUPPORTED_EVENT_TYPE" | "STREAM_GAP" | "UNSUPPORTED_FEATURE" | "INTERNAL_ERROR";
                 details?: {
                     [key: string]: unknown;
                 };
@@ -4476,15 +4476,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -4559,15 +4550,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -4635,15 +4617,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7252,15 +7225,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -7337,15 +7301,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -7413,15 +7368,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7507,15 +7453,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -7587,15 +7524,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7875,15 +7803,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description QUOTA_EXCEEDED */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description PERMISSION_DENIED */
             403: {
                 headers: {
@@ -7895,24 +7814,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description STREAM_GAP */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description UNSUPPORTED_EVENT_TYPE */
-            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7969,15 +7870,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8054,15 +7946,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8989,15 +8872,6 @@ export interface operations {
             };
             /** @description UNAUTHENTICATED */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description QUOTA_EXCEEDED */
-            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10701,7 +10575,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description SESSION_BUSY */
+            /** @description NO_RUNNING_TASK_RUN */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14614,15 +14488,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description PAYLOAD_TOO_LARGE */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -14634,15 +14499,6 @@ export interface operations {
             };
             /** @description INTERNAL_ERROR */
             500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description STORAGE_QUOTA_EXCEEDED */
-            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14867,15 +14723,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description PAYLOAD_TOO_LARGE */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -14887,15 +14734,6 @@ export interface operations {
             };
             /** @description INTERNAL_ERROR */
             500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description STORAGE_QUOTA_EXCEEDED */
-            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14966,15 +14804,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description PAYLOAD_TOO_LARGE */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
             /** @description RATE_LIMITED */
             429: {
                 headers: {
@@ -14986,15 +14815,6 @@ export interface operations {
             };
             /** @description INTERNAL_ERROR */
             500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description STORAGE_QUOTA_EXCEEDED */
-            507: {
                 headers: {
                     [name: string]: unknown;
                 };

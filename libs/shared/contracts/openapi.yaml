@@ -746,6 +746,9 @@ components:
                 - PAYLOAD_TOO_LARGE
                 - QUOTA_EXCEEDED
                 - TASK_LIMIT_EXCEEDED
+                - NO_RUNNING_TASK_RUN
+                - CANCEL_NOT_OWNED
+                - CANCEL_FAILED
                 - RATE_LIMITED
                 - STORAGE_QUOTA_EXCEEDED
                 - UNSUPPORTED_EVENT_TYPE
@@ -4969,12 +4972,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -5010,7 +5007,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5038,12 +5034,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -5079,7 +5069,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -5107,12 +5096,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -5148,7 +5131,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7432,12 +7414,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7473,7 +7449,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7508,12 +7483,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7549,7 +7518,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7578,12 +7546,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7619,7 +7581,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7653,12 +7614,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7694,7 +7649,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7729,12 +7683,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7770,7 +7718,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -7977,12 +7924,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -7995,18 +7936,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STREAM_GAP
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: UNSUPPORTED_EVENT_TYPE
         "429":
           content:
             application/json:
@@ -8030,9 +7959,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
-        - UNSUPPORTED_EVENT_TYPE
-        - STREAM_GAP
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8061,12 +7987,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -8102,7 +8022,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8138,12 +8057,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -8179,7 +8092,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -8971,12 +8883,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: UNAUTHENTICATED
-        "402":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: QUOTA_EXCEEDED
         "403":
           content:
             application/json:
@@ -9012,7 +8918,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10069,7 +9974,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10139,7 +10043,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10241,7 +10144,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10311,7 +10213,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10381,7 +10282,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10450,7 +10350,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10525,7 +10424,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10634,7 +10532,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10703,7 +10600,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10773,7 +10669,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - TASK_LIMIT_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -10831,7 +10726,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-          description: SESSION_BUSY
+          description: NO_RUNNING_TASK_RUN
         "429":
           content:
             application/json:
@@ -10855,9 +10750,9 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - SESSION_BUSY
-        - IN_PROGRESS
-        - TASK_LIMIT_EXCEEDED
+        - NO_RUNNING_TASK_RUN
+        - CANCEL_NOT_OWNED
+        - CANCEL_FAILED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14212,12 +14107,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "413":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PAYLOAD_TOO_LARGE
         "429":
           content:
             application/json:
@@ -14230,12 +14119,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
-        "507":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STORAGE_QUOTA_EXCEEDED
       security:
         - accessToken: []
       tags:
@@ -14247,8 +14130,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - PAYLOAD_TOO_LARGE
-        - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14459,12 +14340,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "413":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PAYLOAD_TOO_LARGE
         "429":
           content:
             application/json:
@@ -14477,12 +14352,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
-        "507":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STORAGE_QUOTA_EXCEEDED
       security:
         - accessToken: []
       tags:
@@ -14494,8 +14363,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - PAYLOAD_TOO_LARGE
-        - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3
@@ -14569,12 +14436,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: NOT_FOUND
-        "413":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: PAYLOAD_TOO_LARGE
         "429":
           content:
             application/json:
@@ -14587,12 +14448,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
           description: INTERNAL_ERROR
-        "507":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-          description: STORAGE_QUOTA_EXCEEDED
       security:
         - accessToken: []
       tags:
@@ -14604,8 +14459,6 @@ paths:
         - UNAUTHENTICATED
         - PERMISSION_DENIED
         - NOT_FOUND
-        - PAYLOAD_TOO_LARGE
-        - STORAGE_QUOTA_EXCEEDED
       x-lobster-source-refs:
         - 附录A
         - 19§3.3

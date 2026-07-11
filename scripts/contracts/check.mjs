@@ -100,6 +100,12 @@ const checkRoutes = () => {
   assert('routes', byOperation.get('post_api_v1_model_config_check')?.successStatus === 200, 'model config check status drifted');
   assert('routes', byOperation.get('post_api_v1_model_stream')?.successStatus === 202, 'model stream status drifted');
   assert('routes', !byOperation.get('get_api_v1_sessions_id')?.errors.includes('SESSION_BUSY'), 'session read inherited mutation errors');
+  equalSets(
+    'routes',
+    new Set(Object.keys(RoutePolicyExpectations)),
+    new Set(byOperation.keys()),
+    'authoritative route policy denominator',
+  );
   for (const [operationId, expectation] of Object.entries(RoutePolicyExpectations)) {
     const actual = byOperation.get(operationId);
     assert('routes', actual?.auth === expectation.auth, `authoritative auth mismatch ${operationId}`);

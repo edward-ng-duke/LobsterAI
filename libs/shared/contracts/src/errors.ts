@@ -19,6 +19,9 @@ export const ErrorRegistry = {
   PAYLOAD_TOO_LARGE: error(413, false, true, 'errors.payloadTooLarge'),
   QUOTA_EXCEEDED: error(402, false, true, 'errors.quotaExceeded'),
   TASK_LIMIT_EXCEEDED: error(403, false, true, 'errors.taskLimitExceeded'),
+  NO_RUNNING_TASK_RUN: error(409, false, true, 'errors.noRunningTaskRun'),
+  CANCEL_NOT_OWNED: error(409, true, false, 'errors.cancelNotOwned'),
+  CANCEL_FAILED: error(500, true, true, 'errors.cancelFailed'),
   RATE_LIMITED: error(429, true, true, 'errors.rateLimited'),
   STORAGE_QUOTA_EXCEEDED: error(507, false, true, 'errors.storageQuotaExceeded'),
   UNSUPPORTED_EVENT_TYPE: error(422, false, false, 'errors.unsupportedEventType'),
@@ -29,4 +32,3 @@ export const ErrorRegistry = {
 
 export type ErrorCode = keyof typeof ErrorRegistry;
 export const ErrorCodeSchema = z.enum(Object.keys(ErrorRegistry) as [ErrorCode, ...ErrorCode[]]);
-
