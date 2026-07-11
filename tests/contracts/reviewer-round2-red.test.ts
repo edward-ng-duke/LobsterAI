@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { z } from 'zod';
 
 import { StreamTicketRequestSchema } from '../../libs/shared/contracts/src/envelope.schema.js';
 import * as Schemas from '../../libs/shared/contracts/src/index.schemas.js';
@@ -22,6 +23,12 @@ describe('Reviewer Round 2 field-level route mutations', () => {
     expect(RouteRegistry.some((entry) => /Operation(Request|Response)/.test(
       `${entry.requestName}:${entry.responseName}`,
     ))).toBe(false);
+    for (const entry of RouteRegistry) {
+      const requestProperties = Object.keys(z.toJSONSchema(entry.request).properties ?? {}).sort();
+      const responseProperties = Object.keys(z.toJSONSchema(entry.response).properties ?? {}).sort();
+      expect(requestProperties, entry.operationId).not.toEqual(['idempotencyKey', 'input']);
+      expect(responseProperties, entry.operationId).not.toEqual(['data', 'success']);
+    }
   });
 
   test('accepts canonical domain payloads and list response shapes', () => {
@@ -35,6 +42,17 @@ describe('Reviewer Round 2 field-level route mutations', () => {
     }).success).toBe(true);
     expect(route('get_api_v1_agents').response.safeParse({ agents: [] }).success).toBe(true);
     expect(route('get_api_v1_sessions').response.safeParse({ sessions: [] }).success).toBe(true);
+  });
+
+  test.each([
+    ['model config', 'put_api_v1_model_config', { provider: 'openai', model: 'gpt', apiKeySecretRef: 'secret:key' }, { provider: 'openai', model: 'gpt', apiKey: 'raw' }],
+    ['skill install', 'post_api_v1_skills_install', { source: 'registry:skill' }, { source: '' }],
+    ['plugin install', 'post_api_v1_plugins_install', { source: 'registry:plugin' }, { source: '' }],
+    ['scheduled task', 'post_api_v1_scheduled_tasks', { name: 'daily', schedule: '0 9 * * *', enabled: true }, { name: 'daily', enabled: true }],
+    ['runtime restart', 'post_api_v1_runtime_restart', {}, { arbitrary: true }],
+  ])('validates %s request fields', (_name, operationId, valid, invalid) => {
+    expect(route(operationId).request.safeParse(valid).success).toBe(true);
+    expect(route(operationId).request.safeParse(invalid).success).toBe(false);
   });
 });
 

@@ -78,6 +78,10 @@ const checkRoutes = () => {
     assert('routes', route.request && route.response, `missing schema reference for ${route.operationId}`);
     assert('routes', !route.requestName.startsWith('Generic'), `generic request schema ${route.operationId}`);
     assert('routes', !route.responseName.startsWith('Generic'), `generic response schema ${route.operationId}`);
+    const requestProperties = Object.keys(z.toJSONSchema(route.request).properties ?? {}).sort().join(',');
+    const responseProperties = Object.keys(z.toJSONSchema(route.response).properties ?? {}).sort().join(',');
+    assert('routes', requestProperties !== 'idempotencyKey,input', `renamed request placeholder ${route.operationId}`);
+    assert('routes', responseProperties !== 'data,success', `renamed response placeholder ${route.operationId}`);
   }
   assert('routes', !('OperationRequest' in Schemas) && !('OperationResponse' in Schemas), 'operation placeholder schema exported');
   const routeSource = readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/src/registry/routes.ts'), 'utf8');
