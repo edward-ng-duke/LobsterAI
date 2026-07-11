@@ -55,6 +55,7 @@ const createRepositoryCopy = (): string => {
     'scripts/check-docker-build.mjs',
     'scripts/check-helm.mjs',
     'scripts/check-supply-chain.mjs',
+    'scripts/harden-openclaw-runtime-dependencies.mjs',
     'scripts/contracts',
     'scripts/expect-saas-stage-gate.mjs',
     'scripts/json-without-duplicate-keys.mjs',

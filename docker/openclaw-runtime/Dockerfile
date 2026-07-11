@@ -20,6 +20,7 @@ RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;
  && node scripts/sync-openclaw-runtime-current.cjs "$target" \
  && node scripts/bundle-openclaw-gateway.cjs \
  && node scripts/ensure-openclaw-plugins.cjs \
+ && node scripts/harden-openclaw-runtime-dependencies.mjs \
  && node scripts/sync-local-openclaw-extensions.cjs \
  && node scripts/precompile-openclaw-extensions.cjs \
  && node scripts/install-openclaw-channel-deps.cjs \

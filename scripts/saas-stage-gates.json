@@ -77,7 +77,8 @@
         "docker/runtime-orchestrator/Dockerfile",
         "docker/openclaw-runtime/Dockerfile",
         "docker/openclaw-runtime/Dockerfile.debug",
-        "scripts/check-docker-build.mjs"
+        "scripts/check-docker-build.mjs",
+        "scripts/harden-openclaw-runtime-dependencies.mjs"
       ]
     },
     "helm:lint": {
