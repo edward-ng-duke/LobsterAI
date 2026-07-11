@@ -1,7 +1,14 @@
+import { InventoryBridgePaths } from './bridge-links.js';
+
 export const InventorySupport = { Ga: 'ga', PartialGa: 'partial-ga' } as const;
 export const InventoryKind = { Route: 'route', Channel: 'channel' } as const;
 export interface IpcGaInventoryEntry { readonly id:string; readonly legacyIpc:string; readonly direction:string; readonly kind:'route'|'channel'; readonly targets:readonly string[]; readonly sourceRef:string; readonly support:'ga'|'partial-ga'; }
-export const IpcGaInventory = [
+export interface ResolvedIpcGaInventoryEntry extends IpcGaInventoryEntry {
+  readonly routeTargets: readonly string[];
+  readonly channelTargets: readonly string[];
+  readonly bridgePaths: readonly string[];
+}
+const IpcGaInventoryRows = [
   {"id":"A-099","legacyIpc":"cowork:session:start","direction":"R→M","kind":"route","targets":["post_api_v1_sessions"],"sourceRef":"附录A:99","support":"ga"},
   {"id":"A-100","legacyIpc":"cowork:session:continue","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_turns"],"sourceRef":"附录A:100","support":"ga"},
   {"id":"A-101","legacyIpc":"cowork:session:stop","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_stop"],"sourceRef":"附录A:101","support":"ga"},
@@ -75,9 +82,9 @@ export const IpcGaInventory = [
   {"id":"A-221","legacyIpc":"get-api-config","direction":"R→M","kind":"route","targets":["get_api_v1_model_config"],"sourceRef":"附录A:221","support":"ga"},
   {"id":"A-222","legacyIpc":"check-api-config","direction":"R→M","kind":"route","targets":["post_api_v1_model_config_check"],"sourceRef":"附录A:222","support":"ga"},
   {"id":"A-223","legacyIpc":"save-api-config","direction":"R→M","kind":"route","targets":["put_api_v1_model_config"],"sourceRef":"附录A:223","support":"ga"},
-  {"id":"A-224","legacyIpc":"generate-session-title","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_title_generation","post_api_v1_sessions_id"],"sourceRef":"附录A:224","support":"ga"},
+  {"id":"A-224","legacyIpc":"generate-session-title","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_title_generation"],"sourceRef":"附录A:224","support":"ga"},
   {"id":"A-232","legacyIpc":"auth:login","direction":"R→M","kind":"route","targets":["post_auth_login","post_oauth_authorize"],"sourceRef":"附录A:232","support":"ga"},
-  {"id":"A-233","legacyIpc":"auth:exchange","direction":"R→M","kind":"route","targets":["post_oauth_token","post_auth_callback"],"sourceRef":"附录A:233","support":"ga"},
+  {"id":"A-233","legacyIpc":"auth:exchange","direction":"R→M","kind":"route","targets":["post_oauth_token"],"sourceRef":"附录A:233","support":"ga"},
   {"id":"A-234","legacyIpc":"auth:callback","direction":"M→R","kind":"channel","targets":["authCallback"],"sourceRef":"附录A:234","support":"ga"},
   {"id":"A-236","legacyIpc":"auth:getUser","direction":"R→M","kind":"route","targets":["get_auth_me"],"sourceRef":"附录A:236","support":"ga"},
   {"id":"A-237","legacyIpc":"auth:getProfileSummary","direction":"R→M","kind":"route","targets":["get_auth_profile_summary"],"sourceRef":"附录A:237","support":"ga"},
@@ -151,7 +158,7 @@ export const IpcGaInventory = [
   {"id":"A-351","legacyIpc":"openclaw:dataMigration:getLastRestoreResult","direction":"R→M","kind":"route","targets":["get_api_v1_runtime_migration_last_restore"],"sourceRef":"附录A:351","support":"ga"},
   {"id":"A-352","legacyIpc":"openclaw:sessionPolicy:get","direction":"R→M","kind":"route","targets":["get_api_v1_runtime_session_policy"],"sourceRef":"附录A:352","support":"ga"},
   {"id":"A-353","legacyIpc":"openclaw:sessionPolicy:set","direction":"R→M","kind":"route","targets":["put_api_v1_runtime_session_policy"],"sourceRef":"附录A:353","support":"ga"},
-  {"id":"A-365","legacyIpc":"asr:realtime:createSession","direction":"R→M","kind":"route","targets":["post_api_v1_asr_sessions","post_api_v1_asr_sessions_asrSessionId_stream","post_api_v1_model_stream"],"sourceRef":"附录A:365","support":"ga"},
+  {"id":"A-365","legacyIpc":"asr:realtime:createSession","direction":"R→M","kind":"route","targets":["post_api_v1_asr_sessions"],"sourceRef":"附录A:365","support":"ga"},
   {"id":"A-373","legacyIpc":"dialog:selectDirectory","direction":"R→M","kind":"route","targets":["get_api_v1_workspaces_wid_files_tree"],"sourceRef":"附录A:373","support":"ga"},
   {"id":"A-374","legacyIpc":"dialog:selectFile / dialog:selectFiles","direction":"R→M","kind":"route","targets":["post_api_v1_workspaces_wid_files_upload"],"sourceRef":"附录A:374","support":"ga"},
   {"id":"A-375","legacyIpc":"dialog:saveInlineFile","direction":"R→M","kind":"route","targets":["post_api_v1_workspaces_wid_files_upload"],"sourceRef":"附录A:375","support":"ga"},
@@ -187,3 +194,14 @@ export const IpcGaInventory = [
   {"id":"A-485","legacyIpc":"scheduledTask:refresh","direction":"M→R","kind":"channel","targets":["taskRefresh"],"sourceRef":"附录A:485","support":"ga"},
   {"id":"A-514","legacyIpc":"app:getVersion / getSystemLocale / getKeyfromAttribution","direction":"R→M","kind":"route","targets":["get_api_v1_config_app_info"],"sourceRef":"附录A:514","support":"ga"},
 ] as const satisfies readonly IpcGaInventoryEntry[];
+
+export const IpcGaInventory: readonly ResolvedIpcGaInventoryEntry[] = IpcGaInventoryRows.map((row) => ({
+  ...row,
+  routeTargets: row.kind === 'route' ? row.targets : [],
+  channelTargets: row.id === 'A-365'
+    ? ['asrAudioChunk', 'asrPartial', 'asrFinal', 'asrError']
+    : row.kind === 'channel'
+      ? row.targets
+      : [],
+  bridgePaths: InventoryBridgePaths[row.id],
+}));

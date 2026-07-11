@@ -18,6 +18,8 @@ export {
   MessageDtoSchema as MessageDto,
   MessageListResponseSchema as MessageListResponse,
   OAuthTokenRequestSchema as OAuthTokenRequest,
+  OperationRequestSchema as OperationRequest,
+  OperationResponseSchema as OperationResponse,
   PageInfoSchema as PageInfo,
   PermissionDismissEventSchema as PermissionDismissEvent,
   PermissionRespondRequestSchema as PermissionRespondRequest,

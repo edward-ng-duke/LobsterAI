@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 
+import type { ErrorCode } from '../errors.js';
 import * as Schemas from '../index.schemas.js';
 import { IpcGaInventory } from './ipc-ga-inventory.js';
 
@@ -10,15 +11,70 @@ export const RouteSupport = { Ga: 'ga', Unsupported: 'unsupported' } as const;
 export interface RouteRegistryEntry {
   readonly operationId: string; readonly method: HttpMethod; readonly path: string; readonly domain: string;
   readonly requestName: string; readonly request: ZodType; readonly responseName: string; readonly response: ZodType;
-  readonly errors: readonly string[]; readonly auth: 'public' | 'access-token'; readonly legacyBridgePaths: readonly string[];
+  readonly successStatus: number; readonly errors: readonly ErrorCode[]; readonly auth: 'public' | 'access-token'; readonly legacyBridgePaths: readonly string[];
   readonly sourceRefs: readonly string[]; readonly support: 'ga' | 'unsupported';
 }
 
-const route = (method: HttpMethod, path: string, operationId: string, requestName: keyof typeof Schemas, responseName: keyof typeof Schemas): RouteRegistryEntry => ({
-  operationId, method, path, domain: path.split('/').filter(Boolean)[2] ?? 'auth', requestName, request: Schemas[requestName], responseName, response: Schemas[responseName],
-  errors: ['VALIDATION_FAILED', 'UNAUTHENTICATED', 'NOT_FOUND', 'INTERNAL_ERROR'], auth: path.startsWith('/auth/') || path.startsWith('/oauth/') ? 'public' : 'access-token',
-  legacyBridgePaths: [], sourceRefs: ['附录A', '19§3.3'], support: method === 'POST' && path === '/api/v1/share-deployments/node' ? 'unsupported' : 'ga',
-});
+const schemaName = (operationId: string, suffix: 'Request' | 'Response') =>
+  `${operationId.replace(/(^|_)([a-zA-Z0-9])/g, (_match, _separator, value: string) => value.toUpperCase())}${suffix}`;
+
+const routeErrors = (path: string, auth: RouteRegistryEntry['auth']): ErrorCode[] => {
+  const errors: ErrorCode[] = ['VALIDATION_FAILED', 'RATE_LIMITED', 'INTERNAL_ERROR'];
+  if (auth === 'access-token') errors.push('UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND');
+  if (path.includes('/sessions')) errors.push('SESSION_BUSY', 'IN_PROGRESS');
+  if (path === '/api/v1/stream/ticket') errors.push('TICKET_EXPIRED', 'TICKET_ALREADY_USED');
+  if (path.includes('/files') || path.includes('/uploads')) {
+    errors.push('PAYLOAD_TOO_LARGE', 'STORAGE_QUOTA_EXCEEDED');
+  }
+  if (path.includes('/billing') || path.includes('/model') || path.includes('/media')) {
+    errors.push('QUOTA_EXCEEDED');
+  }
+  if (path.includes('/scheduled-tasks')) errors.push('TASK_LIMIT_EXCEEDED');
+  if (path.includes('/stream')) errors.push('UNSUPPORTED_EVENT_TYPE', 'STREAM_GAP');
+  return [...new Set(errors)];
+};
+
+const route = (method: HttpMethod, path: string, operationId: string, requestName: keyof typeof Schemas, responseName: keyof typeof Schemas): RouteRegistryEntry => {
+  const support = method === 'POST' && path === '/api/v1/share-deployments/node' ? 'unsupported' : 'ga';
+  const auth = ['/auth/login', '/oauth/authorize', '/oauth/token'].includes(path)
+    ? 'public'
+    : 'access-token';
+  const defaultRequest = requestName === 'GenericRequest';
+  const defaultResponse = responseName === 'GenericResponse';
+  const accepted = method === 'POST' && (
+    path === '/api/v1/sessions' ||
+    path.includes('/turns') ||
+    path.startsWith('/api/v1/model/') ||
+    path.startsWith('/api/v1/asr/') ||
+    path.startsWith('/api/v1/privacy/') ||
+    path.startsWith('/api/v1/runtime/')
+  );
+  const created = method === 'POST' && !accepted && /\/(agents|artifacts|html-shares|mcp\/servers|scheduled-tasks|skills\/install|kits\/install|uploads)$/.test(path);
+  return {
+    operationId,
+    method,
+    path,
+    domain: path.split('/').filter(Boolean)[2] ?? 'auth',
+    requestName: defaultRequest ? schemaName(operationId, 'Request') : requestName,
+    request: defaultRequest ? Schemas.OperationRequest : Schemas[requestName],
+    responseName: support === 'unsupported'
+      ? 'ErrorEnvelope'
+      : defaultResponse
+        ? schemaName(operationId, 'Response')
+        : responseName,
+    response: support === 'unsupported'
+      ? Schemas.OperationResponse
+      : defaultResponse
+        ? Schemas.OperationResponse
+        : Schemas[responseName],
+    successStatus: support === 'unsupported' ? 501 : accepted ? 202 : created ? 201 : 200,
+    errors: support === 'unsupported' ? ['UNSUPPORTED_FEATURE'] : routeErrors(path, auth),
+    auth,
+    legacyBridgePaths: [],
+    sourceRefs: ['附录A', '19§3.3'],
+    support,
+  };
+};
 
 const RouteDefinitions = [
   route('GET', '/api/v1/agents', 'get_api_v1_agents', 'EmptyRequest', 'GenericResponse'),
@@ -32,7 +88,6 @@ const RouteDefinitions = [
   route('POST', '/api/v1/artifacts/{artifactId}/preview', 'post_api_v1_artifacts_artifactId_preview', 'GenericRequest', 'GenericResponse'),
   route('DELETE', '/api/v1/artifacts/preview-sessions/{previewSessionId}', 'delete_api_v1_artifacts_preview_sessions_previewSessionId', 'EmptyRequest', 'GenericResponse'),
   route('POST', '/api/v1/asr/sessions', 'post_api_v1_asr_sessions', 'AsrSessionCreateRequest', 'AsrSessionCreateResponse'),
-  route('POST', '/api/v1/asr/sessions/{asrSessionId}/stream', 'post_api_v1_asr_sessions_asrSessionId_stream', 'GenericRequest', 'GenericResponse'),
   route('GET', '/api/v1/billing/account', 'get_api_v1_billing_account', 'EmptyRequest', 'GenericResponse'),
   route('POST', '/api/v1/billing/byok', 'post_api_v1_billing_byok', 'GenericRequest', 'GenericResponse'),
   route('DELETE', '/api/v1/billing/byok/{provider}', 'delete_api_v1_billing_byok_provider', 'EmptyRequest', 'GenericResponse'),
@@ -124,7 +179,6 @@ const RouteDefinitions = [
   route('DELETE', '/api/v1/sessions/{id}', 'delete_api_v1_sessions_id', 'EmptyRequest', 'GenericResponse'),
   route('GET', '/api/v1/sessions/{id}', 'get_api_v1_sessions_id', 'EmptyRequest', 'GenericResponse'),
   route('PATCH', '/api/v1/sessions/{id}', 'patch_api_v1_sessions_id', 'GenericRequest', 'GenericResponse'),
-  route('POST', '/api/v1/sessions/{id}', 'post_api_v1_sessions_id', 'GenericRequest', 'GenericResponse'),
   route('POST', '/api/v1/sessions/{id}/compact-context', 'post_api_v1_sessions_id_compact_context', 'GenericRequest', 'GenericResponse'),
   route('GET', '/api/v1/sessions/{id}/context-usage', 'get_api_v1_sessions_id_context_usage', 'EmptyRequest', 'GenericResponse'),
   route('POST', '/api/v1/sessions/{id}/exports/result-image', 'post_api_v1_sessions_id_exports_result_image', 'GenericRequest', 'GenericResponse'),
@@ -174,7 +228,6 @@ const RouteDefinitions = [
   route('POST', '/api/v1/workspaces/{wid}/uploads', 'post_api_v1_workspaces_wid_uploads', 'GenericRequest', 'GenericResponse'),
   route('POST', '/api/v1/workspaces/{wid}/uploads/{id}/complete', 'post_api_v1_workspaces_wid_uploads_id_complete', 'GenericRequest', 'GenericResponse'),
   route('GET', '/api/v1/workspaces/recent', 'get_api_v1_workspaces_recent', 'EmptyRequest', 'GenericResponse'),
-  route('POST', '/auth/callback', 'post_auth_callback', 'GenericRequest', 'GenericResponse'),
   route('POST', '/auth/login', 'post_auth_login', 'LoginRequest', 'LoginResponse'),
   route('POST', '/auth/logout', 'post_auth_logout', 'EmptyRequest', 'LogoutResponse'),
   route('GET', '/auth/me', 'get_auth_me', 'EmptyRequest', 'GenericResponse'),
