@@ -1,21 +1,91 @@
 {
   "schemaVersion": 1,
   "kind": "P02_PRISMA_STAGE_GATE",
-  "runId": "2e7332cf-5a60-40a3-933e-ad1d0ab31e7a",
-  "generatedAt": "2026-07-11T12:02:45.983Z",
-  "sourceSha": "dc98a77d153fd24f8f8376f10909deaa302126fa",
+  "runId": "3ba5ebfc-051f-4d34-b1c3-99fdffef0d88",
+  "generatedAt": "2026-07-11T14:34:45.704Z",
+  "sourceSha": "ec2cc92379ac754c9625614be7cd0f2c49e74435",
   "nodeVersion": "v24.15.0",
   "platform": "darwin/arm64",
   "status": "PASS",
-  "generatedClientHash": "c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441",
-  "commandExitCodes": {
-    "validate-static": 0,
-    "contracts-preflight": 0,
-    "prisma-validate": 0,
-    "prisma-generate-first": 0,
-    "prisma-generate-second": 0,
-    "db-unit": 0,
-    "db-preflight": 0,
-    "db-integration": 0
-  }
+  "commands": [
+    {
+      "command": [
+        "/Users/whitejack/.nvm/versions/node/v24.15.0/bin/node",
+        "scripts/db/validate-static.mjs"
+      ],
+      "exitCode": 0,
+      "outputSha256": "a5a8d4fb97eca9af91746d8bdb80bcad24096c64da2b33891b0302d5b2a6eb75"
+    },
+    {
+      "command": [
+        "/Users/whitejack/.nvm/versions/node/v24.15.0/bin/node",
+        "scripts/db/preflight.mjs",
+        "--contracts"
+      ],
+      "exitCode": 0,
+      "outputSha256": "681a0c74220fe2e1fbed5e621cfa9289708641c0cb2675fa1eba89f5bd57e07f"
+    },
+    {
+      "command": [
+        "npx",
+        "prisma",
+        "validate",
+        "--schema",
+        "prisma/schema.prisma"
+      ],
+      "exitCode": 0,
+      "outputSha256": "72372110e54e578b6e6809fff046cacedfc70c5cb26c724dea6a52985d5b3bf2"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "prisma:generate"
+      ],
+      "exitCode": 0,
+      "outputSha256": "e33d425aaf7de34c86f3880acd26d3e0f3a276a042f7364dfa5bc116c4497a37"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "prisma:generate"
+      ],
+      "exitCode": 0,
+      "outputSha256": "005992f32e0c701671c2de24a3b875234f4e6baa2a29e284018b0520ed163002"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "test:db:core"
+      ],
+      "exitCode": 0,
+      "outputSha256": "7718bc597d984ae7f7df1b0e1f76462b75c574bc605fe661c8c343fbcc300807"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "test:db:preflight"
+      ],
+      "exitCode": 0,
+      "outputSha256": "47c78f8d6c01a01bcc0694547d6576cf4446b457e5eb54f756d3be820c072e8c"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "test:db:integration"
+      ],
+      "exitCode": 0,
+      "outputSha256": "9ba3d4ec911cb75779f05accfe68cfa4ea187878d9036bbbdc91d3b2a06ff7c0"
+    }
+  ],
+  "generatedClientHash": "c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441"
 }

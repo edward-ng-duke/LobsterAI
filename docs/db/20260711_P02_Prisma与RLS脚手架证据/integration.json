@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_INTEGRATION",
-  "runId": "23213c88-868c-4bc4-9db1-a81002d47c1e",
-  "generatedAt": "2026-07-11T12:02:55.763Z",
-  "sourceSha": "dc98a77d153fd24f8f8376f10909deaa302126fa",
+  "runId": "2b10f3df-d7ee-470a-aea9-fb259baad214",
+  "generatedAt": "2026-07-11T14:35:04.778Z",
+  "sourceSha": "ec2cc92379ac754c9625614be7cd0f2c49e74435",
   "nodeVersion": "v24.15.0",
   "platform": "darwin/arm64",
   "status": "PASS",
@@ -14,11 +14,14 @@
       "image": "postgres:17.10-bookworm",
       "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
       "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-      "containerId": "a0cbea3001d7b035c2a32ee679e6bab7a37431077ccf34e2f919525a59a00cbd",
+      "containerId": "0f0ab6ac00def40f3bc0659d4ce57c3db6de03b5d77f332db454936b0c1f9d69",
       "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)"
     },
     "migrations": [
-      { "migration_name": "20260711000000_init_prisma_rls_scaffold", "finished": true }
+      {
+        "migration_name": "20260711000000_init_prisma_rls_scaffold",
+        "finished": true
+      }
     ],
     "rls": [
       {
@@ -31,8 +34,16 @@
       }
     ],
     "roles": [
-      { "rolname": "p02_admin", "rolsuper": true, "rolbypassrls": true },
-      { "rolname": "p02_app", "rolsuper": false, "rolbypassrls": false }
+      {
+        "rolname": "p02_admin",
+        "rolsuper": true,
+        "rolbypassrls": true
+      },
+      {
+        "rolname": "p02_app",
+        "rolsuper": false,
+        "rolbypassrls": false
+      }
     ],
     "seed": [
       {
@@ -46,10 +57,10 @@
         "id": "b0000000-0000-4000-8000-000000000002"
       }
     ],
-    "testOutputSha256": "4bbe23bb56516c53e3df0d85a8ec5ddfa10630907a76b6e3e7358db5939dfcba"
+    "testOutputSha256": "7aa0604dadfa8e2333436e11095c7131465e18ebae5337d89c83d94282e1a71b"
   },
   "cleanup": {
-    "containerId": "a0cbea3001d7b035c2a32ee679e6bab7a37431077ccf34e2f919525a59a00cbd",
+    "containerId": "0f0ab6ac00def40f3bc0659d4ce57c3db6de03b5d77f332db454936b0c1f9d69",
     "removed": true
   }
 }

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_PREFLIGHT",
-  "runId": "07842da3-e55c-409d-89cb-0675973ccf08",
-  "generatedAt": "2026-07-11T12:02:51.027Z",
-  "sourceSha": "dc98a77d153fd24f8f8376f10909deaa302126fa",
+  "runId": "89b9bc85-535f-4209-94d3-17d44acde61c",
+  "generatedAt": "2026-07-11T14:34:50.951Z",
+  "sourceSha": "ec2cc92379ac754c9625614be7cd0f2c49e74435",
   "nodeVersion": "v24.15.0",
   "platform": "darwin/arm64",
   "status": "PASS",
@@ -19,15 +19,18 @@
       "image": "postgres:17.10-bookworm",
       "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
       "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-      "containerId": "6c2b4c911ba37e4bfd88f63a0135a96e7003b6d4d282263ef8a8b65cb995543d",
+      "containerId": "c687cf0f4f8ab86495efa06581e116580f9ec3a0b7ca07878e8e5435feef6b95",
       "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)",
       "citextAvailableVersion": "1.6",
-      "generatedUuid": "76fa68c0-6cc5-4006-bac6-d77ab1e5d970",
-      "migrationRole": { "rolsuper": true, "rolbypassrls": true }
+      "generatedUuid": "453f5354-6df9-4d10-aaa9-698f0e0e02b9",
+      "migrationRole": {
+        "rolsuper": true,
+        "rolbypassrls": true
+      }
     }
   },
   "cleanup": {
-    "containerId": "6c2b4c911ba37e4bfd88f63a0135a96e7003b6d4d282263ef8a8b65cb995543d",
+    "containerId": "c687cf0f4f8ab86495efa06581e116580f9ec3a0b7ca07878e8e5435feef6b95",
     "removed": true
   }
 }
