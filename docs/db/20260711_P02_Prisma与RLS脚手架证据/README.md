@@ -83,6 +83,7 @@
 |---|---|
 | `node scripts/db/validate.mjs` | exit 0；原生 validation runId `c0a7cccd-...` |
 | provenance mutation | exit 0；20/20，覆盖 add/modify/delete/rename/revert/merge/non-first-parent |
+| `npm run test:db:unit` | exit 0；62/62 |
 | `npm run test:db:integration`（由 validation 调用） | exit 0；21/21，skipped=0 |
 | `npm run prisma:validate` | exit 0；invocationId `fa89ea5b-...` |
 | `node scripts/db/validate-evidence.mjs` | exit 0；code/stage provenance PASS |
@@ -90,11 +91,11 @@
 | `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
 | `npm run typecheck` | exit 0 |
 | changed-file ESLint / `npm run lint:saas` | exit 0；0 warning |
-| `npm test` | exit 0；202 files，2166 passed，1 个既有 skip |
+| `npm test` | exit 0；202 files，2173 passed，1 个既有 skip |
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `3d8eb58b...` 与 `37c7a481...`；不声称报告与包含报告的提交自引用同 SHA。
+原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `3d8eb58b...` 与 `37c7a481...`；不声称报告与包含报告的提交自引用同 SHA。交付前在 stage/docs commit `0419575d...` 上再次执行 active gate，临时 invocationId `3ecd9048-0ffa-4196-bf50-1932ad72f8a1` PASS；该重跑只更新 ignored `.reports`，没有覆盖冻结 snapshot。
 
 ## 已知非 P02 风险
 
