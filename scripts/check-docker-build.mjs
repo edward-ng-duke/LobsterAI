@@ -341,7 +341,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
 };
 
 const writeReport = (report) => {
-  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260711_PR3部署供应链证据');
+  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260712_PR3部署供应链证据');
   mkdirSync(reportDirectory, { recursive: true });
   const reportPath = path.join(reportDirectory, 'docker-build-check.json');
   const temporaryPath = `${reportPath}.${report.invocationId}.tmp`;
