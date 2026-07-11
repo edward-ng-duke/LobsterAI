@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   extendZodWithOpenApi,
   OpenApiGeneratorV31,
@@ -6,7 +6,10 @@ import {
 } from '@asteasolutions/zod-to-openapi';
 import {
   existsSync,
+  closeSync,
+  fsyncSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -49,6 +52,12 @@ const managedOutputs = [
   'apps/api/src/generated/ws-events.ts',
   'apps/web/src/generated/api-client.ts',
   'apps/web/src/generated/stream-events.ts',
+];
+const managedGeneratedDirectories = [
+  'libs/shared/contracts/generated',
+  'libs/client/bridge/src/generated',
+  'apps/api/src/generated',
+  'apps/web/src/generated',
 ];
 
 const walk = (directory) =>
@@ -328,19 +337,51 @@ outputs.set(
 
 const checkOnly = process.argv.includes('--check');
 const mismatches = [];
+const managedAbsolutePaths = new Set(
+  managedOutputs.map((relativePath) => path.join(repositoryRoot, relativePath)),
+);
+const staleOutputs = managedGeneratedDirectories.flatMap((relativeDirectory) => {
+  const absoluteDirectory = path.join(repositoryRoot, relativeDirectory);
+  if (!existsSync(absoluteDirectory)) return [];
+  return walk(absoluteDirectory).filter((file) => !managedAbsolutePaths.has(file));
+});
 for (const relativePath of managedOutputs) {
   const expected = outputs.get(relativePath);
   if (expected === undefined) throw new Error(`managed output has no renderer: ${relativePath}`);
   const absolutePath = path.join(repositoryRoot, relativePath);
   if (checkOnly) {
     if (!existsSync(absolutePath) || readFileSync(absolutePath, 'utf8') !== expected) mismatches.push(relativePath);
-    continue;
   }
-  mkdirSync(path.dirname(absolutePath), { recursive: true });
-  rmSync(absolutePath, { force: true });
-  const temporaryPath = `${absolutePath}.${process.pid}.tmp`;
-  writeFileSync(temporaryPath, expected);
-  renameSync(temporaryPath, absolutePath);
+}
+if (checkOnly) {
+  mismatches.push(...staleOutputs.map((file) => path.relative(repositoryRoot, file)));
+} else {
+  const staged = [];
+  try {
+    for (const [relativePath, expected] of outputs) {
+      const absolutePath = path.join(repositoryRoot, relativePath);
+      mkdirSync(path.dirname(absolutePath), { recursive: true });
+      const temporaryPath = `${absolutePath}.${process.pid}.${randomUUID()}.tmp`;
+      const descriptor = openSync(temporaryPath, 'wx');
+      try {
+        writeFileSync(descriptor, expected);
+        fsyncSync(descriptor);
+      } finally {
+        closeSync(descriptor);
+      }
+      staged.push({ absolutePath, temporaryPath });
+    }
+    if (process.env.CONTRACT_GENERATE_FAIL_AFTER_STAGE === '1') {
+      throw new Error('Injected contract generation failure after staging');
+    }
+    for (const { absolutePath, temporaryPath } of staged) {
+      renameSync(temporaryPath, absolutePath);
+    }
+    for (const staleOutput of staleOutputs) rmSync(staleOutput, { force: true });
+  } catch (error) {
+    for (const { temporaryPath } of staged) rmSync(temporaryPath, { force: true });
+    throw error;
+  }
 }
 
 if (mismatches.length > 0) {

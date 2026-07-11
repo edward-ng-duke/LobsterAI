@@ -156,4 +156,16 @@ describe('Reviewer Round 1 atomic generation mutations', () => {
     expect(result.status, result.stdout + result.stderr).not.toBe(0);
     expect(existsSync(staleOutput)).toBe(true);
   });
+
+  test('keeps the published outputs intact when staging fails closed', () => {
+    const publishedOutput = path.join(repositoryRoot, 'libs/shared/contracts/openapi.yaml');
+    const before = readFileSync(publishedOutput, 'utf8');
+    const result = spawnSync(process.execPath, ['scripts/contracts/generate.mjs'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+      env: { ...process.env, CONTRACT_GENERATE_FAIL_AFTER_STAGE: '1' },
+    });
+    expect(result.status, result.stdout + result.stderr).not.toBe(0);
+    expect(readFileSync(publishedOutput, 'utf8')).toBe(before);
+  });
 });
