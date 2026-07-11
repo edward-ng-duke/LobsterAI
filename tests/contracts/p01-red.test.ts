@@ -12,6 +12,7 @@ function readJson(relativePath: string): unknown {
 
 describe('P01 contract gate red baseline', () => {
   test('activates contracts:check as a real PASS gate', () => {
+    const stageManifest = readJson('scripts/saas-stage-gates.json') as { currentStage: string };
     const result = spawnSync('npm', ['run', 'contracts:check'], {
       cwd: repositoryRoot,
       encoding: 'utf8',
@@ -20,7 +21,7 @@ describe('P01 contract gate red baseline', () => {
     expect(result.status, result.stdout + result.stderr).toBe(0);
     expect(readJson('.reports/saas-gates/contracts-check.json')).toMatchObject({
       gate: 'contracts:check',
-      stage: 'P01',
+      stage: stageManifest.currentStage,
       status: 'PASS',
     });
   });

@@ -61,6 +61,7 @@ const runNodeScript = (root: string, script: string, argument?: string) =>
   spawnSync(process.execPath, argument ? [script, argument] : [script], {
     cwd: root,
     encoding: 'utf8',
+    env: { ...process.env, SAAS_SOURCE_SHA: 'a'.repeat(40) },
   });
 
 const readRegistry = (root: string): WorkspaceRegistry =>
