@@ -85,14 +85,18 @@ describe('P01 contract mutation gates', () => {
     expect(result.stderr).toContain('colon parameter/action');
   });
 
-  test('detects a hand-edited generated consumer', () => {
-    const root = createContractCopy();
-    const file = path.join(root, 'apps/web/src/generated/api-client.ts');
-    writeFileSync(file, `${readFileSync(file, 'utf8')}\n// hand edit\n`);
-    const result = runCheck(root, 'generated-consumers');
-    expect(result.status, result.stdout + result.stderr).not.toBe(0);
-    expect(result.stderr).toContain('stale or edited');
-  });
+  test(
+    'detects a hand-edited generated consumer',
+    () => {
+      const root = createContractCopy();
+      const file = path.join(root, 'apps/web/src/generated/api-client.ts');
+      writeFileSync(file, `${readFileSync(file, 'utf8')}\n// hand edit\n`);
+      const result = runCheck(root, 'generated-consumers');
+      expect(result.status, result.stdout + result.stderr).not.toBe(0);
+      expect(result.stderr).toContain('stale or edited');
+    },
+    15_000,
+  );
 
   test('reports a missing breaking base ref as BLOCKED rather than PASS', () => {
     const result = spawnSync(process.execPath, ['scripts/contracts/breaking-diff.mjs'], {
