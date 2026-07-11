@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
 import {
+  extendZodWithOpenApi,
+  OpenApiGeneratorV31,
+  OpenAPIRegistry,
+} from '@asteasolutions/zod-to-openapi';
+import {
   existsSync,
   mkdirSync,
   readFileSync,
@@ -11,19 +16,20 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import openapiTypeScript, { astToString } from 'openapi-typescript';
 import { stringify } from 'yaml';
 import { z } from 'zod';
 
-import * as SchemaCatalog from '../../libs/shared/contracts/dist/index.schemas.js';
-import { ContractVersion } from '../../libs/shared/contracts/dist/version.js';
-import { ErrorRegistry } from '../../libs/shared/contracts/dist/errors.js';
-import { BridgeRegistry } from '../../libs/shared/contracts/dist/registry/bridge.js';
-import { ChannelRegistry } from '../../libs/shared/contracts/dist/registry/channels.js';
-import { CoworkStreamRegistry } from '../../libs/shared/contracts/dist/registry/cowork-stream.js';
-import { IpcGaInventory } from '../../libs/shared/contracts/dist/registry/ipc-ga-inventory.js';
-import { RouteRegistry } from '../../libs/shared/contracts/dist/registry/routes.js';
-
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+extendZodWithOpenApi(z);
+const SchemaCatalog = await import('../../libs/shared/contracts/dist/index.schemas.js');
+const { ContractVersion } = await import('../../libs/shared/contracts/dist/version.js');
+const { ErrorRegistry } = await import('../../libs/shared/contracts/dist/errors.js');
+const { BridgeRegistry } = await import('../../libs/shared/contracts/dist/registry/bridge.js');
+const { ChannelRegistry } = await import('../../libs/shared/contracts/dist/registry/channels.js');
+const { CoworkStreamRegistry } = await import('../../libs/shared/contracts/dist/registry/cowork-stream.js');
+const { IpcGaInventory } = await import('../../libs/shared/contracts/dist/registry/ipc-ga-inventory.js');
+const { RouteRegistry } = await import('../../libs/shared/contracts/dist/registry/routes.js');
 const generatedHeader = 'Generated file. Do not edit.';
 const yamlHeader = `# ${generatedHeader}`;
 const tsHeader = `// ${generatedHeader}`;
@@ -73,11 +79,15 @@ const schemaJson = (schema, name) => {
   return { title: name, ...json };
 };
 
-const componentSchemas = Object.fromEntries(
-  Object.entries(SchemaCatalog)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([name, schema]) => [name, schemaJson(schema, name)]),
-);
+const openapiRegistry = new OpenAPIRegistry();
+for (const [name, schema] of Object.entries(SchemaCatalog).sort(([left], [right]) =>
+  left.localeCompare(right),
+)) {
+  openapiRegistry.register(name, schema);
+}
+const componentSchemas = new OpenApiGeneratorV31(
+  openapiRegistry.definitions,
+).generateComponents().components.schemas;
 componentSchemas.ErrorEnvelope = {
   type: 'object',
   additionalProperties: false,
@@ -146,6 +156,9 @@ const openapi = {
     schemas: componentSchemas,
   },
 };
+const generatedOpenapiTypes = astToString(
+  await openapiTypeScript(openapi, { alphabetize: true }),
+);
 
 const asyncMessages = {};
 for (const channel of ChannelRegistry) {
@@ -261,7 +274,7 @@ const bridgeMapSource = `${tsHeader}\nexport const ElectronBridgeMap = ${JSON.st
   null,
   2,
 )} as const;\n`;
-const apiClientSource = `${tsHeader}\nexport type ApiOperation =\n${routeUnion};\n`;
+const apiClientSource = `${tsHeader}\n${generatedOpenapiTypes}\nexport type ApiOperation =\n${routeUnion};\n`;
 const streamEventsSource = `${tsHeader}\nexport type StreamEvent =\n${streamUnion};\n`;
 
 const outputs = new Map([

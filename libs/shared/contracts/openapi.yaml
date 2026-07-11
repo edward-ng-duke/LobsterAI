@@ -19,7 +19,6 @@ components:
       required:
         - name
         - skillIds
-      title: AgentCreateRequest
       type: object
     AgentDto:
       additionalProperties: false
@@ -43,7 +42,6 @@ components:
         - id
         - name
         - skillIds
-      title: AgentDto
       type: object
     AgentUpdateRequest:
       additionalProperties: false
@@ -60,13 +58,13 @@ components:
           type: array
         workingDirectory:
           type: string
-      title: AgentUpdateRequest
       type: object
     ApiStreamAbort:
       additionalProperties: false
       properties:
         aborted:
-          const: true
+          enum:
+            - true
           type: boolean
         requestId:
           minLength: 1
@@ -74,7 +72,6 @@ components:
       required:
         - requestId
         - aborted
-      title: ApiStreamAbort
       type: object
     ApiStreamChunk:
       additionalProperties: false
@@ -85,14 +82,13 @@ components:
           type: string
       required:
         - requestId
-        - chunk
-      title: ApiStreamChunk
       type: object
     ApiStreamDone:
       additionalProperties: false
       properties:
         done:
-          const: true
+          enum:
+            - true
           type: boolean
         requestId:
           minLength: 1
@@ -100,7 +96,6 @@ components:
       required:
         - requestId
         - done
-      title: ApiStreamDone
       type: object
     ApiStreamError:
       additionalProperties: false
@@ -111,8 +106,6 @@ components:
           type: string
       required:
         - requestId
-        - error
-      title: ApiStreamError
       type: object
     ArtifactDto:
       additionalProperties: false
@@ -134,7 +127,6 @@ components:
         - id
         - type
         - path
-      title: ArtifactDto
       type: object
     AskUserQuestion:
       additionalProperties: false
@@ -153,7 +145,6 @@ components:
       required:
         - requestId
         - question
-      title: AskUserQuestion
       type: object
     AsrAudioChunk:
       additionalProperties: false
@@ -162,13 +153,11 @@ components:
           minLength: 1
           type: string
         sequence:
-          maximum: 9007199254740991
           minimum: 0
           type: integer
       required:
         - sequence
         - audioBase64
-      title: AsrAudioChunk
       type: object
     AsrErrorEvent:
       additionalProperties: false
@@ -181,33 +170,32 @@ components:
       required:
         - code
         - message
-      title: AsrErrorEvent
       type: object
     AsrFinalEvent:
       additionalProperties: false
       properties:
         isFinal:
-          const: true
+          enum:
+            - true
           type: boolean
         text:
           type: string
       required:
         - text
         - isFinal
-      title: AsrFinalEvent
       type: object
     AsrPartialEvent:
       additionalProperties: false
       properties:
         isFinal:
-          const: false
+          enum:
+            - false
           type: boolean
         text:
           type: string
       required:
         - text
         - isFinal
-      title: AsrPartialEvent
       type: object
     AsrSessionCreateRequest:
       additionalProperties: false
@@ -220,7 +208,6 @@ components:
           type: string
       required:
         - mimeType
-      title: AsrSessionCreateRequest
       type: object
     AsrSessionCreateResponse:
       additionalProperties: false
@@ -230,7 +217,6 @@ components:
           type: string
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         recommendedMimeType:
           minLength: 1
@@ -243,14 +229,12 @@ components:
         - streamTicket
         - expiresAt
         - recommendedMimeType
-      title: AsrSessionCreateResponse
       type: object
     AsrStreamTicket:
       additionalProperties: false
       properties:
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         tenantId:
           minLength: 1
@@ -266,7 +250,6 @@ components:
         - tenantId
         - userId
         - expiresAt
-      title: AsrStreamTicket
       type: object
     AuthError:
       additionalProperties: false
@@ -280,7 +263,6 @@ components:
       required:
         - code
         - requestId
-      title: AuthError
       type: object
     BillingError:
       additionalProperties: false
@@ -296,7 +278,6 @@ components:
       required:
         - code
         - requestId
-      title: BillingError
       type: object
     BillingHoldRequest:
       additionalProperties: false
@@ -310,7 +291,6 @@ components:
       required:
         - requestId
         - credits
-      title: BillingHoldRequest
       type: object
     BillingHoldResponse:
       additionalProperties: false
@@ -342,7 +322,6 @@ components:
       required:
         - holdId
         - bucketDeltas
-      title: BillingHoldResponse
       type: object
     BillingLedgerEntry:
       additionalProperties: false
@@ -396,7 +375,6 @@ components:
         - entryType
         - reason
         - bucketDeltas
-      title: BillingLedgerEntry
       type: object
     BillingSettleRequest:
       additionalProperties: false
@@ -414,7 +392,6 @@ components:
         - requestId
         - holdId
         - credits
-      title: BillingSettleRequest
       type: object
     ContinueTurnRequest:
       additionalProperties: false
@@ -424,22 +401,20 @@ components:
           type: string
       required:
         - prompt
-      title: ContinueTurnRequest
       type: object
     DeleteSessionResponse:
       additionalProperties: false
       properties:
         deleted:
-          const: true
+          enum:
+            - true
           type: boolean
       required:
         - deleted
-      title: DeleteSessionResponse
       type: object
     EmptyRequest:
       additionalProperties: false
       properties: {}
-      title: EmptyRequest
       type: object
     ErrorEnvelope:
       additionalProperties: false
@@ -487,11 +462,11 @@ components:
       additionalProperties: false
       properties:
         deleted:
-          const: true
+          enum:
+            - true
           type: boolean
       required:
         - deleted
-      title: FileDeleteResponse
       type: object
     FileSyncStatus:
       additionalProperties: false
@@ -508,7 +483,6 @@ components:
       required:
         - path
         - status
-      title: FileSyncStatus
       type: object
     FileUploadIntent:
       additionalProperties: false
@@ -520,14 +494,12 @@ components:
           minLength: 1
           type: string
         sizeBytes:
-          maximum: 9007199254740991
           minimum: 0
           type: integer
       required:
         - path
         - sizeBytes
         - mimeType
-      title: FileUploadIntent
       type: object
     GatewayRpcRequest:
       additionalProperties: false
@@ -537,13 +509,10 @@ components:
           type: string
         params:
           additionalProperties: {}
-          propertyNames:
-            type: string
           type: object
       required:
         - method
         - params
-      title: GatewayRpcRequest
       type: object
     GatewayRpcResponse:
       additionalProperties: false
@@ -556,18 +525,14 @@ components:
         result: {}
       required:
         - requestId
-      title: GatewayRpcResponse
       type: object
     GenericRequest:
       additionalProperties: {}
       properties: {}
-      title: GenericRequest
       type: object
     GenericResponse:
-      additionalProperties: false
       properties:
         data: {}
-      title: GenericResponse
       type: object
     GoalUpdate:
       additionalProperties: false
@@ -578,8 +543,6 @@ components:
           type: string
       required:
         - sessionId
-        - goal
-      title: GoalUpdate
       type: object
     LoginRequest:
       additionalProperties: false
@@ -597,7 +560,6 @@ components:
         - codeChallenge
         - redirectUri
         - state
-      title: LoginRequest
       type: object
     LoginResponse:
       additionalProperties: false
@@ -607,17 +569,16 @@ components:
           type: string
       required:
         - code
-      title: LoginResponse
       type: object
     LogoutResponse:
       additionalProperties: false
       properties:
         success:
-          const: true
+          enum:
+            - true
           type: boolean
       required:
         - success
-      title: LogoutResponse
       type: object
     McpLaunchResolution:
       additionalProperties: false
@@ -642,7 +603,6 @@ components:
         - resolvedCommand
         - integrity
         - riskLevel
-      title: McpLaunchResolution
       type: object
     McpServerConfig:
       additionalProperties: false
@@ -664,13 +624,13 @@ components:
         - command
         - enabled
         - secretRefs
-      title: McpServerConfig
       type: object
     MediaCancelResponse:
       additionalProperties: false
       properties:
         status:
-          const: canceled
+          enum:
+            - canceled
           type: string
         taskId:
           minLength: 1
@@ -678,7 +638,6 @@ components:
       required:
         - taskId
         - status
-      title: MediaCancelResponse
       type: object
     MediaStatusPollUpdate:
       additionalProperties: false
@@ -703,7 +662,6 @@ components:
       required:
         - taskId
         - status
-      title: MediaStatusPollUpdate
       type: object
     MediaTaskDto:
       additionalProperties: false
@@ -728,7 +686,6 @@ components:
       required:
         - taskId
         - status
-      title: MediaTaskDto
       type: object
     MediaTaskStatusResponse:
       additionalProperties: false
@@ -753,7 +710,6 @@ components:
       required:
         - taskId
         - status
-      title: MediaTaskStatusResponse
       type: object
     Membership:
       additionalProperties: false
@@ -775,11 +731,9 @@ components:
         - tenantId
         - userId
         - role
-      title: Membership
       type: object
     MessageCursor:
       minLength: 1
-      title: MessageCursor
       type: string
     MessageDto:
       additionalProperties: false
@@ -788,7 +742,6 @@ components:
           type: string
         createdAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         id:
           minLength: 1
@@ -801,7 +754,6 @@ components:
             - system
           type: string
         sequence:
-          maximum: 9007199254740991
           minimum: 0
           type: integer
       required:
@@ -810,7 +762,6 @@ components:
         - content
         - sequence
         - createdAt
-      title: MessageDto
       type: object
     MessageListResponse:
       additionalProperties: false
@@ -823,7 +774,6 @@ components:
                 type: string
               createdAt:
                 format: date-time
-                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                 type: string
               id:
                 minLength: 1
@@ -836,7 +786,6 @@ components:
                   - system
                 type: string
               sequence:
-                maximum: 9007199254740991
                 minimum: 0
                 type: integer
             required:
@@ -861,7 +810,6 @@ components:
       required:
         - messages
         - pageInfo
-      title: MessageListResponse
       type: object
     ModelDetailResponse:
       additionalProperties: false
@@ -904,7 +852,6 @@ components:
         - outputUnitPrice
         - capabilities
         - fallbackChain
-      title: ModelDetailResponse
       type: object
     ModelDto:
       additionalProperties: false
@@ -929,7 +876,6 @@ components:
         - name
         - kind
         - costMultiplier
-      title: ModelDto
       type: object
     OAuthTokenRequest:
       additionalProperties: false
@@ -947,7 +893,6 @@ components:
         - code
         - verifier
         - redirectUri
-      title: OAuthTokenRequest
       type: object
     PageInfo:
       additionalProperties: false
@@ -959,7 +904,6 @@ components:
           type: string
       required:
         - hasMore
-      title: PageInfo
       type: object
     PermissionDismissEvent:
       additionalProperties: false
@@ -969,14 +913,14 @@ components:
           type: string
       required:
         - requestId
-      title: PermissionDismissEvent
       type: object
     PermissionRespondRequest:
       oneOf:
         - additionalProperties: false
           properties:
             kind:
-              const: tool
+              enum:
+                - tool
               type: string
             requestId:
               minLength: 1
@@ -986,7 +930,8 @@ components:
                 - additionalProperties: false
                   properties:
                     behavior:
-                      const: allow
+                      enum:
+                        - allow
                       type: string
                     updatedInput: {}
                     updatedPermissions:
@@ -1009,7 +954,8 @@ components:
                 - additionalProperties: false
                   properties:
                     behavior:
-                      const: deny
+                      enum:
+                        - deny
                       type: string
                     interrupt:
                       type: boolean
@@ -1030,11 +976,10 @@ components:
             answers:
               additionalProperties:
                 type: string
-              propertyNames:
-                type: string
               type: object
             kind:
-              const: ask
+              enum:
+                - ask
               type: string
             requestId:
               minLength: 1
@@ -1044,13 +989,13 @@ components:
             - requestId
             - answers
           type: object
-      title: PermissionRespondRequest
     PermissionResult:
       oneOf:
         - additionalProperties: false
           properties:
             behavior:
-              const: allow
+              enum:
+                - allow
               type: string
             updatedInput: {}
             updatedPermissions:
@@ -1073,7 +1018,8 @@ components:
         - additionalProperties: false
           properties:
             behavior:
-              const: deny
+              enum:
+                - deny
               type: string
             interrupt:
               type: boolean
@@ -1084,7 +1030,6 @@ components:
             - behavior
             - message
           type: object
-      title: PermissionResult
     PermissionUpdate:
       additionalProperties: false
       properties:
@@ -1096,14 +1041,12 @@ components:
       required:
         - toolName
         - allow
-      title: PermissionUpdate
       type: object
     PodLease:
       additionalProperties: false
       properties:
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         holderId:
           minLength: 1
@@ -1115,7 +1058,6 @@ components:
         - workspaceId
         - holderId
         - expiresAt
-      title: PodLease
       type: object
     PreviewEvent:
       additionalProperties: false
@@ -1132,7 +1074,6 @@ components:
       required:
         - previewSessionId
         - status
-      title: PreviewEvent
       type: object
     PreviewTokenRequest:
       additionalProperties: false
@@ -1147,7 +1088,6 @@ components:
           type: string
       required:
         - artifactId
-      title: PreviewTokenRequest
       type: object
     PreviewTokenResponse:
       additionalProperties: false
@@ -1159,7 +1099,6 @@ components:
           type: string
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         previewSessionId:
           minLength: 1
@@ -1172,7 +1111,6 @@ components:
         - tokenPrefix
         - expiresAt
         - cspMode
-      title: PreviewTokenResponse
       type: object
     PricingCatalogResponse:
       additionalProperties: false
@@ -1259,7 +1197,6 @@ components:
         - textModels
         - imageModels
         - videoModels
-      title: PricingCatalogResponse
       type: object
     ProviderConfig:
       additionalProperties: false
@@ -1275,7 +1212,6 @@ components:
       required:
         - provider
         - configured
-      title: ProviderConfig
       type: object
     QuotaBuckets:
       additionalProperties: false
@@ -1297,7 +1233,6 @@ components:
         - purchased
         - promotional
         - overdraft
-      title: QuotaBuckets
       type: object
     ReadFileAsDataUrlResponse:
       additionalProperties: false
@@ -1308,7 +1243,6 @@ components:
           type: boolean
       required:
         - success
-      title: ReadFileAsDataUrlResponse
       type: object
     RefreshRequest:
       additionalProperties: false
@@ -1316,7 +1250,6 @@ components:
         refreshToken:
           minLength: 1
           type: string
-      title: RefreshRequest
       type: object
     Role:
       enum:
@@ -1324,13 +1257,11 @@ components:
         - admin
         - member
         - viewer
-      title: Role
       type: string
     RuntimeClass:
       enum:
         - gvisor
         - kata
-      title: RuntimeClass
       type: string
     RuntimeHealthEvent:
       additionalProperties: false
@@ -1345,7 +1276,6 @@ components:
       required:
         - ready
         - runtimeClassName
-      title: RuntimeHealthEvent
       type: object
     RuntimeSessionClaim:
       additionalProperties: false
@@ -1365,7 +1295,6 @@ components:
         - tenantId
         - sessionId
         - sessionKeys
-      title: RuntimeSessionClaim
       type: object
     SaveInlineFileRequest:
       additionalProperties: false
@@ -1387,7 +1316,6 @@ components:
         - fileName
         - mimeType
         - cwd
-      title: SaveInlineFileRequest
       type: object
     SaveInlineFileResponse:
       additionalProperties: false
@@ -1398,7 +1326,6 @@ components:
           type: boolean
       required:
         - success
-      title: SaveInlineFileResponse
       type: object
     ScheduledTaskDto:
       additionalProperties: false
@@ -1419,7 +1346,6 @@ components:
         - name
         - schedule
         - enabled
-      title: ScheduledTaskDto
       type: object
     SessionDetail:
       additionalProperties: false
@@ -1430,7 +1356,6 @@ components:
         capsule: {}
         createdAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         goal: {}
         id:
@@ -1452,7 +1377,6 @@ components:
           type: string
         updatedAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
       required:
         - id
@@ -1462,7 +1386,6 @@ components:
         - updatedAt
         - agentId
         - sessionKeys
-      title: SessionDetail
       type: object
     SessionPatchRequest:
       additionalProperties: false
@@ -1473,7 +1396,6 @@ components:
         title:
           minLength: 1
           type: string
-      title: SessionPatchRequest
       type: object
     SessionStopped:
       additionalProperties: false
@@ -1482,12 +1404,12 @@ components:
           minLength: 1
           type: string
         stopped:
-          const: true
+          enum:
+            - true
           type: boolean
       required:
         - sessionId
         - stopped
-      title: SessionStopped
       type: object
     SessionSummary:
       additionalProperties: false
@@ -1495,7 +1417,6 @@ components:
         capsule: {}
         createdAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         goal: {}
         id:
@@ -1512,7 +1433,6 @@ components:
           type: string
         updatedAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
       required:
         - id
@@ -1520,7 +1440,6 @@ components:
         - status
         - createdAt
         - updatedAt
-      title: SessionSummary
       type: object
     ShareAbuseReport:
       additionalProperties: false
@@ -1534,7 +1453,6 @@ components:
       required:
         - shareId
         - reason
-      title: ShareAbuseReport
       type: object
     ShareCreateRequest:
       additionalProperties: false
@@ -1551,7 +1469,6 @@ components:
       required:
         - sourceKey
         - accessMode
-      title: ShareCreateRequest
       type: object
     ShareDto:
       additionalProperties: false
@@ -1575,7 +1492,6 @@ components:
         - url
         - noindex
         - status
-      title: ShareDto
       type: object
     ShareTakedownEvent:
       additionalProperties: false
@@ -1586,13 +1502,13 @@ components:
           minLength: 1
           type: string
         status:
-          const: takedown
+          enum:
+            - takedown
           type: string
       required:
         - shareId
         - status
         - cdnInvalidated
-      title: ShareTakedownEvent
       type: object
     SkillManifest:
       additionalProperties: false
@@ -1614,7 +1530,6 @@ components:
         - version
         - integrity
         - registry
-      title: SkillManifest
       type: object
     SkillScanResult:
       additionalProperties: false
@@ -1635,7 +1550,6 @@ components:
         - riskLevel
         - lifecycleScripts
         - allowed
-      title: SkillScanResult
       type: object
     StartSessionRequest:
       additionalProperties: false
@@ -1670,7 +1584,6 @@ components:
       required:
         - agentId
         - prompt
-      title: StartSessionRequest
       type: object
     StartSessionResponse:
       additionalProperties: false
@@ -1684,7 +1597,6 @@ components:
       required:
         - sessionId
         - requestId
-      title: StartSessionResponse
       type: object
     StreamTicketRequest:
       additionalProperties: false
@@ -1694,7 +1606,8 @@ components:
             additionalProperties: false
             properties:
               channel:
-                const: files:changed
+                enum:
+                  - files:changed
                 type: string
               params:
                 additionalProperties: false
@@ -1720,14 +1633,12 @@ components:
             type: string
           maxItems: 100
           type: array
-      title: StreamTicketRequest
       type: object
     StreamTicketResponse:
       additionalProperties: false
       properties:
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         ticket:
           minLength: 1
@@ -1735,16 +1646,17 @@ components:
       required:
         - ticket
         - expiresAt
-      title: StreamTicketResponse
       type: object
     SupplyChainPolicyError:
       additionalProperties: false
       properties:
         code:
-          const: PERMISSION_DENIED
+          enum:
+            - PERMISSION_DENIED
           type: string
         policy:
-          const: mcpCommandPolicy
+          enum:
+            - mcpCommandPolicy
           type: string
         reason:
           minLength: 1
@@ -1753,7 +1665,6 @@ components:
         - code
         - policy
         - reason
-      title: SupplyChainPolicyError
       type: object
     SwitchTenantRequest:
       additionalProperties: false
@@ -1763,7 +1674,6 @@ components:
           type: string
       required:
         - tenantId
-      title: SwitchTenantRequest
       type: object
     TaskCreateRequest:
       additionalProperties: false
@@ -1780,7 +1690,6 @@ components:
         - name
         - schedule
         - enabled
-      title: TaskCreateRequest
       type: object
     TaskRunDto:
       additionalProperties: false
@@ -1803,7 +1712,6 @@ components:
         - runId
         - taskId
         - status
-      title: TaskRunDto
       type: object
     TaskRunEvent:
       additionalProperties: false
@@ -1826,7 +1734,6 @@ components:
         - runId
         - taskId
         - status
-      title: TaskRunEvent
       type: object
     TaskStatusEvent:
       additionalProperties: false
@@ -1840,7 +1747,6 @@ components:
       required:
         - taskId
         - status
-      title: TaskStatusEvent
       type: object
     TaskUpdateRequest:
       additionalProperties: false
@@ -1853,7 +1759,6 @@ components:
         schedule:
           minLength: 1
           type: string
-      title: TaskUpdateRequest
       type: object
     TenantScopedError:
       additionalProperties: false
@@ -1869,7 +1774,6 @@ components:
       required:
         - code
         - requestId
-      title: TenantScopedError
       type: object
     TenantSummary:
       additionalProperties: false
@@ -1883,7 +1787,6 @@ components:
       required:
         - id
         - name
-      title: TenantSummary
       type: object
     TokenResponse:
       additionalProperties: false
@@ -1893,7 +1796,6 @@ components:
           type: string
         expiresAt:
           format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
           type: string
         refreshToken:
           minLength: 1
@@ -1901,7 +1803,6 @@ components:
       required:
         - accessToken
         - expiresAt
-      title: TokenResponse
       type: object
     TurnAcceptedResponse:
       additionalProperties: false
@@ -1911,7 +1812,6 @@ components:
           type: string
       required:
         - requestId
-      title: TurnAcceptedResponse
       type: object
     UploadCompleteRequest:
       additionalProperties: false
@@ -1925,7 +1825,6 @@ components:
       required:
         - uploadId
         - etag
-      title: UploadCompleteRequest
       type: object
     UploadCompleteResponse:
       additionalProperties: false
@@ -1942,7 +1841,6 @@ components:
       required:
         - path
         - syncStatus
-      title: UploadCompleteResponse
       type: object
     UsageReport:
       additionalProperties: false
@@ -1954,14 +1852,12 @@ components:
           minLength: 1
           type: string
         tokens:
-          maximum: 9007199254740991
           minimum: 0
           type: integer
       required:
         - requestId
         - tokens
         - credits
-      title: UsageReport
       type: object
     WorkspaceCreateRequest:
       additionalProperties: false
@@ -1971,7 +1867,6 @@ components:
           type: string
       required:
         - name
-      title: WorkspaceCreateRequest
       type: object
     WorkspaceCreateResponse:
       additionalProperties: false
@@ -1985,7 +1880,6 @@ components:
       required:
         - workspaceId
         - name
-      title: WorkspaceCreateResponse
       type: object
     WorkspaceListResponse:
       additionalProperties: false
@@ -2007,7 +1901,6 @@ components:
           type: array
       required:
         - workspaces
-      title: WorkspaceListResponse
       type: object
     WorkspaceTreeRequest:
       additionalProperties: false
@@ -2016,12 +1909,10 @@ components:
           minLength: 1
           type: string
         depth:
-          maximum: 9007199254740991
           minimum: 0
           type: integer
         path:
           type: string
-      title: WorkspaceTreeRequest
       type: object
     WorkspaceTreeResponse:
       additionalProperties: false
@@ -2051,7 +1942,6 @@ components:
           type: string
       required:
         - entries
-      title: WorkspaceTreeResponse
       type: object
   securitySchemes:
     accessToken:
