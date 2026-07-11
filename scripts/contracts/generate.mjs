@@ -57,6 +57,7 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const sourceFiles = [
   ...walk(path.join(repositoryRoot, 'libs/shared/contracts/src')).filter((file) => file.endsWith('.ts')),
   path.join(repositoryRoot, 'libs/shared/contracts/codegen-policy.json'),
+  path.join(repositoryRoot, 'src/renderer/types/electron.d.ts'),
   fileURLToPath(import.meta.url),
 ];
 const sourceHash = sha256(

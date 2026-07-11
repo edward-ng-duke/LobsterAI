@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,9 +42,26 @@ if (fixtureErrors.length > 0) {
 }
 
 const exitCode = manifest.statuses?.[gate.status];
-if (!Number.isInteger(exitCode) || exitCode === 0) {
+if (!Number.isInteger(exitCode) || exitCode < 0) {
   console.error(JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'invalid stage status' }));
   process.exit(1);
+}
+
+let commandResult;
+if (gate.status === 'PASS') {
+  if (!Array.isArray(gate.command) || gate.command.length === 0) {
+    console.error(JSON.stringify({ status: 'ERROR', gate: gateName, reason: 'PASS gate has no command' }));
+    process.exit(1);
+  }
+  commandResult = spawnSync(gate.command[0], gate.command.slice(1), {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  });
+  if (commandResult.status !== 0) {
+    process.stdout.write(commandResult.stdout);
+    process.stderr.write(commandResult.stderr);
+    process.exit(commandResult.status ?? 1);
+  }
 }
 
 const report = {
@@ -57,6 +75,10 @@ const report = {
   invocationId: randomUUID(),
   generatedAt: new Date().toISOString(),
   runnerSha256,
+  command: gate.command ?? null,
+  commandOutputSha256: commandResult
+    ? createHash('sha256').update(commandResult.stdout).digest('hex')
+    : null,
 };
 const reportDirectory = path.join(repositoryRoot, '.reports/saas-gates');
 mkdirSync(reportDirectory, { recursive: true });

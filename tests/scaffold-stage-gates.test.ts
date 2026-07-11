@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +18,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const temporaryRoots: string[] = [];
 
 interface StageGate {
-  status: 'NOT_APPLICABLE';
+  status: 'PASS' | 'NOT_APPLICABLE';
   activationTask: string;
   reason: string;
   fixtures: string[];
@@ -25,7 +26,7 @@ interface StageGate {
 
 interface StageManifest {
   schemaVersion: number;
-  currentStage: 'P00';
+  currentStage: 'P01';
   statuses: Record<string, number>;
   gates: Record<string, StageGate>;
 }
@@ -47,12 +48,14 @@ const createRepositoryCopy = (): string => {
     'scripts/check-saas-build-artifacts.mjs',
     'scripts/clean-saas-build.mjs',
     'scripts/check-saas-scaffold.mjs',
+    'scripts/contracts',
     'scripts/expect-saas-stage-gate.mjs',
     'scripts/json-without-duplicate-keys.mjs',
     'scripts/run-saas-stage-gate.mjs',
     'scripts/saas-stage-gates.json',
     'scripts/saas-workspace-registry.json',
     'scripts/saas-workspace-policy.mjs',
+    'src/renderer/types/electron.d.ts',
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
@@ -65,6 +68,7 @@ const createRepositoryCopy = (): string => {
       filter: (candidate) => !/(?:^|\/)(?:dist|dist-types)(?:\/|$)/.test(candidate),
     });
   }
+  symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(target, 'node_modules'), 'dir');
   return target;
 };
 
@@ -86,8 +90,8 @@ afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
 
-describe('P00 deferred stage gate integrity', () => {
-  test('all seven gates directly return 78 and atomically write a complete fresh report', () => {
+describe('P01 active and deferred stage gate integrity', () => {
+  test('each gate returns its declared status and atomically writes a complete fresh report', () => {
     const root = createRepositoryCopy();
     const manifest = readManifest(root);
     for (const [gateName, gate] of Object.entries(manifest.gates)) {
@@ -96,7 +100,7 @@ describe('P00 deferred stage gate integrity', () => {
       writeFileSync(reportPath, '{"invocationId":"stale"}\n');
 
       const result = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', gateName);
-      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(78);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(manifest.statuses[gate.status]);
       const stdoutReport = parseReport(result.stdout);
       const fileReport = JSON.parse(readFileSync(reportPath, 'utf8')) as Record<string, unknown>;
       expect(fileReport).toEqual(stdoutReport);
@@ -127,8 +131,7 @@ describe('P00 deferred stage gate integrity', () => {
 
         const runner = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', gateName);
         const verifier = runNodeScript(root, 'scripts/expect-saas-stage-gate.mjs', gateName);
-        expect(runner.status).not.toBe(78);
-        expect(runner.status).not.toBe(0);
+        expect(runner.status).not.toBe(manifest.statuses[gate.status]);
         expect(verifier.status).not.toBe(0);
       }
     }

@@ -36,7 +36,7 @@ export const IpcGaInventory = [
   {"id":"A-135","legacyIpc":"cowork:dreaming:diary","direction":"R→M","kind":"route","targets":["get_api_v1_cowork_dreaming_diary"],"sourceRef":"附录A:135","support":"ga"},
   {"id":"A-141","legacyIpc":"cowork:permission:respond","direction":"R→M","kind":"route","targets":["post_api_v1_sessions_id_permissions_requestId_respond"],"sourceRef":"附录A:141","support":"ga"},
   {"id":"A-142","legacyIpc":"cowork:media:cancel","direction":"R→M","kind":"route","targets":["post_api_v1_media_tasks_taskId_cancel"],"sourceRef":"附录A:142","support":"ga"},
-  {"id":"A-143","legacyIpc":"media:getModels","direction":"R→M","kind":"route","targets":["get_api_v1_models","get_api_v1_media_models"],"sourceRef":"附录A:143","support":"ga"},
+  {"id":"A-143","legacyIpc":"media:getModels","direction":"R→M","kind":"route","targets":["get_api_v1_models"],"sourceRef":"附录A:143","support":"ga"},
   {"id":"A-144","legacyIpc":"media:getTaskStatus","direction":"R→M","kind":"route","targets":["get_api_v1_media_tasks_taskId"],"sourceRef":"附录A:144","support":"ga"},
   {"id":"A-150","legacyIpc":"cowork:subagent:list (SubagentList)","direction":"R→M","kind":"route","targets":["get_api_v1_sessions_id_subagents"],"sourceRef":"附录A:150","support":"ga"},
   {"id":"A-151","legacyIpc":"cowork:subagent:delete (SubagentDelete)","direction":"R→M","kind":"route","targets":["delete_api_v1_subagents_runId"],"sourceRef":"附录A:151","support":"ga"},

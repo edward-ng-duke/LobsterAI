@@ -65,7 +65,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run scaffold:check
-      - name: Verify deferred P00 gate entry points are explicit
+      - run: npm run contracts:generate
+      - run: npm run contracts:check
+      - name: Verify active and deferred stage gate entry points are explicit
         run: |
           node scripts/expect-saas-stage-gate.mjs test:e2e
           node scripts/expect-saas-stage-gate.mjs contracts:check

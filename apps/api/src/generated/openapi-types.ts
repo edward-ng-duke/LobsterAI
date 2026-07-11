@@ -50,7 +50,6 @@ export type ApiOperation =
   | { operationId: 'delete_api_v1_mcp_servers_id'; method: 'DELETE'; path: '/api/v1/mcp/servers/{id}' }
   | { operationId: 'patch_api_v1_mcp_servers_id'; method: 'PATCH'; path: '/api/v1/mcp/servers/{id}' }
   | { operationId: 'post_api_v1_mcp_servers_id_launch_resolution_retry'; method: 'POST'; path: '/api/v1/mcp/servers/{id}/launch-resolution/retry' }
-  | { operationId: 'get_api_v1_media_models'; method: 'GET'; path: '/api/v1/media/models' }
   | { operationId: 'get_api_v1_media_tasks_taskId'; method: 'GET'; path: '/api/v1/media/tasks/{taskId}' }
   | { operationId: 'post_api_v1_media_tasks_taskId_cancel'; method: 'POST'; path: '/api/v1/media/tasks/{taskId}/cancel' }
   | { operationId: 'get_api_v1_model_config'; method: 'GET'; path: '/api/v1/model/config' }

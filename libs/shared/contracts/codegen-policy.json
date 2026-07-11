@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "status": "NOT_APPLICABLE",
+  "status": "PASS",
   "activationTask": "P01-PR1契约",
   "requiredHeader": "Generated file. Do not edit.",
   "sourceDirectories": [
-    "openapi",
-    "asyncapi",
-    "schemas"
+    "src"
   ],
   "fixtureDirectory": "fixtures",
   "generatedDirectories": [
-    "generated/client",
-    "generated/server"
+    "generated",
+    "../../client/bridge/src/generated",
+    "../../../apps/api/src/generated",
+    "../../../apps/web/src/generated"
   ]
 }

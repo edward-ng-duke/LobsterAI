@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
-  "currentStage": "P00",
-  "runnerSha256": "e0db5c704f61503e725fb43983ec422157daa5bb5e90834aac0bc628298869ef",
+  "currentStage": "P01",
+  "runnerSha256": "6e752d9b58b9b698f82db949dc937bfdfffbcf0bfdde50fc70706fde6511063b",
   "statuses": {
+    "PASS": 0,
     "NOT_APPLICABLE": 78,
     "BLOCKED": 2
   },
@@ -14,14 +15,16 @@
       "fixtures": ["apps/web/index.html", "tests/scaffold-web-build.test.ts"]
     },
     "contracts:check": {
-      "status": "NOT_APPLICABLE",
+      "status": "PASS",
       "activationTask": "P01-PR1契约",
-      "reason": "P00 freezes contract source and codegen locations; PR-1 activates route/channel validation.",
+      "reason": "P01 executes deterministic generation, schema validators, inventory coverage, and consumer checks.",
+      "command": ["npm", "run", "--silent", "contracts:validate"],
       "fixtures": [
         "libs/shared/contracts/codegen-policy.json",
-        "libs/shared/contracts/openapi/README.md",
-        "libs/shared/contracts/asyncapi/README.md",
-        "libs/shared/contracts/fixtures/README.md"
+        "libs/shared/contracts/openapi.yaml",
+        "libs/shared/contracts/asyncapi.yaml",
+        "libs/shared/contracts/generated/contract-manifest.ts",
+        "scripts/contracts/check.mjs"
       ]
     },
     "prisma:validate": {

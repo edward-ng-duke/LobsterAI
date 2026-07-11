@@ -37,7 +37,7 @@ const requiredRootScripts = {
   'docker:build:check': 'node scripts/run-saas-stage-gate.mjs docker:build:check',
   'helm:lint': 'node scripts/run-saas-stage-gate.mjs helm:lint',
   'lint:saas':
-    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts"',
+    'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts"',
   'poc:v1:check': 'node scripts/run-saas-stage-gate.mjs poc:v1:check',
   'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate',
   'scaffold:check': 'node scripts/check-saas-scaffold.mjs',
@@ -308,8 +308,12 @@ const validateCommandsAndCi = (
     errors,
     'SCAF-2',
   );
-  if (stageManifest?.currentStage !== 'P00' || stageManifest?.statuses?.NOT_APPLICABLE !== 78) {
-    errors.push(taggedError('SCAF-2', 'stage gate manifest must freeze P00 NOT_APPLICABLE exit 78'));
+  if (
+    stageManifest?.currentStage !== 'P01' ||
+    stageManifest?.statuses?.NOT_APPLICABLE !== 78 ||
+    stageManifest?.statuses?.PASS !== 0
+  ) {
+    errors.push(taggedError('SCAF-2', 'stage gate manifest must activate P01 PASS while preserving deferred exit 78'));
   }
   const runnerPath = path.join(repositoryRoot, 'scripts/run-saas-stage-gate.mjs');
   if (existsSync(runnerPath)) {
@@ -320,8 +324,9 @@ const validateCommandsAndCi = (
   }
   for (const gateName of deferredGates) {
     const gate = stageManifest?.gates?.[gateName];
+    const expectedStatus = gateName === 'contracts:check' ? 'PASS' : 'NOT_APPLICABLE';
     if (
-      gate?.status !== 'NOT_APPLICABLE' ||
+      gate?.status !== expectedStatus ||
       typeof gate?.activationTask !== 'string' ||
       gate.activationTask.length === 0 ||
       typeof gate?.reason !== 'string' ||
@@ -329,7 +334,7 @@ const validateCommandsAndCi = (
       !Array.isArray(gate?.fixtures) ||
       gate.fixtures.length === 0
     ) {
-      errors.push(taggedError('SCAF-2', `${gateName} lacks an honest P00 stage declaration`));
+      errors.push(taggedError('SCAF-2', `${gateName} lacks an honest P01 stage declaration`));
     }
   }
   const workflowPath = '.github/workflows/saas-scaffold.yml';
@@ -341,6 +346,8 @@ const validateCommandsAndCi = (
   for (const command of [
     'npm ci',
     'npm run scaffold:check',
+    'npm run contracts:generate',
+    'npm run contracts:check',
     'npm run lint:saas',
     'npm run typecheck',
     'npm run test:scaffold',
@@ -503,8 +510,8 @@ const validateGenerationPolicy = (repositoryRoot, errors) => {
   if (policy?.requiredHeader !== 'Generated file. Do not edit.') {
     errors.push(taggedError('SCAF-5', 'codegen policy must freeze the generated-file header'));
   }
-  if (policy?.status !== 'NOT_APPLICABLE' || policy?.activationTask !== 'P01-PR1契约') {
-    errors.push(taggedError('SCAF-5', 'codegen policy must honestly declare P00 stage status'));
+  if (policy?.status !== 'PASS' || policy?.activationTask !== 'P01-PR1契约') {
+    errors.push(taggedError('SCAF-5', 'codegen policy must honestly declare active P01 stage status'));
   }
   for (const directory of [
     ...(policy?.sourceDirectories ?? []),
@@ -520,7 +527,11 @@ const validateGenerationPolicy = (repositoryRoot, errors) => {
     for (const sourceFile of listFiles(repositoryRoot, `libs/shared/contracts/${directory}`, (name) =>
       /\.(?:ts|tsx)$/.test(name),
     )) {
-      if (!readFileSync(path.join(repositoryRoot, sourceFile), 'utf8').startsWith(policy.requiredHeader)) {
+      if (
+        !readFileSync(path.join(repositoryRoot, sourceFile), 'utf8')
+          .split(/\r?\n/, 1)[0]
+          .includes(policy.requiredHeader)
+      ) {
         errors.push(taggedError('SCAF-5', `${sourceFile} is missing the generated-file header`));
       }
     }

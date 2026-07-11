@@ -39,6 +39,7 @@ const createRepositoryCopy = (): string => {
     'package.json',
     'prisma',
     'scripts',
+    'src/renderer/types/electron.d.ts',
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
@@ -51,6 +52,7 @@ const createRepositoryCopy = (): string => {
       filter: (candidate) => !/(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(candidate),
     });
   }
+  symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(target, 'node_modules'), 'dir');
   return target;
 };
 
@@ -87,7 +89,7 @@ afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
 
-describe('P00 independent tester corner cases', () => {
+describe('SaaS scaffold independent tester corner cases', () => {
   test.skipIf(process.platform === 'win32')(
     'rejects a registered artifact that is a symlink escaping the repository',
     () => {
@@ -138,10 +140,10 @@ describe('P00 independent tester corner cases', () => {
     const reportPath = path.join(reportDirectory, 'contracts-check.json');
 
     const first = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', gate);
-    expect(first.status).toBe(78);
+    expect(first.status).toBe(0);
     const firstReport = JSON.parse(readFileSync(reportPath, 'utf8')) as { invocationId: string };
     const second = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', gate);
-    expect(second.status).toBe(78);
+    expect(second.status).toBe(0);
     const secondReport = JSON.parse(readFileSync(reportPath, 'utf8')) as { invocationId: string };
 
     expect(secondReport.invocationId).not.toBe(firstReport.invocationId);

@@ -69,7 +69,6 @@ export const RouteRegistry = [
   route('DELETE', '/api/v1/mcp/servers/{id}', 'delete_api_v1_mcp_servers_id', 'EmptyRequest', 'GenericResponse'),
   route('PATCH', '/api/v1/mcp/servers/{id}', 'patch_api_v1_mcp_servers_id', 'GenericRequest', 'GenericResponse'),
   route('POST', '/api/v1/mcp/servers/{id}/launch-resolution/retry', 'post_api_v1_mcp_servers_id_launch_resolution_retry', 'GenericRequest', 'GenericResponse'),
-  route('GET', '/api/v1/media/models', 'get_api_v1_media_models', 'EmptyRequest', 'GenericResponse'),
   route('GET', '/api/v1/media/tasks/{taskId}', 'get_api_v1_media_tasks_taskId', 'EmptyRequest', 'MediaTaskStatusResponse'),
   route('POST', '/api/v1/media/tasks/{taskId}/cancel', 'post_api_v1_media_tasks_taskId_cancel', 'EmptyRequest', 'MediaCancelResponse'),
   route('GET', '/api/v1/model/config', 'get_api_v1_model_config', 'EmptyRequest', 'GenericResponse'),
@@ -182,4 +181,3 @@ export const RouteRegistry = [
   route('POST', '/oauth/authorize', 'post_oauth_authorize', 'GenericRequest', 'GenericResponse'),
   route('POST', '/oauth/token', 'post_oauth_token', 'OAuthTokenRequest', 'TokenResponse'),
 ] as const satisfies readonly RouteRegistryEntry[];
-
