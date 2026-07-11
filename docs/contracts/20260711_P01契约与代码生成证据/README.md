@@ -85,3 +85,12 @@ exit 1; 5 tests failed
 - 最新 hash：source `2d771c6e7552895d65d036854afbd676ce25660cf2a79844a68419175cddf394`；output `8e2e6f43c14cbf5c9173bcb2f7202fcf622d589fec3956aed43f0abe2226f24d`；inventory `a89dcc7d51bc33e282adaf51d4885f2fb8451c00573956fc951f214c77cb1c02`。
 - 总门：`npm ci`、generate/check/test:contract/typecheck、changed-file lint、189-file Vitest、SaaS 9-workspace build、renderer build、Electron compile 均 exit 0。
 - 关键变化：无虚构 REST；逐 operation status/security/errors；三注册表双向 target；Electron 命名类型不再擦除为 `unknown`；Cowork 10 四方 payload；递归 breaking diff；无删除窗口的 atomic publish 与 stale 拒绝。
+
+## Round 3 Reviewer 退回修复（2026-07-11 15:54 +0800）
+
+- Red：`e19e31a3` 初始 6/6 failed；Green 后 11/11 PASS，覆盖占位 schema、显式 operation policy、ticket scope 与 D12 billing。
+- 字段级契约：`OperationRequest/OperationResponse` export 与 route identity 均为 0；改名后的旧占位结构同样由 checker 拒绝。新增 htmlShare/BYOK/model config/skills/plugins/tasks/runtime/list valid-invalid matrix。
+- operation policy：158 条 route 源码逐项声明 auth、success status、error set；`/auth/refresh` 使用 `refreshCookie` security，login 包含 credential error，model proxy/config check=200、stream=202。
+- D12：余额四桶 `daily/monthly/granted/topup`；delta 可为有符号数但必须同号且总和等于 ledger credits；billing account 同时冻结 breakdown 与 `creditsRemaining/creditsLimit/creditsUsed`。
+- 最新计数/hash：schema `209`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `f3505cbb20ad6fa6a5445621e340efed7ab216c6b84a88f1e31fde9dfb67a2cf`；output `c84d95d7c924dcb3b81b3b905860c61bb262d4f67603ef8d9f7874b67885985a`。
+- 总门：contracts 15/15、targeted 33/33、workspace typecheck、changed-file lint、190-file Vitest、SaaS 9-workspace build、renderer build、Electron compile 均 exit 0。
