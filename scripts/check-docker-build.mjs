@@ -11,6 +11,8 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { validateVulnerabilityReport } from './check-supply-chain.mjs';
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const productionImages = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'];
 const pinnedBasePattern = /^FROM\s+[^\s]+@sha256:[a-f0-9]{64}\s+AS\s+[a-z0-9-]+\s*$/gim;
@@ -151,7 +153,7 @@ const waitForHealthy = (containerId, timeoutMs = 45_000) => {
   throw new Error(`container did not become healthy within ${timeoutMs}ms`);
 };
 
-const buildAndSmoke = (imageName, sourceSha, reportDirectory) => {
+const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers) => {
   const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
   const dockerfile = `docker/${imageName}/Dockerfile`;
   const build = run('docker', ['build', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
@@ -166,12 +168,23 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory) => {
   if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
 
   if (imageName === 'openclaw-runtime') {
-    const version = run('docker', [
-      'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
-      '--security-opt=no-new-privileges', '--user=10001:10001', '--entrypoint=node', tag,
-      '/opt/openclaw/openclaw.mjs', '--version',
+    const started = run('docker', [
+      'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
+      '--security-opt=no-new-privileges', '--user=10001:10001',
+      '--tmpfs=/tmp:rw,noexec,nosuid,size=16m', '--tmpfs=/state:rw,noexec,nosuid,size=256m',
+      '--tmpfs=/workspace:rw,noexec,nosuid,size=1g',
+      '--env=OPENCLAW_GATEWAY_TOKEN=p03-offline-smoke-token', '--env=OPENCLAW_GATEWAY_PORT=18789',
+      tag,
     ]);
-    if (version.status !== 0) throw new Error(`${imageName}: offline version smoke failed: ${version.stderr}`);
+    if (started.status !== 0) throw new Error(`${imageName}: production entrypoint failed: ${started.stderr}`);
+    const containerId = started.stdout.trim();
+    try {
+      waitForHealthy(containerId, 90_000);
+      const stopped = run('docker', ['stop', '--time=15', containerId]);
+      if (stopped.status !== 0) throw new Error(`${imageName}: graceful gateway stop failed`);
+    } finally {
+      run('docker', ['rm', '--force', containerId]);
+    }
   } else {
     const args = [
       'run', '--detach', '--network=none', '--read-only', '--cap-drop=ALL',
@@ -201,7 +214,40 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory) => {
   });
   if (sbom.status !== 0) throw new Error(`${imageName}: SBOM generation failed: ${sbom.stderr}`);
   const sbomSha256 = `sha256:${createHash('sha256').update(readFileSync(sbomPath)).digest('hex')}`;
-  return { imageName, tag, digest: imageDigest, sourceSha, sbom: { path: sbomPath, sha256: sbomSha256 } };
+  const scanPath = path.join(reportDirectory, `${imageName}.grype.json`);
+  const scan = run('grype', [`docker:${tag}`, '--output', 'json'], {
+    env: { ...process.env, DOCKER_HOST: dockerContext.stdout.trim(), GRYPE_CHECK_FOR_APP_UPDATE: 'false' },
+  });
+  if (scan.status !== 0) throw new Error(`${imageName}: Grype scan failed: ${scan.stderr}`);
+  writeFileSync(scanPath, scan.stdout, { mode: 0o600 });
+  const scanDocument = JSON.parse(scan.stdout);
+  const findings = (scanDocument.matches ?? []).map(match => ({
+    id: match.vulnerability?.id ?? '<unknown>',
+    severity: match.vulnerability?.severity ?? 'Unknown',
+    package: match.artifact?.name ?? '<unknown>',
+    version: match.artifact?.version ?? '<unknown>',
+  }));
+  const vulnerabilityErrors = validateVulnerabilityReport({ imageDigest, findings }, waivers);
+  if (vulnerabilityErrors.length > 0) throw new Error(`${imageName}: ${vulnerabilityErrors.join('; ')}`);
+  const scanSha256 = `sha256:${createHash('sha256').update(readFileSync(scanPath)).digest('hex')}`;
+  return {
+    imageName,
+    image: `${tag}@${imageDigest}`,
+    tag,
+    digest: imageDigest,
+    sourceSha,
+    sbom: { format: 'spdx-json', path: sbomPath, sha256: sbomSha256, imageDigest, sourceSha },
+    vulnerabilityScan: {
+      scanner: scannerPolicy.scanner,
+      scannerVersion: scannerPolicy.version,
+      path: scanPath,
+      sha256: scanSha256,
+      imageDigest,
+      sourceSha,
+      findings,
+    },
+    criticalFindings: findings.filter(finding => String(finding.severity).toLowerCase() === 'critical').length,
+  };
 };
 
 const writeReport = (report) => {
@@ -227,6 +273,15 @@ const main = () => {
   }
   const dockerVersion = requireTool('docker', ['version', '--format', '{{.Client.Version}}']);
   const syftVersion = requireTool('syft', ['version']);
+  const grypeVersion = requireTool('grype', ['version']);
+  const scannerPolicy = JSON.parse(readFileSync(path.join(repositoryRoot, 'docs/supply-chain/scanner-policy.json'), 'utf8'));
+  if (!grypeVersion.includes(scannerPolicy.version)) {
+    throw new BlockedError(`Grype version must be ${scannerPolicy.version}; received ${grypeVersion}`);
+  }
+  const inventoryManifest = JSON.parse(readFileSync(
+    path.join(repositoryRoot, 'docs/supply-chain/skills-and-plugins.manifest.json'),
+    'utf8',
+  ));
   const git = run('git', ['rev-parse', 'HEAD']);
   if (git.status !== 0 || !/^[a-f0-9]{40}\s*$/.test(git.stdout)) throw new Error('unable to bind build to source SHA');
   const sourceSha = git.stdout.trim();
@@ -239,11 +294,14 @@ const main = () => {
     sourceSha,
     dockerVersion,
     syftVersion,
+    grypeVersion,
     images: [],
   });
   const images = [];
   try {
-    for (const imageName of productionImages) images.push(buildAndSmoke(imageName, sourceSha, reportDirectory));
+    for (const imageName of productionImages) {
+      images.push(buildAndSmoke(imageName, sourceSha, reportDirectory, scannerPolicy, inventoryManifest.waivers ?? []));
+    }
     const report = {
       schemaVersion: 1,
       status: 'PASSED',
@@ -252,6 +310,7 @@ const main = () => {
       sourceSha,
       dockerVersion,
       syftVersion,
+      grypeVersion,
       productionNetwork: 'offline',
       images,
       signature: { status: 'BLOCKED', reason: 'Internal trust identity is not frozen; publish is forbidden.' },

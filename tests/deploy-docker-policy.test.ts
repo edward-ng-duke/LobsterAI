@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -70,5 +71,13 @@ describe('P03 production image policy', () => {
     expect(checker).toContain('--tmpfs=/state');
     expect(checker).toContain('--tmpfs=/workspace');
     expect(checker).toContain('waitForHealthy(containerId');
+
+    const negative = spawnSync(process.execPath, [
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),
+    ], {
+      encoding: 'utf8',
+      env: { ...process.env, OPENCLAW_GATEWAY_PORT: '9' },
+    });
+    expect(negative.status).not.toBe(0);
   });
 });
