@@ -50,7 +50,9 @@ const createRepositoryCopy = (): string => {
     mkdirSync(path.dirname(destination), { recursive: true });
     cpSync(source, destination, {
       recursive: true,
-      filter: (candidate) => !/(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(candidate),
+      filter: (candidate) =>
+        !/(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(candidate) &&
+        !/\.tmp(?:\.|$)/.test(candidate),
     });
   }
   symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(target, 'node_modules'), 'dir');

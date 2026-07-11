@@ -15,7 +15,7 @@ import { RouteRegistry } from '../../libs/shared/contracts/src/registry/routes.j
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const staleOutput = path.join(
   repositoryRoot,
-  'libs/shared/contracts/generated/reviewer-round1-stale.ts',
+  'libs/shared/contracts/generated/reviewer-round1-stale.tmp.ts',
 );
 
 afterEach(() => rmSync(staleOutput, { force: true }));

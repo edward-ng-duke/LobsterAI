@@ -36,6 +36,7 @@ const { RouteRegistry } = await import('../../libs/shared/contracts/dist/registr
 const generatedHeader = 'Generated file. Do not edit.';
 const yamlHeader = `# ${generatedHeader}`;
 const tsHeader = `// ${generatedHeader}`;
+const checkOnly = process.argv.includes('--check');
 
 const managedOutputs = [
   'libs/shared/contracts/openapi.yaml',
@@ -268,12 +269,16 @@ const streamUnion = ChannelRegistry.map(
 ).join('\n');
 
 const createElectronBridgeSource = () => {
+  const preferredConfigPath = path.join(repositoryRoot, 'tsconfig.json');
+  if (checkOnly && !existsSync(preferredConfigPath)) {
+    return readFileSync(path.join(repositoryRoot, 'libs/client/bridge/src/electronBridge.ts'), 'utf8');
+  }
   const [bundle] = generateDtsBundle(
     [{
       filePath: path.join(repositoryRoot, 'libs/client/bridge/codegen/electron-bridge-entry.ts'),
       output: { exportReferencedTypes: false, noBanner: true, sortNodes: true },
     }],
-    { preferredConfigPath: path.join(repositoryRoot, 'tsconfig.json') },
+    { preferredConfigPath },
   );
   return `${tsHeader}\n/* eslint-disable @typescript-eslint/no-unused-vars -- bundled type declarations retain const companions */\n${bundle}`;
 };
@@ -317,7 +322,6 @@ outputs.set(
   }, null, 2)} as const;\n`,
 );
 
-const checkOnly = process.argv.includes('--check');
 const mismatches = [];
 const managedAbsolutePaths = new Set(
   managedOutputs.map((relativePath) => path.join(repositoryRoot, relativePath)),

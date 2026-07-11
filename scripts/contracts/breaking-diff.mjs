@@ -189,14 +189,16 @@ export const analyzeBreakingDiff = (baseOpenapi, currentOpenapi, baseAsyncapi, c
   const currentMessages = new Set(Object.keys(currentAsyncapi.components?.messages ?? {}));
   for (const message of Object.keys(baseAsyncapi.components?.messages ?? {})) {
     if (!currentMessages.has(message)) breaking.push(`removed event ${message}`);
-    else checkSchemaCompatibility(
-      baseAsyncapi.components.messages[message].payload,
-      currentAsyncapi.components.messages[message].payload,
-      `#/components/messages/${message}/payload`,
-      breaking,
-      baseAsyncapi,
-      currentAsyncapi,
-    );
+    else if (baseAsyncapi.components.messages[message].payload) {
+      checkSchemaCompatibility(
+        baseAsyncapi.components.messages[message].payload,
+        currentAsyncapi.components.messages[message].payload,
+        `#/components/messages/${message}/payload`,
+        breaking,
+        baseAsyncapi,
+        currentAsyncapi,
+      );
+    }
   }
   return breaking;
 };
