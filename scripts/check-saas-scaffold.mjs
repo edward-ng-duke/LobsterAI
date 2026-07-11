@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { validateWorkspaceRegistry } from './saas-workspace-policy.mjs';
+
 const defaultRepositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const expectedWorkspacePatterns = ['apps/*', 'libs/*/*'];
 const expectedWorkspaces = [
@@ -26,7 +28,8 @@ const deferredGates = [
   'poc:v1:check',
 ];
 const requiredRootScripts = {
-  'build:saas': 'npm run build --workspaces && node scripts/check-saas-build-artifacts.mjs',
+  'build:saas':
+    'node scripts/clean-saas-build.mjs && npm run build --workspaces && node scripts/check-saas-build-artifacts.mjs',
   'contracts:check': 'node scripts/run-saas-stage-gate.mjs contracts:check',
   'docker:build:check': 'node scripts/run-saas-stage-gate.mjs docker:build:check',
   'helm:lint': 'node scripts/run-saas-stage-gate.mjs helm:lint',
@@ -38,7 +41,7 @@ const requiredRootScripts = {
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':
-    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts',
+    'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts',
   typecheck: 'tsc -b tsconfig.workspace.json --pretty false',
 };
 const requiredScaffoldFiles = [
@@ -67,9 +70,11 @@ const requiredScaffoldFiles = [
   'prisma/seed/README.md',
   'scripts/expect-saas-stage-gate.mjs',
   'scripts/check-saas-build-artifacts.mjs',
+  'scripts/clean-saas-build.mjs',
   'scripts/run-saas-stage-gate.mjs',
   'scripts/saas-stage-gates.json',
   'scripts/saas-workspace-registry.json',
+  'scripts/saas-workspace-policy.mjs',
 ];
 
 const normalizeRelativePath = (value) => value.replaceAll(path.sep, '/').replace(/^\.\//, '');
@@ -225,6 +230,9 @@ const validateDirectories = (repositoryRoot, discoveredWorkspaces, errors) => {
     'SCAF-1',
   );
   const registeredWorkspaces = new Set(Object.keys(registry?.workspaces ?? {}));
+  for (const registryError of validateWorkspaceRegistry(registry)) {
+    errors.push(taggedError('SCAF-2', `invalid workspace registry: ${registryError}`));
+  }
   for (const workspace of discoveredWorkspaces) {
     if (!registeredWorkspaces.has(workspace)) {
       errors.push(

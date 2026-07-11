@@ -66,7 +66,7 @@ describe('P00 SaaS workspace scaffold', () => {
     expect(scripts['scaffold:check']).toBe('node scripts/check-saas-scaffold.mjs');
     expect(scripts.typecheck).toBe('tsc -b tsconfig.workspace.json --pretty false');
     expect(scripts['test:scaffold']).toBe(
-      'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts',
+      'vitest run tests/scaffold.test.ts tests/scaffold-checker.test.ts tests/scaffold-apps.test.ts tests/scaffold-web-build.test.ts tests/scaffold-stage-gates.test.ts tests/scaffold-build-artifacts.test.ts',
     );
 
     for (const command of ['scaffold:check', 'typecheck', 'test:scaffold']) {

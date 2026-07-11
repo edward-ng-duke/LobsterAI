@@ -8,14 +8,14 @@
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#32-apps-应用边界",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "apps/runtime-orchestrator": {
       "kind": "deployable",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#32-apps-应用边界",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "apps/web": {
       "kind": "deployable",
@@ -29,42 +29,42 @@
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#32-apps-应用边界",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "libs/client/bridge": {
       "kind": "library",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#33-libs-与契约事实源",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "libs/server/auth": {
       "kind": "library",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#33-libs-与契约事实源",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "libs/server/db": {
       "kind": "library",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#33-libs-与契约事实源",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "libs/shared/contracts": {
       "kind": "library",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#33-libs-与契约事实源",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     },
     "libs/shared/types": {
       "kind": "library",
       "planReference": "改造计划/19-开工前补件与工程脚手架冻结.md#33-libs-与契约事实源",
       "build": "tsc -b",
       "typecheck": "tsc -b --pretty false",
-      "artifacts": ["dist/index.js"]
+      "artifacts": ["dist/index.js", "dist/index.d.ts"]
     }
   }
 }
