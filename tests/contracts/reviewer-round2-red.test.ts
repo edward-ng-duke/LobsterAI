@@ -48,7 +48,7 @@ describe('Reviewer Round 2 field-level route mutations', () => {
     ['model config', 'put_api_v1_model_config', { provider: 'openai', model: 'gpt', apiKeySecretRef: 'secret:key' }, { provider: 'openai', model: 'gpt', apiKey: 'raw' }],
     ['skill install', 'post_api_v1_skills_install', { source: 'registry:skill' }, { source: '' }],
     ['plugin install', 'post_api_v1_plugins_install', { source: 'registry:plugin' }, { source: '' }],
-    ['scheduled task', 'post_api_v1_scheduled_tasks', { name: 'daily', schedule: { kind: 'cron', expression: '0 9 * * *', timezone: 'Asia/Shanghai' }, enabled: true }, { name: 'daily', enabled: true }],
+    ['scheduled task', 'post_api_v1_scheduled_tasks', { name: 'daily', schedule: { kind: 'cron', expr: '0 9 * * *', tz: 'Asia/Shanghai' }, enabled: true }, { name: 'daily', enabled: true }],
     ['runtime restart', 'post_api_v1_runtime_restart', {}, { arbitrary: true }],
   ])('validates %s request fields', (_name, operationId, valid, invalid) => {
     expect(route(operationId).request.safeParse(valid).success).toBe(true);
