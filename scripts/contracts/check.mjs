@@ -47,8 +47,10 @@ const isCanonicalFormalPath = (routePath) => {
   if (routePath.includes('\\') || routePath.includes('?') || routePath.includes('#')) return false;
   if (routePath.includes('%') || routePath.includes('//')) return false;
   if (/[\u0000-\u001f\u007f]/.test(routePath) || /:([A-Za-z]|$)/.test(routePath)) return false;
-  return routePath.slice(1).split('/').every(
-    (segment) => segment.length > 0 && segment !== '.' && segment !== '..',
+  return routePath.slice(1).split('/').every((segment, index) =>
+    (index === 0 && segment === '.well-known') ||
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segment) ||
+    /^\{[A-Za-z][A-Za-z0-9]*\}$/.test(segment),
   );
 };
 const canonicalJson = (value) => JSON.stringify(
