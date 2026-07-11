@@ -18,6 +18,8 @@ const dynamicInstallPattern = /\b(?:npm|pnpm|yarn|pip3?|npx)\s+(?:install|add|ci
 const forbiddenProductionPattern = /(?:xvfb|x11vnc|novnc|chromium|electron|:latest|\bdebug\b)/i;
 const secretPattern = /(?:-----BEGIN [A-Z ]+PRIVATE KEY-----|npm_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/;
 
+class BlockedError extends Error {}
+
 const run = (command, args, options = {}) => spawnSync(command, args, {
   cwd: repositoryRoot,
   encoding: 'utf8',
@@ -131,7 +133,7 @@ export const checkDockerStatic = (root = repositoryRoot) => {
 const requireTool = (command, args) => {
   const result = run(command, args);
   if (result.status !== 0) {
-    throw new Error(`blocked: missing or unusable ${command}: ${result.stderr || result.stdout}`);
+    throw new BlockedError(`missing or unusable ${command}: ${result.stderr || result.stdout}`);
   }
   return (result.stdout || result.stderr).trim();
 };
@@ -190,7 +192,13 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory) => {
 
   const imageDigest = metadata.Id;
   const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
-  const sbom = run('syft', [tag, '--output', `spdx-json=${sbomPath}`]);
+  const dockerContext = run('docker', ['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']);
+  if (dockerContext.status !== 0 || !dockerContext.stdout.trim()) {
+    throw new Error(`${imageName}: unable to resolve Docker context for SBOM scan`);
+  }
+  const sbom = run('syft', [`docker:${tag}`, '--output', `spdx-json=${sbomPath}`], {
+    env: { ...process.env, DOCKER_HOST: dockerContext.stdout.trim() },
+  });
   if (sbom.status !== 0) throw new Error(`${imageName}: SBOM generation failed: ${sbom.stderr}`);
   const sbomSha256 = `sha256:${createHash('sha256').update(readFileSync(sbomPath)).digest('hex')}`;
   return { imageName, tag, digest: imageDigest, sourceSha, sbom: { path: sbomPath, sha256: sbomSha256 } };
@@ -260,7 +268,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     main();
   } catch (error) {
-    console.error(JSON.stringify({ status: 'BLOCKED', check: 'docker-build', reason: String(error) }));
-    process.exitCode = 2;
+    const blocked = error instanceof BlockedError;
+    console.error(JSON.stringify({ status: blocked ? 'BLOCKED' : 'FAILED', check: 'docker-build', reason: String(error) }));
+    process.exitCode = blocked ? 2 : 1;
   }
 }

@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 FROM node:24.15.0-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS build
 WORKDIR /src
 ARG TARGETARCH
@@ -8,9 +8,9 @@ COPY scripts ./scripts
 COPY openclaw-extensions ./openclaw-extensions
 COPY resources ./resources
 COPY SKILLs ./SKILLs
-RUN apk add --no-cache bash ca-certificates git python3 make g++ pkgconfig \
- && npm ci --ignore-scripts --no-audit --no-fund \
- && case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;; *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
+RUN apk add --no-cache bash ca-certificates git python3 make g++ pkgconfig
+RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN case "$TARGETARCH" in amd64) target=linux-x64 ;; arm64) target=linux-arm64 ;; *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
  && node scripts/ensure-openclaw-version.cjs \
  && node scripts/apply-openclaw-patches.cjs \
  && node scripts/run-build-openclaw-runtime.cjs "$target" \

@@ -1,11 +1,11 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 FROM node:24.15.0-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS build
 WORKDIR /src
 COPY package.json package-lock.json tsconfig.base.json tsconfig.workspace.json vite.config.ts ./
 COPY apps ./apps
 COPY libs ./libs
-RUN npm ci --ignore-scripts --no-audit --no-fund \
- && npm run build --workspace @lobsterai/web
+RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN npm run build --workspace @lobsterai/web
 
 FROM node:24.15.0-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS production
 RUN addgroup -S -g 10001 lobster && adduser -S -D -H -u 10001 -G lobster lobster
