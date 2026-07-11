@@ -61,7 +61,8 @@
       {
         "id": "openclaw-netease-bee",
         "npm": "openclaw-netease-bee",
-        "version": "0.1.3"
+        "version": "0.1.3",
+        "installTimeoutMs": 600000
       },
       {
         "id": "clawemail-email",

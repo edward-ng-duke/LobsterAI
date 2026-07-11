@@ -33,6 +33,9 @@ const {
   prepareOpenClawNimPackage,
 } = require('./openclaw-plugin-preparers/nim-channel.cjs');
 
+const DEFAULT_PLUGIN_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
+const MAX_PLUGIN_INSTALL_TIMEOUT_MS = 15 * 60 * 1000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -321,6 +324,20 @@ function buildGitEnv() {
   };
 }
 
+function resolvePluginInstallTimeoutMs(plugin = {}) {
+  const timeoutMs = plugin.installTimeoutMs ?? DEFAULT_PLUGIN_INSTALL_TIMEOUT_MS;
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_PLUGIN_INSTALL_TIMEOUT_MS) {
+    throw new Error(
+      `Plugin install timeout must be an integer between 1 and ${MAX_PLUGIN_INSTALL_TIMEOUT_MS} ms`,
+    );
+  }
+  return timeoutMs;
+}
+
+function shouldSkipPluginInstallFailure(plugin = {}) {
+  return plugin.optional === true;
+}
+
 /**
  * Run the OpenClaw CLI with the given arguments.
  *
@@ -577,6 +594,14 @@ function main() {
         'Each plugin must have "id", "npm", and "version" fields.'
       );
     }
+    if (plugin.optional !== undefined && typeof plugin.optional !== 'boolean') {
+      die(`Invalid plugin declaration for ${plugin.id}: "optional" must be a boolean.`);
+    }
+    try {
+      resolvePluginInstallTimeoutMs(plugin);
+    } catch (err) {
+      die(`Invalid plugin declaration for ${plugin.id}: ${err.message}`);
+    }
   }
 
   const forceInstall = process.env.OPENCLAW_FORCE_PLUGIN_INSTALL === '1';
@@ -598,7 +623,8 @@ function main() {
   log(`Processing ${plugins.length} plugin(s)...`);
 
   for (const plugin of plugins) {
-    const { id, npm: npmSpec, version, optional } = plugin;
+    const { id, npm: npmSpec, version } = plugin;
+    const optional = shouldSkipPluginInstallFailure(plugin);
     const cacheDir = path.join(pluginCacheBase, id);
     const installInfoPath = path.join(cacheDir, 'plugin-install-info.json');
     const targetDir = path.join(runtimeExtensionsDir, id);
@@ -666,6 +692,7 @@ function main() {
               npm_config_legacy_peer_deps: 'true',
             },
             stdio: 'inherit',
+            timeout: resolvePluginInstallTimeoutMs(plugin),
           }
         );
 
@@ -762,5 +789,7 @@ module.exports = {
   npmPack,
   parseGitSpec,
   resolveGitPackSpec,
+  resolvePluginInstallTimeoutMs,
   resolvePluginInstallSource,
+  shouldSkipPluginInstallFailure,
 };
