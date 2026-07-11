@@ -403,6 +403,7 @@ const checkDeferredContracts = () => {
   const source = readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/src/domains/deferred.schema.ts'), 'utf8');
   for (const fragment of forbiddenImports) assert('deferred-contracts', !source.includes(fragment), `behavior implementation leaked: ${fragment}`);
   assert('deferred-contracts', Schemas.BillingAccountResponse.safeParse({ creditsRemaining: 10, creditsLimit: 24, creditsUsed: 14, breakdown: { daily: { balance: 1, limit: 5 }, monthly: { balance: 2, limit: 10 }, granted: { balance: 3, total: 5 }, topup: { balance: 4 } } }).success, 'D12 billing account response rejected');
+  assert('deferred-contracts', openapi.components.schemas.BillingAccountResponse?.['x-lobster-derived-fields']?.creditsLimit === 'daily.limit+monthly.limit+granted.total+topup.balance', 'D12 derived-field metadata missing');
 };
 
 const checkGenerated = () => {

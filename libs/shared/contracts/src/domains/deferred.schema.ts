@@ -114,6 +114,12 @@ export const BillingAccountResponseSchema = z.strictObject({
   if (Math.abs(limit - balance - account.creditsUsed) > Number.EPSILON) {
     context.addIssue({ code: 'custom', path: ['creditsUsed'], message: 'Usage mismatch' });
   }
+}).meta({
+  'x-lobster-derived-fields': {
+    creditsRemaining: 'daily.balance+monthly.balance+granted.balance+topup.balance',
+    creditsLimit: 'daily.limit+monthly.limit+granted.total+topup.balance',
+    creditsUsed: 'creditsLimit-creditsRemaining',
+  },
 });
 export const BillingLedgerEntrySchema = z.strictObject({
   requestId: z.string().min(1),

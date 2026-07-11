@@ -154,5 +154,10 @@ describe('Reviewer Round 3 D12 derived account mutations', () => {
       creditsUsed: 999_990,
     }).success).toBe(false);
     expect(Schemas.BillingAccountResponse.safeParse({ ...account, creditsUsed: 13 }).success).toBe(false);
+    expect(openapi.components.schemas.BillingAccountResponse['x-lobster-derived-fields']).toEqual({
+      creditsRemaining: 'daily.balance+monthly.balance+granted.balance+topup.balance',
+      creditsLimit: 'daily.limit+monthly.limit+granted.total+topup.balance',
+      creditsUsed: 'creditsLimit-creditsRemaining',
+    });
   });
 });

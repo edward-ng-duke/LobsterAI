@@ -435,6 +435,10 @@ components:
         - creditsUsed
         - breakdown
       type: object
+      x-lobster-derived-fields:
+        creditsLimit: daily.limit+monthly.limit+granted.total+topup.balance
+        creditsRemaining: daily.balance+monthly.balance+granted.balance+topup.balance
+        creditsUsed: creditsLimit-creditsRemaining
     BillingError:
       additionalProperties: false
       properties:
