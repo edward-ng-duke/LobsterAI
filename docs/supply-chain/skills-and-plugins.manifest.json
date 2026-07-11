@@ -1,0 +1,8 @@
+{
+  "$schema": "../../libs/shared/contracts/assets/supply-chain-inventory.schema.json",
+  "schemaVersion": 1,
+  "status": "NOT_APPLICABLE",
+  "activationTask": "P03-PR3部署供应链",
+  "skills": [],
+  "plugins": []
+}

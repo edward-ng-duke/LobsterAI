@@ -1,0 +1,21 @@
+{{- if .Values.sandbox.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-sandbox-fixture
+  labels:
+    app.kubernetes.io/name: lobsterai-sandbox
+spec:
+  runtimeClassName: {{ required "sandbox.runtimeClassName is a Day-0 decision" .Values.sandbox.runtimeClassName }}
+  serviceAccountName: {{ required "sandbox.serviceAccountName is a Day-0 decision" .Values.sandbox.serviceAccountName }}
+  restartPolicy: Never
+  containers:
+    - name: openclaw-runtime
+      image: '{{ required "sandbox.image.repository is required" .Values.sandbox.image.repository }}@{{ required "sandbox.image.digest is required" .Values.sandbox.image.digest }}'
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        capabilities:
+          drop: ["ALL"]
+{{- end }}

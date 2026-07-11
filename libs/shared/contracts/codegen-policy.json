@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "status": "NOT_APPLICABLE",
+  "activationTask": "P01-PR1契约",
+  "requiredHeader": "Generated file. Do not edit.",
+  "sourceDirectories": [
+    "openapi",
+    "asyncapi",
+    "schemas"
+  ],
+  "fixtureDirectory": "fixtures",
+  "generatedDirectories": [
+    "generated/client",
+    "generated/server"
+  ]
+}

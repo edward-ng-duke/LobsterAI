@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "currentStage": "P00",
+  "statuses": {
+    "NOT_APPLICABLE": 78,
+    "BLOCKED": 2
+  },
+  "gates": {
+    "test:e2e": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P04-PR4PoC脚手架",
+      "reason": "Playwright scaffold and browser journeys are not installed in P00.",
+      "fixtures": ["apps/web/index.html", "tests/scaffold-web-build.test.ts"]
+    },
+    "contracts:check": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P01-PR1契约",
+      "reason": "P00 freezes contract source and codegen locations; PR-1 activates route/channel validation.",
+      "fixtures": [
+        "libs/shared/contracts/codegen-policy.json",
+        "libs/shared/contracts/openapi/README.md",
+        "libs/shared/contracts/asyncapi/README.md",
+        "libs/shared/contracts/fixtures/README.md"
+      ]
+    },
+    "prisma:validate": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P02-PR2数据库脚手架",
+      "reason": "P00 freezes Prisma/RLS locations; PR-2 installs and activates Prisma validation.",
+      "fixtures": [
+        "prisma/schema.prisma",
+        "prisma/migrations/README.md",
+        "prisma/rls/README.md",
+        "prisma/seed/README.md"
+      ]
+    },
+    "supply-chain:check": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P00 freezes schema/manifest locations; PR-3 activates complete inventory and SBOM checks.",
+      "fixtures": [
+        "docs/supply-chain/skills-and-plugins.manifest.json",
+        "libs/shared/contracts/assets/supply-chain-inventory.schema.json"
+      ]
+    },
+    "docker:build:check": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P00 freezes image boundaries; PR-3 adds Dockerfiles and image validation.",
+      "fixtures": [
+        "docker/web/README.md",
+        "docker/api/README.md",
+        "docker/worker/README.md",
+        "docker/runtime-orchestrator/README.md",
+        "docker/openclaw-runtime/README.md"
+      ]
+    },
+    "helm:lint": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P00 freezes the chart boundary; PR-3 activates full chart/schema lint.",
+      "fixtures": [
+        "charts/lobsterai/Chart.yaml",
+        "charts/lobsterai/values.yaml",
+        "charts/lobsterai/templates/sandbox-pod.yaml"
+      ]
+    },
+    "poc:v1:check": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P04-PR4PoC脚手架",
+      "reason": "P00 freezes the harness and evidence locations; PR-4 activates real V1 probes.",
+      "fixtures": [
+        "apps/runtime-orchestrator/poc/poc-manifest.json",
+        "charts/lobsterai/templates/sandbox-pod.yaml",
+        "docs/poc/20260711_V1_OpenClaw沙箱PoC证据包/README.md"
+      ]
+    }
+  }
+}

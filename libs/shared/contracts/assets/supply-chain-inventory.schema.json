@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lobsterai.internal/schemas/supply-chain-inventory.schema.json",
+  "title": "LobsterAI supply-chain inventory scaffold",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "activationTask", "skills", "plugins"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "status": { "enum": ["NOT_APPLICABLE", "ACTIVE"] },
+    "activationTask": { "type": "string", "minLength": 1 },
+    "skills": { "type": "array", "items": { "$ref": "#/$defs/asset" } },
+    "plugins": { "type": "array", "items": { "$ref": "#/$defs/asset" } }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

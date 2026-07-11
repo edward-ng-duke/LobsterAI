@@ -1,0 +1,12 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../libs/server/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// PR-2 owns the first real model and migration. Every tenant-owned model must
+// use a mapped `tenant_id` column and participate in ENABLE + FORCE RLS.
