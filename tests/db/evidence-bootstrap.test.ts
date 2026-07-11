@@ -122,4 +122,17 @@ describe('P02 external evidence bootstrap boundary', () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('trusted bootstrap');
   });
+
+  test('coordinated bootstrap and validator replacement cannot make the official entry pass', () => {
+    const root = createFixture();
+    writeFileSync(path.join(root, 'scripts/db/evidence-bootstrap.mjs'), '// bypass attempt\n');
+    writeFileSync(
+      path.join(root, 'scripts/db/validate-evidence.mjs'),
+      "console.log(JSON.stringify({ status: 'PASS', coordinatedBypass: true }));\n",
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'fix(db): coordinated evidence bypass');
+    const result = run(root, true);
+    expect(result.status).not.toBe(0);
+  });
 });
