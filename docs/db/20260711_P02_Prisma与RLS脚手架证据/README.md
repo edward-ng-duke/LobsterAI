@@ -2,9 +2,9 @@
 
 - 状态：`REVIEW_PENDING`（Reviewer Round 4）
 - Developer：`/root/p02_developer`
-- codeEvidenceSha：`21e141d47240988306fec7f45a7b23ae54a5f992`
-- code evidence-only commit：`c49b66cd479f1906586806c1cdd9043a11650656`
-- stageEvidenceSha：`c49b66cd479f1906586806c1cdd9043a11650656`
+- codeEvidenceSha：`352d0caaa1c0ea992f6a48ee8c698d56df25309c`
+- code evidence-only commit：`2f8e33e42d12249470a3b800612338ac448d0751`
+- stageEvidenceSha：`2f8e33e42d12249470a3b800612338ac448d0751`
 - 环境：macOS arm64 / Node `v24.15.0` / PostgreSQL `17.10 (Debian 17.10-1.pgdg12+1)`
 - 镜像：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`
 - P01 接受 SHA：`a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28`
@@ -15,8 +15,8 @@
 
 报告不能把包含自身的提交 SHA 写进自身内容。本目录采用可机器验证的两段 evidence-only descendant 链：
 
-1. 四份 code report 由最终 P03 source resolver/exact-five 稳定后的集成提交 `21e141d4...` 原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；该 source 的祖先包含 P03 最终产品提交 `f93fdd59...`，`c49b66cd...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
-2. 正式 `prisma:validate` stage 在 `c49b66cd...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
+1. 四份 code report 由 Round 5 精确 governance 边界实现 `352d0caa...` 原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；该 source 的祖先包含 P03 最终产品提交 `f93fdd59...`，`2f8e33e4...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
+2. 正式 `prisma:validate` stage 在 `2f8e33e4...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
 3. `validate-evidence.mjs` 用严格 schema 拒绝未知字段，核对每份报告内容 SHA-256 与 runner SHA-256，并要求 code/stage SHA 位于最终 HEAD 的 first-parent 链。
 4. validator 从 source SHA 的下一提交起到 HEAD，逐个审计 first-parent commit；每个 commit 都与其唯一父提交做 `--name-status -z -M` 比较。A/M/D 路径和 R/C 的旧、新两端都必须在严格 allowlist，任何 merge commit 均 fail-closed。
 5. mutation 测试覆盖 add、modify、delete、code→evidence rename、code→revert、merge 与 source 仅在 non-first-parent 可达。后续 revert 不能再洗掉历史代码提交。
@@ -39,11 +39,11 @@
 
 | 文件 | 原生标识 | source SHA | 结果 |
 |---|---|---|---|
-| `contracts-preflight.json` | runId `4ef139d8-37f2-4c67-9d54-7a6f906fb7bc` | `21e141d4...` | PASS |
-| `preflight.json` | runId `fcd664b8-9d87-40df-b093-12f45da8e2c3` | `21e141d4...` | PASS；container removed |
-| `integration.json` | runId `26c451e3-9683-40a9-90fd-0e8e9e8bfca5` | `21e141d4...` | PASS；24/24；skipped=0；container removed |
-| `validation.json` | runId `4d73b8f7-ba20-4b5b-add8-d66990b6f731` | `21e141d4...` | PASS；原生 `commands[]` 共 8 项 |
-| `prisma-stage-gate.json` | invocationId `4b004aa6-706f-452e-a608-7f292ae45bf5` | `c49b66cd...` | PASS；outer digests 一致 |
+| `contracts-preflight.json` | runId `e6c7b8ea-272a-42b8-ae50-e96642f34313` | `352d0caa...` | PASS |
+| `preflight.json` | runId `a2d17b66-259c-4fe7-a51d-be188c309907` | `352d0caa...` | PASS；container removed |
+| `integration.json` | runId `17184ecf-d751-4ec8-8569-8d7cf7be4b4f` | `352d0caa...` | PASS；24/24；skipped=0；container removed |
+| `validation.json` | runId `7543b596-692a-4b5a-9b5b-27521b006e88` | `352d0caa...` | PASS；原生 `commands[]` 共 8 项 |
+| `prisma-stage-gate.json` | invocationId `bf925a14-ae99-41e1-9aa0-dab7fbcda8b7` | `2f8e33e4...` | PASS；outer digests 一致 |
 
 `evidence-manifest.json` 保存上述文件摘要、source SHA、runner 路径和 runner 摘要。当前实现与报告中的 generated Prisma client hash 均为 `c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441`。
 
@@ -109,7 +109,13 @@
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-原生机器报告以本目录 JSON 与 manifest 为准。最终冻结证据链由 manifest 指向 `21e141d4...` 与 `c49b66cd...`；implementation SHA 包含 P03 最终 resolver `f93fdd59...`、source-boundary 测试和 exact-five 角色记录的全部祖先；不声称报告与包含报告的提交自引用同 SHA。
+原生机器报告以本目录 JSON 与 manifest 为准。最终冻结证据链由 manifest 指向 `352d0caa...` 与 `2f8e33e4...`；implementation SHA 包含 P03 最终 resolver `f93fdd59...`、source-boundary 测试和 exact-five 角色记录的全部祖先；不声称报告与包含报告的提交自引用同 SHA。
+
+### Round 5 协调者总表边界
+
+- 当协调者修改权威总表后，旧 provenance 按预期拒绝；后续 revert 也因逐提交审计不能洗掉该历史，形成可复现 Red。
+- 新例外只是完整 repo-relative 路径 `改造计划/20260711_V2单租户Web闭环开发/00-总体完成表.md`，且只接受 Git name-status `M`。不存在目录、basename 或 Markdown 后缀泛化允许。
+- 真实临时 Git 历史 corner 固定普通修改可通过；删除、重命名到原本可允许的 task 记录、复制到相邻文档、相邻计划文档、嵌套同名和后缀伪装均 fail-closed；代码路径拒绝测试保持不变。
 
 ### P03 shared evidence 集成阻断（历史，已解除）
 
