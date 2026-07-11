@@ -156,7 +156,7 @@ const waitForHealthy = (containerId, timeoutMs = 45_000) => {
 const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, waivers) => {
   const tag = `lobsterai-p03-${imageName}:${sourceSha.slice(0, 12)}`;
   const dockerfile = `docker/${imageName}/Dockerfile`;
-  const build = run('docker', ['build', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
+  const build = run('docker', ['build', '--no-cache', '--pull=false', '--file', dockerfile, '--tag', tag, '.'], {
     stdio: 'inherit',
   });
   if (build.status !== 0) throw new Error(`${imageName}: docker build failed with exit ${build.status}`);
@@ -164,6 +164,9 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   if (inspect.status !== 0) throw new Error(`${imageName}: image inspect failed`);
   const metadata = JSON.parse(inspect.stdout);
   if (metadata.Config?.User !== '10001:10001') throw new Error(`${imageName}: effective image user is not 10001:10001`);
+  if (metadata.Os !== 'linux' || !['amd64', 'arm64'].includes(metadata.Architecture)) {
+    throw new Error(`${imageName}: image must contain Linux amd64/arm64 content`);
+  }
   const history = run('docker', ['history', '--no-trunc', '--format', '{{.CreatedBy}}', tag]);
   if (secretPattern.test(history.stdout)) throw new Error(`${imageName}: secret-like content found in image history`);
 
@@ -284,6 +287,10 @@ const main = () => {
   ));
   const git = run('git', ['rev-parse', 'HEAD']);
   if (git.status !== 0 || !/^[a-f0-9]{40}\s*$/.test(git.stdout)) throw new Error('unable to bind build to source SHA');
+  const worktree = run('git', ['status', '--porcelain', '--untracked-files=all']);
+  if (worktree.status !== 0 || worktree.stdout.trim()) {
+    throw new Error('Docker evidence requires a clean checkout with no tracked or untracked changes');
+  }
   const sourceSha = git.stdout.trim();
   const invocationId = randomUUID();
   const { reportDirectory } = writeReport({
