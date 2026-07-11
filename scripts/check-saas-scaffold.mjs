@@ -58,6 +58,7 @@ const requiredRootScripts = {
   'supply-chain:validate': 'node scripts/check-supply-chain.mjs',
   'test:db:integration': 'node scripts/db/run-integration.mjs',
   'test:db:preflight': 'node scripts/db/preflight.mjs',
+  'test:db:core': 'vitest run tests/db/p02-red.test.ts tests/db/seed.test.ts tests/db/tenant-scope.test.ts',
   'test:db:unit': 'vitest run tests/db',
   'test:e2e': 'node scripts/run-saas-stage-gate.mjs test:e2e',
   'test:scaffold':

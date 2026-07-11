@@ -63,7 +63,7 @@ try {
   run('npm', ['run', '--silent', 'prisma:generate'], { DATABASE_URL: placeholderUrl });
   const secondGeneratedHash = hashGeneratedClient();
   if (firstGeneratedHash !== secondGeneratedHash) throw new Error('Prisma generation is not deterministic');
-  run('npm', ['run', '--silent', 'test:db:unit']);
+  run('npm', ['run', '--silent', 'test:db:core']);
   run('npm', ['run', '--silent', 'test:db:preflight']);
   run('npm', ['run', '--silent', 'test:db:integration']);
 
