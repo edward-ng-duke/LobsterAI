@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "image": "postgres:17.10-bookworm",
+  "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+  "platform": "linux/arm64",
+  "serverMajor": 17,
+  "serverVersion": "17.10",
+  "distribution": "Debian bookworm",
+  "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a"
+}
