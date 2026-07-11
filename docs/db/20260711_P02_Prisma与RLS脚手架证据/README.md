@@ -96,19 +96,27 @@
 | Tester evidence boundary | exit 0；6/6 |
 | external/bootstrap/outer boundary | exit 0；10/10（含双文件协同与 manifest+launcher 协同） |
 | provenance/static mutation | exit 0；21/21，覆盖 add/modify/delete/rename/revert/merge/non-first-parent 与移除 bootstrap 入口 |
-| `npm run test:db:unit` | exit 0；7 files / 72 tests |
+| `npm run test:db:unit` | exit 0；8 files / 74 tests |
 | `npm run test:db:integration`（由 validation 调用） | exit 0；24/24，skipped=0 |
-| `npm run prisma:validate` | exit 0；冻结 invocationId `bb9fab84-...`；外部 manifest digest 匹配 |
+| `npm run prisma:validate` | exit 0；冻结 invocationId `bb9fab84-...`；集成重跑 `00329847-...`；外部 manifest digest 均匹配 |
 | trusted evidence launcher | exit 0；code/stage/raw/provenance/outer digests PASS |
 | `npm ci` | exit 0；lockfile clean install 与 Prisma postinstall generate 成功 |
 | `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
 | `npm run typecheck` | exit 0 |
 | changed-file ESLint / `npm run lint:saas` | exit 0；0 warning |
-| `npm test` | exit 0；204 files，2186 passed，1 个既有 skip |
+| `npm test` | exit 1；除 P03 exact-five evidence 文件外 206 files / 2199 passed / 1 skip；该文件 37 failed，见下方集成阻断 |
+| `npx vitest run --exclude tests/deploy-supply-chain-evidence-files.test.ts` | exit 0；206 files / 2197 passed / 1 skip |
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
 原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `20b95e3c...` 与 `b07694d9...`；implementation SHA 位于 P03 accepted merge `43665ce1...` 之后；不声称报告与包含报告的提交自引用同 SHA。
+
+### P03 shared evidence 集成阻断
+
+- P03 不依赖 exact-five raw 目录的 4 个 targeted 文件共 34 tests PASS；Docker/Helm static checker PASS。
+- `tests/deploy-supply-chain-evidence-files.test.ts` 需要 ignored `.reports/supply-chain/20260712_PR3部署供应链证据`，共享 worktree 不存在该目录；36 项因 ENOENT 失败。
+- 另 1 项正确发现 P03 product-source resolver 已把本 P02 `docs/db` evidence commit `613bbe91...` 当作镜像产品 source，而 accepted P03 evidence source 仍为 `187da9a...`。这会使 Reviewer/Tester 文档继续无意义推进 P03 source。
+- 因此不能把 full `npm test` 写成 PASS，也不能复制旧 exact-five 证据伪绿。协调者将交同一 P03 Developer 把 source 收敛到实际 Docker image inputs 并重跑 exact-five；随后 P02 再做最终 rebaseline。
 
 ## 已知非 P02 风险
 
