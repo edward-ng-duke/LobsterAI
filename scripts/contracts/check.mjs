@@ -83,6 +83,7 @@ const checkRoutes = () => {
   assert('routes', new Set(operationIds).size === operationIds.length, 'duplicate operationId');
   assert('routes', new Set(methodPaths).size === methodPaths.length, 'duplicate method/path');
   for (const route of RouteRegistry) {
+    assert('routes', !/:([A-Za-z]|$)/.test(route.path), `colon parameter/action in ${route.path}`);
     assert('routes', isCanonicalFormalPath(route.path), `non-canonical formal route ${route.path}`);
     assert('routes', route.request && route.response, `missing schema reference for ${route.operationId}`);
     assert('routes', !route.requestName.startsWith('Generic'), `generic request schema ${route.operationId}`);
