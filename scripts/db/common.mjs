@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,11 +20,17 @@ export const writeAtomicJson = (relativePath, value) => {
   renameSync(temporary, target);
 };
 
-export const createRunMetadata = (kind) => ({
-  schemaVersion: 1,
-  kind,
-  runId: randomUUID(),
-  generatedAt: new Date().toISOString(),
-  nodeVersion: process.version,
-  platform: `${process.platform}/${process.arch}`,
-});
+export const createRunMetadata = (kind) => {
+  const git = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' });
+  const sourceSha = git.status === 0 ? git.stdout.trim() : '';
+  if (!/^[a-f0-9]{40}$/.test(sourceSha)) throw new Error('unable to bind DB report to git HEAD');
+  return {
+    schemaVersion: 1,
+    kind,
+    runId: randomUUID(),
+    generatedAt: new Date().toISOString(),
+    sourceSha,
+    nodeVersion: process.version,
+    platform: `${process.platform}/${process.arch}`,
+  };
+};

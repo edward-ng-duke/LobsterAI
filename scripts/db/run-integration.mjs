@@ -35,6 +35,7 @@ const requireSuccessful = (result, label) => {
 };
 
 let container;
+let exitCode = 0;
 try {
   requireSuccessful(run(process.execPath, ['scripts/db/preflight.mjs', '--contracts']), 'contract preflight');
   const image = readJson('tests/integration/db/postgres-image.json');
@@ -175,15 +176,28 @@ try {
     seed: seedRows.rows,
     testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
   };
-  writeAtomicJson('.reports/db/integration.json', report);
-  console.log(JSON.stringify(report));
 } catch (error) {
   const isBlocked = Boolean(error?.blocked) || /Could not find a working container runtime strategy/.test(String(error));
   report.status = isBlocked ? 'BLOCKED' : 'FAILED';
   report.error = error instanceof Error ? error.message : String(error);
-  writeAtomicJson('.reports/db/integration.json', report);
-  console.error(JSON.stringify(report));
-  process.exitCode = isBlocked ? 2 : 1;
+  exitCode = isBlocked ? 2 : 1;
 } finally {
-  if (container) await container.stop();
+  if (container) {
+    try {
+      const containerId = container.getId();
+      await container.stop();
+      report.cleanup = { containerId, removed: true };
+    } catch (error) {
+      report.status = 'FAILED';
+      report.cleanup = {
+        containerId: container.getId(),
+        removed: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+      exitCode = 1;
+    }
+  }
+  writeAtomicJson('.reports/db/integration.json', report);
+  (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
+  process.exitCode = exitCode;
 }

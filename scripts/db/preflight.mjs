@@ -13,6 +13,9 @@ import {
 
 const { Client } = pg;
 const contractsOnly = process.argv.includes('--contracts');
+const reportPath = contractsOnly
+  ? '.reports/db/contracts-preflight.json'
+  : '.reports/db/preflight.json';
 const report = {
   ...createRunMetadata(contractsOnly ? 'P02_CONTRACT_PREFLIGHT' : 'P02_DATABASE_PREFLIGHT'),
   status: 'RUNNING',
@@ -75,6 +78,7 @@ const verifyContracts = () => {
 };
 
 let container;
+let exitCode = 0;
 try {
   verifyContracts();
   if (!contractsOnly) {
@@ -177,15 +181,28 @@ try {
   }
 
   report.status = 'PASS';
-  writeAtomicJson('.reports/db/preflight.json', report);
-  console.log(JSON.stringify(report));
 } catch (error) {
   const blocked = Boolean(error?.blocked);
   report.status = blocked ? 'BLOCKED' : 'FAILED';
   report.error = error instanceof Error ? error.message : String(error);
-  writeAtomicJson('.reports/db/preflight.json', report);
-  console.error(JSON.stringify(report));
-  process.exitCode = blocked ? 2 : 1;
+  exitCode = blocked ? 2 : 1;
 } finally {
-  if (container) await container.stop();
+  if (container) {
+    try {
+      const containerId = container.getId();
+      await container.stop();
+      report.cleanup = { containerId, removed: true };
+    } catch (error) {
+      report.status = 'FAILED';
+      report.cleanup = {
+        containerId: container.getId(),
+        removed: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+      exitCode = 1;
+    }
+  }
+  writeAtomicJson(reportPath, report);
+  (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
+  process.exitCode = exitCode;
 }
