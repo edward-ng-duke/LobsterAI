@@ -32,7 +32,7 @@ export const MemoryEntryUpdateRequestSchema = MemoryEntryCreateRequestSchema.par
 export const MemoryEntryListResponseSchema = z.strictObject({ entries: z.array(MemoryEntrySchema) });
 export const MemoryStatsResponseSchema = z.strictObject({ total: z.number().int().nonnegative(), stale: z.number().int().nonnegative() });
 
-export const HtmlShareCreateRequestSchema = z.strictObject({ source: z.enum(['html-file', 'artifact-file']), clientSourceKey: z.string().min(1), sessionId: z.string().min(1).optional(), artifactId: z.string().min(1).optional(), title: z.string().optional() });
+export const HtmlShareCreateRequestSchema = z.strictObject({ source: z.enum(['html', 'artifact']), clientSourceKey: z.string().min(1), sessionId: z.string().min(1).optional(), artifactId: z.string().min(1).optional(), title: z.string().optional() });
 export const HtmlShareUpdateRequestSchema = HtmlShareCreateRequestSchema.partial();
 export const HtmlSharePatchAccessRequestSchema = z.strictObject({ accessMode: z.enum(['public', 'code']), shareCode: z.string().min(1).optional() });
 export const HtmlSharePatchStatusRequestSchema = z.strictObject({ status: z.enum(['active', 'disabled']) });
@@ -62,10 +62,10 @@ export const ModelListResponseSchema = z.strictObject({ models: z.array(ModelDto
 export const PluginDtoSchema = z.strictObject({ id: z.string().min(1), name: z.string().min(1), version: z.string().min(1), enabled: z.boolean() });
 export const PluginListResponseSchema = z.strictObject({ plugins: z.array(PluginDtoSchema) });
 export const PluginUpdateRequestSchema = z.strictObject({ enabled: z.boolean().optional(), version: z.string().min(1).optional() });
-export const PluginConfigRequestSchema = z.strictObject({ config: z.record(z.string(), z.string()) });
+export const PluginConfigRequestSchema = z.strictObject({ config: z.record(z.string(), z.unknown()) });
 export const PluginConfigSchemaResponseSchema = z.strictObject({ fields: z.array(z.strictObject({ key: z.string().min(1), sensitive: z.boolean() })) });
 export const PluginInstallRequestSchema = z.strictObject({ source: z.string().min(1), integrity: z.string().min(1).optional() });
-export const PluginBatchSaveRequestSchema = z.strictObject({ toggles: z.array(z.strictObject({ pluginId: z.string().min(1), enabled: z.boolean() })).optional(), configs: z.array(z.strictObject({ pluginId: z.string().min(1), config: z.record(z.string(), z.string()) })).optional() });
+export const PluginBatchSaveRequestSchema = z.strictObject({ toggles: z.array(z.strictObject({ pluginId: z.string().min(1), enabled: z.boolean() })).optional(), configs: z.array(z.strictObject({ pluginId: z.string().min(1), config: z.record(z.string(), z.unknown()) })).optional() });
 export const PluginMutationResponseSchema = z.strictObject({ success: z.boolean(), plugin: PluginDtoSchema.optional() });
 export const PluginUpdatesResponseSchema = z.strictObject({ updates: z.array(z.strictObject({ pluginId: z.string().min(1), version: z.string().min(1) })) });
 

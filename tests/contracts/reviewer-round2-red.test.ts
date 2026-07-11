@@ -33,7 +33,7 @@ describe('Reviewer Round 2 field-level route mutations', () => {
 
   test('accepts canonical domain payloads and list response shapes', () => {
     expect(route('post_api_v1_html_shares').request.safeParse({
-      source: 'html-file',
+      source: 'html',
       clientSourceKey: 'workspace:index.html',
     }).success).toBe(true);
     expect(route('post_api_v1_billing_byok').request.safeParse({
@@ -48,7 +48,7 @@ describe('Reviewer Round 2 field-level route mutations', () => {
     ['model config', 'put_api_v1_model_config', { provider: 'openai', model: 'gpt', apiKeySecretRef: 'secret:key' }, { provider: 'openai', model: 'gpt', apiKey: 'raw' }],
     ['skill install', 'post_api_v1_skills_install', { source: 'registry:skill' }, { source: '' }],
     ['plugin install', 'post_api_v1_plugins_install', { source: 'registry:plugin' }, { source: '' }],
-    ['scheduled task', 'post_api_v1_scheduled_tasks', { name: 'daily', schedule: '0 9 * * *', enabled: true }, { name: 'daily', enabled: true }],
+    ['scheduled task', 'post_api_v1_scheduled_tasks', { name: 'daily', schedule: { kind: 'cron', expression: '0 9 * * *', timezone: 'Asia/Shanghai' }, enabled: true }, { name: 'daily', enabled: true }],
     ['runtime restart', 'post_api_v1_runtime_restart', {}, { arbitrary: true }],
   ])('validates %s request fields', (_name, operationId, valid, invalid) => {
     expect(route(operationId).request.safeParse(valid).success).toBe(true);
@@ -104,9 +104,14 @@ describe('Reviewer Round 2 D12 billing mutations', () => {
     expect('BillingAccountResponse' in Schemas).toBe(true);
     expect(schemaCatalog.BillingAccountResponse?.safeParse({
       creditsRemaining: 10,
-      creditsLimit: 14,
-      creditsUsed: 4,
-      breakdown: { daily: 1, monthly: 2, granted: 3, topup: 4 },
+      creditsLimit: 24,
+      creditsUsed: 14,
+      breakdown: {
+        daily: { balance: 1, limit: 5 },
+        monthly: { balance: 2, limit: 10 },
+        granted: { balance: 3, total: 5 },
+        topup: { balance: 4 },
+      },
     }).success).toBe(true);
   });
 

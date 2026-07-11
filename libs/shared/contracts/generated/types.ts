@@ -194,6 +194,7 @@ export type TaskRunCountResponseSchema = z.infer<typeof Schemas.TaskRunCountResp
 export type TaskRunDto = z.infer<typeof Schemas.TaskRunDto>;
 export type TaskRunEvent = z.infer<typeof Schemas.TaskRunEvent>;
 export type TaskRunListResponseSchema = z.infer<typeof Schemas.TaskRunListResponseSchema>;
+export type TaskSchedule = z.infer<typeof Schemas.TaskSchedule>;
 export type TaskSessionResponseSchema = z.infer<typeof Schemas.TaskSessionResponseSchema>;
 export type TaskStatusEvent = z.infer<typeof Schemas.TaskStatusEvent>;
 export type TaskStopRequestSchema = z.infer<typeof Schemas.TaskStopRequestSchema>;

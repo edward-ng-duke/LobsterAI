@@ -90,17 +90,28 @@ export const QuotaBucketDeltasSchema = z.strictObject({
   granted: z.number(),
   topup: z.number(),
 });
+const BillingAccountBreakdownSchema = z.strictObject({
+  daily: z.strictObject({ balance: z.number().nonnegative(), limit: z.number().nonnegative() }),
+  monthly: z.strictObject({ balance: z.number().nonnegative(), limit: z.number().nonnegative() }),
+  granted: z.strictObject({ balance: z.number().nonnegative(), total: z.number().nonnegative() }),
+  topup: z.strictObject({ balance: z.number().nonnegative() }),
+});
 export const BillingAccountResponseSchema = z.strictObject({
   creditsRemaining: z.number().nonnegative(),
   creditsLimit: z.number().nonnegative(),
   creditsUsed: z.number().nonnegative(),
-  breakdown: QuotaBucketsSchema,
+  breakdown: BillingAccountBreakdownSchema,
 }).superRefine((account, context) => {
-  const balance = Object.values(account.breakdown).reduce((sum, value) => sum + value, 0);
+  const balance = Object.values(account.breakdown).reduce((sum, bucket) => sum + bucket.balance, 0);
   if (Math.abs(balance - account.creditsRemaining) > Number.EPSILON) {
     context.addIssue({ code: 'custom', path: ['creditsRemaining'], message: 'Balance mismatch' });
   }
-  if (Math.abs(account.creditsLimit - account.creditsRemaining - account.creditsUsed) > Number.EPSILON) {
+  const limit = account.breakdown.daily.limit + account.breakdown.monthly.limit +
+    account.breakdown.granted.total + account.breakdown.topup.balance;
+  if (Math.abs(limit - account.creditsLimit) > Number.EPSILON) {
+    context.addIssue({ code: 'custom', path: ['creditsLimit'], message: 'Limit mismatch' });
+  }
+  if (Math.abs(limit - balance - account.creditsUsed) > Number.EPSILON) {
     context.addIssue({ code: 'custom', path: ['creditsUsed'], message: 'Usage mismatch' });
   }
 });
@@ -169,7 +180,16 @@ export const SkillManifestSchema = z.strictObject({ id: z.string().min(1), versi
 export const SkillScanResultSchema = z.strictObject({ riskLevel: z.enum(['low', 'medium', 'high']), lifecycleScripts: z.array(z.string()), allowed: z.boolean() });
 export const SupplyChainPolicyErrorSchema = z.strictObject({ code: z.literal('PERMISSION_DENIED'), policy: z.literal('mcpCommandPolicy'), reason: z.string().min(1) });
 
-export const ScheduledTaskDtoSchema = z.strictObject({ id: z.string().min(1), name: z.string().min(1), schedule: z.string().min(1), enabled: z.boolean() });
+export const TaskScheduleSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('at'), at: z.iso.datetime() }),
+  z.strictObject({ kind: z.literal('every'), intervalMs: z.number().int().positive() }),
+  z.strictObject({
+    kind: z.literal('cron'),
+    expression: z.string().min(1),
+    timezone: z.string().min(1),
+  }),
+]);
+export const ScheduledTaskDtoSchema = z.strictObject({ id: z.string().min(1), name: z.string().min(1), schedule: TaskScheduleSchema, enabled: z.boolean() });
 export const TaskCreateRequestSchema = ScheduledTaskDtoSchema.omit({ id: true });
 export const TaskUpdateRequestSchema = TaskCreateRequestSchema.partial();
 export const TaskRunDtoSchema = z.strictObject({ runId: z.string().min(1), taskId: z.string().min(1), status: z.enum(['queued', 'running', 'succeeded', 'failed', 'stopped']) });

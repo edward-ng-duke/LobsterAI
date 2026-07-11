@@ -89,7 +89,7 @@ const checkRoutes = () => {
     assert('routes', !routeSource.includes(heuristic), `route policy heuristic remains: ${heuristic}`);
   }
   const byOperation = new Map(RouteRegistry.map((route) => [route.operationId, route]));
-  assert('routes', byOperation.get('post_api_v1_html_shares')?.request.safeParse({ source: 'html-file', clientSourceKey: 'workspace:index.html' }).success, 'html share DTO rejected');
+  assert('routes', byOperation.get('post_api_v1_html_shares')?.request.safeParse({ source: 'html', clientSourceKey: 'workspace:index.html' }).success, 'html share DTO rejected');
   assert('routes', byOperation.get('post_api_v1_billing_byok')?.request.safeParse({ provider: 'openai', secret: 'secret-ref' }).success, 'BYOK DTO rejected');
   assert('routes', byOperation.get('get_api_v1_agents')?.response.safeParse({ agents: [] }).success, 'agent list DTO rejected');
   assert('routes', byOperation.get('get_api_v1_sessions')?.response.safeParse({ sessions: [] }).success, 'session list DTO rejected');
@@ -370,7 +370,9 @@ const checkEnvelope = () => {
 };
 
 const checkCoreDto = () => {
-  assert('core-dto', Schemas.LoginRequest.safeParse({ email: 'user@example.com', password: 'password123' }).success, 'password login rejected');
+  assert('core-dto', Schemas.LoginRequest.safeParse({ email: 'user@example.com', password: 'password123', codeChallenge: 'c'.repeat(43), redirectUri: 'https://app.example/callback', state: 's'.repeat(16) }).success, 'password PKCE login rejected');
+  assert('core-dto', Schemas.LoginRequest.safeParse({ email: 'user@example.com', password: 'password123' }).success === false, 'unbound password login accepted');
+  assert('core-dto', Schemas.RefreshRequest.safeParse({ refreshToken: 'body-token' }).success === false, 'browser refresh body token accepted');
   assert('core-dto', Schemas.StartSessionRequest.safeParse({ agentId: 'main', prompt: '' }).success === false, 'empty prompt accepted');
   assert('core-dto', Schemas.ContinueTurnRequest.safeParse({ prompt: 'next' }).success, 'continue rejected');
   assert('core-dto', Schemas.TurnAcceptedResponse.safeParse({ requestId: 'r' }).success, 'requestId missing from response contract');
@@ -385,7 +387,7 @@ const checkDeferredContracts = () => {
   const forbiddenImports = ["from 'axios'", 'fetch(', 'billingLedger', 'providerAdapter'];
   const source = readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/src/domains/deferred.schema.ts'), 'utf8');
   for (const fragment of forbiddenImports) assert('deferred-contracts', !source.includes(fragment), `behavior implementation leaked: ${fragment}`);
-  assert('deferred-contracts', Schemas.BillingAccountResponse.safeParse({ creditsRemaining: 10, creditsLimit: 14, creditsUsed: 4, breakdown: { daily: 1, monthly: 2, granted: 3, topup: 4 } }).success, 'D12 billing account response rejected');
+  assert('deferred-contracts', Schemas.BillingAccountResponse.safeParse({ creditsRemaining: 10, creditsLimit: 24, creditsUsed: 14, breakdown: { daily: { balance: 1, limit: 5 }, monthly: { balance: 2, limit: 10 }, granted: { balance: 3, total: 5 }, topup: { balance: 4 } } }).success, 'D12 billing account response rejected');
 };
 
 const checkGenerated = () => {

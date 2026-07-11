@@ -34,8 +34,8 @@ export const ResourceSubscriptionSchema = z.strictObject({
 });
 
 export const StreamTicketRequestSchema = z.strictObject({
-  sessions: z.array(z.string().min(1)).max(100).optional(),
-  resourceSubscriptions: z.array(ResourceSubscriptionSchema).max(100).optional(),
+  sessions: z.array(z.string().min(1)).max(100).meta({ uniqueItems: true }).optional(),
+  resourceSubscriptions: z.array(ResourceSubscriptionSchema).max(100).meta({ uniqueItems: true }).optional(),
 }).superRefine((value, context) => {
   const sessions = value.sessions ?? [];
   if (new Set(sessions).size !== sessions.length) {
@@ -52,7 +52,7 @@ export const StreamTicketRequestSchema = z.strictObject({
       message: 'Duplicate resource scope',
     });
   }
-});
+}).meta({ 'x-lobster-resource-uniqueness': 'channel+workspaceId+path' });
 
 export const StreamTicketResponseSchema = z.strictObject({
   ticket: z.string().min(1),

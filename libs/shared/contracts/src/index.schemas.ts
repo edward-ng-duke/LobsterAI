@@ -91,6 +91,7 @@ export {
   TaskCreateRequestSchema as TaskCreateRequest,
   TaskRunDtoSchema as TaskRunDto,
   TaskRunEventSchema as TaskRunEvent,
+  TaskScheduleSchema as TaskSchedule,
   TaskStatusEventSchema as TaskStatusEvent,
   TaskUpdateRequestSchema as TaskUpdateRequest,
   TenantScopedErrorSchema as TenantScopedError,

@@ -2238,10 +2238,21 @@ export interface components {
         };
         BillingAccountResponse: {
             breakdown: {
-                daily: number;
-                granted: number;
-                monthly: number;
-                topup: number;
+                daily: {
+                    balance: number;
+                    limit: number;
+                };
+                granted: {
+                    balance: number;
+                    total: number;
+                };
+                monthly: {
+                    balance: number;
+                    limit: number;
+                };
+                topup: {
+                    balance: number;
+                };
             };
             creditsLimit: number;
             creditsRemaining: number;
@@ -2401,7 +2412,7 @@ export interface components {
             clientSourceKey: string;
             sessionId?: string;
             /** @enum {string} */
-            source: "html-file" | "artifact-file";
+            source: "html" | "artifact";
             title?: string;
         };
         HtmlShareDtoSchema: {
@@ -2438,7 +2449,7 @@ export interface components {
             clientSourceKey?: string;
             sessionId?: string;
             /** @enum {string} */
-            source?: "html-file" | "artifact-file";
+            source?: "html" | "artifact";
             title?: string;
         };
         InstalledKitSchema: {
@@ -2473,9 +2484,13 @@ export interface components {
             redirectUri: string;
             state: string;
         } | {
+            codeChallenge: string;
             /** Format: email */
             email: string;
             password: string;
+            /** Format: uri */
+            redirectUri: string;
+            state: string;
         };
         LoginResponse: {
             code: string;
@@ -2678,9 +2693,15 @@ export interface components {
         };
         OAuthTokenRequest: {
             code: string;
+            /** @enum {string} */
+            grantType: "authorization_code";
             /** Format: uri */
             redirectUri: string;
             verifier: string;
+        } | {
+            /** @enum {string} */
+            grantType: "refresh_token";
+            refreshToken: string;
         };
         PageInfo: {
             hasMore: boolean;
@@ -2736,7 +2757,7 @@ export interface components {
         PluginBatchSaveRequestSchema: {
             configs?: {
                 config: {
-                    [key: string]: string;
+                    [key: string]: unknown;
                 };
                 pluginId: string;
             }[];
@@ -2747,7 +2768,7 @@ export interface components {
         };
         PluginConfigRequestSchema: {
             config: {
-                [key: string]: string;
+                [key: string]: unknown;
             };
         };
         PluginConfigSchemaResponseSchema: {
@@ -2870,9 +2891,7 @@ export interface components {
             dataUrl?: string;
             success: boolean;
         };
-        RefreshRequest: {
-            refreshToken?: string;
-        };
+        RefreshRequest: Record<string, never>;
         ResultImageChunkRequestSchema: {
             chunkBase64: string;
             index: number;
@@ -2929,14 +2948,42 @@ export interface components {
             enabled: boolean;
             id: string;
             name: string;
-            schedule: string;
+            schedule: {
+                /** Format: date-time */
+                at: string;
+                /** @enum {string} */
+                kind: "at";
+            } | {
+                intervalMs: number;
+                /** @enum {string} */
+                kind: "every";
+            } | {
+                expression: string;
+                /** @enum {string} */
+                kind: "cron";
+                timezone: string;
+            };
         };
         ScheduledTaskListResponseSchema: {
             tasks: {
                 enabled: boolean;
                 id: string;
                 name: string;
-                schedule: string;
+                schedule: {
+                    /** Format: date-time */
+                    at: string;
+                    /** @enum {string} */
+                    kind: "at";
+                } | {
+                    intervalMs: number;
+                    /** @enum {string} */
+                    kind: "every";
+                } | {
+                    expression: string;
+                    /** @enum {string} */
+                    kind: "cron";
+                    timezone: string;
+                };
             }[];
         };
         SessionBatchDeleteRequestSchema: {
@@ -3207,7 +3254,21 @@ export interface components {
         TaskCreateRequest: {
             enabled: boolean;
             name: string;
-            schedule: string;
+            schedule: {
+                /** Format: date-time */
+                at: string;
+                /** @enum {string} */
+                kind: "at";
+            } | {
+                intervalMs: number;
+                /** @enum {string} */
+                kind: "every";
+            } | {
+                expression: string;
+                /** @enum {string} */
+                kind: "cron";
+                timezone: string;
+            };
         };
         TaskRunCountResponseSchema: {
             count: number;
@@ -3232,6 +3293,21 @@ export interface components {
                 taskId: string;
             }[];
         };
+        TaskSchedule: {
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            kind: "at";
+        } | {
+            intervalMs: number;
+            /** @enum {string} */
+            kind: "every";
+        } | {
+            expression: string;
+            /** @enum {string} */
+            kind: "cron";
+            timezone: string;
+        };
         TaskSessionResponseSchema: {
             sessionId: string;
         };
@@ -3245,7 +3321,21 @@ export interface components {
         TaskUpdateRequest: {
             enabled?: boolean;
             name?: string;
-            schedule?: string;
+            schedule?: {
+                /** Format: date-time */
+                at: string;
+                /** @enum {string} */
+                kind: "at";
+            } | {
+                intervalMs: number;
+                /** @enum {string} */
+                kind: "every";
+            } | {
+                expression: string;
+                /** @enum {string} */
+                kind: "cron";
+                timezone: string;
+            };
         };
         TenantScopedError: {
             /** @enum {string} */

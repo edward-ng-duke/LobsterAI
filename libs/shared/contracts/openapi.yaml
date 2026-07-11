@@ -367,17 +367,53 @@ components:
           additionalProperties: false
           properties:
             daily:
-              minimum: 0
-              type: number
+              additionalProperties: false
+              properties:
+                balance:
+                  minimum: 0
+                  type: number
+                limit:
+                  minimum: 0
+                  type: number
+              required:
+                - balance
+                - limit
+              type: object
             granted:
-              minimum: 0
-              type: number
+              additionalProperties: false
+              properties:
+                balance:
+                  minimum: 0
+                  type: number
+                total:
+                  minimum: 0
+                  type: number
+              required:
+                - balance
+                - total
+              type: object
             monthly:
-              minimum: 0
-              type: number
+              additionalProperties: false
+              properties:
+                balance:
+                  minimum: 0
+                  type: number
+                limit:
+                  minimum: 0
+                  type: number
+              required:
+                - balance
+                - limit
+              type: object
             topup:
-              minimum: 0
-              type: number
+              additionalProperties: false
+              properties:
+                balance:
+                  minimum: 0
+                  type: number
+              required:
+                - balance
+              type: object
           required:
             - daily
             - monthly
@@ -856,8 +892,8 @@ components:
           type: string
         source:
           enum:
-            - html-file
-            - artifact-file
+            - html
+            - artifact
           type: string
         title:
           type: string
@@ -962,8 +998,8 @@ components:
           type: string
         source:
           enum:
-            - html-file
-            - artifact-file
+            - html
+            - artifact
           type: string
         title:
           type: string
@@ -1077,15 +1113,27 @@ components:
           type: object
         - additionalProperties: false
           properties:
+            codeChallenge:
+              minLength: 43
+              type: string
             email:
               format: email
               type: string
             password:
               minLength: 8
               type: string
+            redirectUri:
+              format: uri
+              type: string
+            state:
+              minLength: 16
+              type: string
           required:
             - email
             - password
+            - codeChallenge
+            - redirectUri
+            - state
           type: object
     LoginResponse:
       additionalProperties: false
@@ -1712,22 +1760,41 @@ components:
         - requestId
       type: object
     OAuthTokenRequest:
-      additionalProperties: false
-      properties:
-        code:
-          minLength: 1
-          type: string
-        redirectUri:
-          format: uri
-          type: string
-        verifier:
-          minLength: 43
-          type: string
-      required:
-        - code
-        - verifier
-        - redirectUri
-      type: object
+      oneOf:
+        - additionalProperties: false
+          properties:
+            code:
+              minLength: 1
+              type: string
+            grantType:
+              enum:
+                - authorization_code
+              type: string
+            redirectUri:
+              format: uri
+              type: string
+            verifier:
+              minLength: 43
+              type: string
+          required:
+            - grantType
+            - code
+            - verifier
+            - redirectUri
+          type: object
+        - additionalProperties: false
+          properties:
+            grantType:
+              enum:
+                - refresh_token
+              type: string
+            refreshToken:
+              minLength: 1
+              type: string
+          required:
+            - grantType
+            - refreshToken
+          type: object
     PageInfo:
       additionalProperties: false
       properties:
@@ -1884,8 +1951,7 @@ components:
             additionalProperties: false
             properties:
               config:
-                additionalProperties:
-                  type: string
+                additionalProperties: {}
                 type: object
               pluginId:
                 minLength: 1
@@ -1914,8 +1980,7 @@ components:
       additionalProperties: false
       properties:
         config:
-          additionalProperties:
-            type: string
+          additionalProperties: {}
           type: object
       required:
         - config
@@ -2306,10 +2371,7 @@ components:
       type: object
     RefreshRequest:
       additionalProperties: false
-      properties:
-        refreshToken:
-          minLength: 1
-          type: string
+      properties: {}
       type: object
     ResultImageChunkRequestSchema:
       additionalProperties: false
@@ -2480,8 +2542,50 @@ components:
           minLength: 1
           type: string
         schedule:
-          minLength: 1
-          type: string
+          oneOf:
+            - additionalProperties: false
+              properties:
+                at:
+                  format: date-time
+                  type: string
+                kind:
+                  enum:
+                    - at
+                  type: string
+              required:
+                - kind
+                - at
+              type: object
+            - additionalProperties: false
+              properties:
+                intervalMs:
+                  exclusiveMinimum: 0
+                  type: integer
+                kind:
+                  enum:
+                    - every
+                  type: string
+              required:
+                - kind
+                - intervalMs
+              type: object
+            - additionalProperties: false
+              properties:
+                expression:
+                  minLength: 1
+                  type: string
+                kind:
+                  enum:
+                    - cron
+                  type: string
+                timezone:
+                  minLength: 1
+                  type: string
+              required:
+                - kind
+                - expression
+                - timezone
+              type: object
       required:
         - id
         - name
@@ -2504,8 +2608,50 @@ components:
                 minLength: 1
                 type: string
               schedule:
-                minLength: 1
-                type: string
+                oneOf:
+                  - additionalProperties: false
+                    properties:
+                      at:
+                        format: date-time
+                        type: string
+                      kind:
+                        enum:
+                          - at
+                        type: string
+                    required:
+                      - kind
+                      - at
+                    type: object
+                  - additionalProperties: false
+                    properties:
+                      intervalMs:
+                        exclusiveMinimum: 0
+                        type: integer
+                      kind:
+                        enum:
+                          - every
+                        type: string
+                    required:
+                      - kind
+                      - intervalMs
+                    type: object
+                  - additionalProperties: false
+                    properties:
+                      expression:
+                        minLength: 1
+                        type: string
+                      kind:
+                        enum:
+                          - cron
+                        type: string
+                      timezone:
+                        minLength: 1
+                        type: string
+                    required:
+                      - kind
+                      - expression
+                      - timezone
+                    type: object
             required:
               - id
               - name
@@ -3205,13 +3351,16 @@ components:
             type: object
           maxItems: 100
           type: array
+          uniqueItems: true
         sessions:
           items:
             minLength: 1
             type: string
           maxItems: 100
           type: array
+          uniqueItems: true
       type: object
+      x-lobster-resource-uniqueness: channel+workspaceId+path
     StreamTicketResponse:
       additionalProperties: false
       properties:
@@ -3314,8 +3463,50 @@ components:
           minLength: 1
           type: string
         schedule:
-          minLength: 1
-          type: string
+          oneOf:
+            - additionalProperties: false
+              properties:
+                at:
+                  format: date-time
+                  type: string
+                kind:
+                  enum:
+                    - at
+                  type: string
+              required:
+                - kind
+                - at
+              type: object
+            - additionalProperties: false
+              properties:
+                intervalMs:
+                  exclusiveMinimum: 0
+                  type: integer
+                kind:
+                  enum:
+                    - every
+                  type: string
+              required:
+                - kind
+                - intervalMs
+              type: object
+            - additionalProperties: false
+              properties:
+                expression:
+                  minLength: 1
+                  type: string
+                kind:
+                  enum:
+                    - cron
+                  type: string
+                timezone:
+                  minLength: 1
+                  type: string
+              required:
+                - kind
+                - expression
+                - timezone
+              type: object
       required:
         - name
         - schedule
@@ -3404,6 +3595,51 @@ components:
       required:
         - runs
       type: object
+    TaskSchedule:
+      oneOf:
+        - additionalProperties: false
+          properties:
+            at:
+              format: date-time
+              type: string
+            kind:
+              enum:
+                - at
+              type: string
+          required:
+            - kind
+            - at
+          type: object
+        - additionalProperties: false
+          properties:
+            intervalMs:
+              exclusiveMinimum: 0
+              type: integer
+            kind:
+              enum:
+                - every
+              type: string
+          required:
+            - kind
+            - intervalMs
+          type: object
+        - additionalProperties: false
+          properties:
+            expression:
+              minLength: 1
+              type: string
+            kind:
+              enum:
+                - cron
+              type: string
+            timezone:
+              minLength: 1
+              type: string
+          required:
+            - kind
+            - expression
+            - timezone
+          type: object
     TaskSessionResponseSchema:
       additionalProperties: false
       properties:
@@ -3441,8 +3677,50 @@ components:
           minLength: 1
           type: string
         schedule:
-          minLength: 1
-          type: string
+          oneOf:
+            - additionalProperties: false
+              properties:
+                at:
+                  format: date-time
+                  type: string
+                kind:
+                  enum:
+                    - at
+                  type: string
+              required:
+                - kind
+                - at
+              type: object
+            - additionalProperties: false
+              properties:
+                intervalMs:
+                  exclusiveMinimum: 0
+                  type: integer
+                kind:
+                  enum:
+                    - every
+                  type: string
+              required:
+                - kind
+                - intervalMs
+              type: object
+            - additionalProperties: false
+              properties:
+                expression:
+                  minLength: 1
+                  type: string
+                kind:
+                  enum:
+                    - cron
+                  type: string
+                timezone:
+                  minLength: 1
+                  type: string
+              required:
+                - kind
+                - expression
+                - timezone
+              type: object
       type: object
     TenantScopedError:
       additionalProperties: false

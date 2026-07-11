@@ -9,20 +9,27 @@ const PkceLoginRequestSchema = z.strictObject({
 const PasswordLoginRequestSchema = z.strictObject({
   email: z.email(),
   password: z.string().min(8),
-});
+}).extend(PkceLoginRequestSchema.shape);
 export const LoginRequestSchema = z.union([PkceLoginRequestSchema, PasswordLoginRequestSchema]);
 export const LoginResponseSchema = z.strictObject({ code: z.string().min(1) });
-export const OAuthTokenRequestSchema = z.strictObject({
-  code: z.string().min(1),
-  verifier: z.string().min(43),
-  redirectUri: z.url(),
-});
+export const OAuthTokenRequestSchema = z.discriminatedUnion('grantType', [
+  z.strictObject({
+    grantType: z.literal('authorization_code'),
+    code: z.string().min(1),
+    verifier: z.string().min(43),
+    redirectUri: z.url(),
+  }),
+  z.strictObject({
+    grantType: z.literal('refresh_token'),
+    refreshToken: z.string().min(1),
+  }),
+]);
 export const TokenResponseSchema = z.strictObject({
   accessToken: z.string().min(1),
   expiresAt: z.iso.datetime(),
   refreshToken: z.string().min(1).optional(),
 });
-export const RefreshRequestSchema = z.strictObject({ refreshToken: z.string().min(1).optional() });
+export const RefreshRequestSchema = z.strictObject({});
 export const LogoutResponseSchema = z.strictObject({ success: z.literal(true) });
 
 export const RoleSchema = z.enum(['owner', 'admin', 'member', 'viewer']);
