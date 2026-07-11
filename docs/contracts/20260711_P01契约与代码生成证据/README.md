@@ -94,3 +94,16 @@ exit 1; 5 tests failed
 - D12：余额四桶 `daily/monthly/granted/topup`；delta 可为有符号数但必须同号且总和等于 ledger credits；billing account 同时冻结 breakdown 与 `creditsRemaining/creditsLimit/creditsUsed`。
 - 最新计数/hash：schema `209`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `f3505cbb20ad6fa6a5445621e340efed7ab216c6b84a88f1e31fde9dfb67a2cf`；output `c84d95d7c924dcb3b81b3b905860c61bb262d4f67603ef8d9f7874b67885985a`。
 - 总门：contracts 15/15、targeted 33/33、workspace typecheck、changed-file lint、190-file Vitest、SaaS 9-workspace build、renderer build、Electron compile 均 exit 0。
+
+## Round 4 Reviewer 退回修复（2026-07-11 16:25 +0800）
+
+- 验证实现基线：`aae6cc8223eba44fe46ef30c16c656a1ef022ec4`；Red commit `94d4cdef`在修复前得到 20/20 failed，Green 后 20/20 PASS。
+- route location：RouteRegistry 分离 path/query/body schema；OpenAPI 现生成 sessions/messages/html-share/task-run/file/tree 的 query parameters 及类型化 path parameters；path/body equality 用 `x-lobster-path-body-equality` 锁定。
+- operation policy：独立 `RoutePolicyExpectations` 对 login/token/refresh、session read/write、file read/write、billing read/write、task list/create 做 exact error-set equality，不从 RouteRegistry/OpenAPI 自证。
+- D11/canonical DTO：password 必须 credentials+PKCE/CSRF；cookie refresh 无 body；非浏览器 refresh 仅 OAuth `refresh_token` grant；HTML `html|artifact`、plugin `Record<string, unknown>`、schedule `at/every/cron` 均进 Zod 与 OpenAPI。
+- ticket/D12：OpenAPI arrays 含 `uniqueItems: true`且复合 resource 唯一性有稳定扩展；billing breakdown 含 daily/monthly limit、granted total、topup balance，三项兼容 credits 字段由 breakdown 唯一派生并有可审计公式 metadata。
+- 最新计数：schema `216`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`。
+- 最新 hash：source `3e9c1cac73c37407c43512e2c0e292aa250f524aebe0571820a8a788039a3fe9`；output `d75f6768a566d6735ee9501c0de70f769fdba9f6924e7112143ac48a4e07c1ed`；inventory `a89dcc7d51bc33e282adaf51d4885f2fb8451c00573956fc951f214c77cb1c02`。
+- gate invocationId：`c3dc0efb-240e-4f3a-82e3-ce7900f9e72b`；本地 CI runId 不可用，未伪造。
+- 最终总门：`contracts:check`、15/15 `test:contract`、workspace typecheck、zero-warning changed-file ESLint、192-file Vitest（2064 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、renderer build、Electron compile 均 exit 0。
+- 两个原子生成破坏性 mutation 已在 `304e9755` / `aae6cc82` 迁入独立临时仓库，不再与全仓并行测试竞争真实 generated 目录。
