@@ -17,6 +17,22 @@ const requiredWorkspaces = [
   'libs/shared/types',
 ] as const;
 
+const requiredScaffoldPaths = [
+  'apps/runtime-orchestrator/poc/README.md',
+  'charts/lobsterai/README.md',
+  'charts/lobsterai/templates/sandbox-pod.yaml',
+  'docker/api/README.md',
+  'docker/openclaw-runtime/README.md',
+  'docker/runtime-orchestrator/README.md',
+  'docker/web/README.md',
+  'docker/worker/README.md',
+  'docs/poc/README.md',
+  'docs/supply-chain/skills-and-plugins.manifest.json',
+  'libs/shared/contracts/assets/supply-chain-inventory.schema.json',
+  'prisma/README.md',
+  'prisma/schema.prisma',
+] as const;
+
 const readJson = (relativePath: string): Record<string, unknown> =>
   JSON.parse(readFileSync(path.join(repositoryRoot, relativePath), 'utf8')) as Record<string, unknown>;
 
@@ -56,6 +72,26 @@ describe('P00 SaaS workspace scaffold', () => {
     }
 
     expect(existsSync(path.join(repositoryRoot, 'scripts/check-saas-scaffold.mjs'))).toBe(true);
+  });
+
+  test.each(requiredScaffoldPaths)('%s exists as a PR-0 fixture', (relativePath) => {
+    expect(existsSync(path.join(repositoryRoot, relativePath))).toBe(true);
+  });
+
+  test('freezes every deferred gate as a machine-readable command', () => {
+    const rootPackage = readJson('package.json');
+    const scripts = rootPackage.scripts as Record<string, string>;
+    for (const command of [
+      'test:e2e',
+      'contracts:check',
+      'prisma:validate',
+      'supply-chain:check',
+      'docker:build:check',
+      'helm:lint',
+      'poc:v1:check',
+    ]) {
+      expect(scripts[command]).toMatch(/^node scripts\/run-saas-stage-gate\.mjs /);
+    }
   });
 
   test('keeps the legacy Electron build entry points intact', () => {
