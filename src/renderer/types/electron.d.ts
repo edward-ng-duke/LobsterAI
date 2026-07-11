@@ -889,6 +889,16 @@ interface IElectronAPI {
     }) => Promise<{ success: boolean; error?: string }>;
     getConfig: () => Promise<{ success: boolean; config?: CoworkConfig; error?: string }>;
     setConfig: (config: CoworkConfigUpdate) => Promise<{ success: boolean; error?: string }>;
+    getDreamingStatus: () => Promise<{
+      success: boolean;
+      data?: Record<string, unknown> | null;
+      error?: string;
+    }>;
+    getDreamDiary: () => Promise<{
+      success: boolean;
+      data?: Record<string, unknown>;
+      error?: string;
+    }>;
     notifyOpenSessionFromNotificationReady: () => Promise<{ success: boolean; error?: string }>;
     onOpenSessionFromNotification: (
       callback: (data: { sessionId: string }) => void,
@@ -1614,7 +1624,7 @@ interface IElectronAPI {
     getPendingCallback: () => Promise<string | null>;
     onCallback: (callback: (data: { code: string }) => void) => () => void;
   };
-  qwen: Record<string, never>;
+  qwen?: Record<string, never>;
   feishu: {
     install: {
       qrcode: (isLark: boolean) => Promise<{

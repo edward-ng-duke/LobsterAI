@@ -1,6 +1,214 @@
 # Generated file. Do not edit.
 components:
   schemas:
+    AgentCreateRequest:
+      additionalProperties: false
+      properties:
+        model:
+          minLength: 1
+          type: string
+        name:
+          minLength: 1
+          type: string
+        skillIds:
+          items:
+            type: string
+          type: array
+        workingDirectory:
+          type: string
+      required:
+        - name
+        - skillIds
+      title: AgentCreateRequest
+      type: object
+    AgentDto:
+      additionalProperties: false
+      properties:
+        id:
+          minLength: 1
+          type: string
+        model:
+          minLength: 1
+          type: string
+        name:
+          minLength: 1
+          type: string
+        skillIds:
+          items:
+            type: string
+          type: array
+        workingDirectory:
+          type: string
+      required:
+        - id
+        - name
+        - skillIds
+      title: AgentDto
+      type: object
+    AgentUpdateRequest:
+      additionalProperties: false
+      properties:
+        model:
+          minLength: 1
+          type: string
+        name:
+          minLength: 1
+          type: string
+        skillIds:
+          items:
+            type: string
+          type: array
+        workingDirectory:
+          type: string
+      title: AgentUpdateRequest
+      type: object
+    ApiStreamAbort:
+      additionalProperties: false
+      properties:
+        aborted:
+          const: true
+          type: boolean
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - aborted
+      title: ApiStreamAbort
+      type: object
+    ApiStreamChunk:
+      additionalProperties: false
+      properties:
+        chunk: {}
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - chunk
+      title: ApiStreamChunk
+      type: object
+    ApiStreamDone:
+      additionalProperties: false
+      properties:
+        done:
+          const: true
+          type: boolean
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - done
+      title: ApiStreamDone
+      type: object
+    ApiStreamError:
+      additionalProperties: false
+      properties:
+        error: {}
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - error
+      title: ApiStreamError
+      type: object
+    ArtifactDto:
+      additionalProperties: false
+      properties:
+        id:
+          minLength: 1
+          type: string
+        path:
+          minLength: 1
+          type: string
+        type:
+          enum:
+            - file
+            - html
+            - svg
+            - document
+          type: string
+      required:
+        - id
+        - type
+        - path
+      title: ArtifactDto
+      type: object
+    AskUserQuestion:
+      additionalProperties: false
+      properties:
+        choices:
+          items:
+            minLength: 1
+            type: string
+          type: array
+        question:
+          minLength: 1
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - question
+      title: AskUserQuestion
+      type: object
+    AsrAudioChunk:
+      additionalProperties: false
+      properties:
+        audioBase64:
+          minLength: 1
+          type: string
+        sequence:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+      required:
+        - sequence
+        - audioBase64
+      title: AsrAudioChunk
+      type: object
+    AsrErrorEvent:
+      additionalProperties: false
+      properties:
+        code:
+          minLength: 1
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+      title: AsrErrorEvent
+      type: object
+    AsrFinalEvent:
+      additionalProperties: false
+      properties:
+        isFinal:
+          const: true
+          type: boolean
+        text:
+          type: string
+      required:
+        - text
+        - isFinal
+      title: AsrFinalEvent
+      type: object
+    AsrPartialEvent:
+      additionalProperties: false
+      properties:
+        isFinal:
+          const: false
+          type: boolean
+        text:
+          type: string
+      required:
+        - text
+        - isFinal
+      title: AsrPartialEvent
+      type: object
     AsrSessionCreateRequest:
       additionalProperties: false
       properties:
@@ -37,6 +245,177 @@ components:
         - recommendedMimeType
       title: AsrSessionCreateResponse
       type: object
+    AsrStreamTicket:
+      additionalProperties: false
+      properties:
+        expiresAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        tenantId:
+          minLength: 1
+          type: string
+        ticket:
+          minLength: 1
+          type: string
+        userId:
+          minLength: 1
+          type: string
+      required:
+        - ticket
+        - tenantId
+        - userId
+        - expiresAt
+      title: AsrStreamTicket
+      type: object
+    AuthError:
+      additionalProperties: false
+      properties:
+        code:
+          minLength: 1
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - code
+        - requestId
+      title: AuthError
+      type: object
+    BillingError:
+      additionalProperties: false
+      properties:
+        code:
+          enum:
+            - QUOTA_EXCEEDED
+            - VALIDATION_FAILED
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - code
+        - requestId
+      title: BillingError
+      type: object
+    BillingHoldRequest:
+      additionalProperties: false
+      properties:
+        credits:
+          exclusiveMinimum: 0
+          type: number
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - credits
+      title: BillingHoldRequest
+      type: object
+    BillingHoldResponse:
+      additionalProperties: false
+      properties:
+        bucketDeltas:
+          additionalProperties: false
+          properties:
+            overdraft:
+              maximum: 0
+              type: number
+            promotional:
+              minimum: 0
+              type: number
+            purchased:
+              minimum: 0
+              type: number
+            subscription:
+              minimum: 0
+              type: number
+          required:
+            - subscription
+            - purchased
+            - promotional
+            - overdraft
+          type: object
+        holdId:
+          minLength: 1
+          type: string
+      required:
+        - holdId
+        - bucketDeltas
+      title: BillingHoldResponse
+      type: object
+    BillingLedgerEntry:
+      additionalProperties: false
+      properties:
+        bucketDeltas:
+          additionalProperties: false
+          properties:
+            overdraft:
+              maximum: 0
+              type: number
+            promotional:
+              minimum: 0
+              type: number
+            purchased:
+              minimum: 0
+              type: number
+            subscription:
+              minimum: 0
+              type: number
+          required:
+            - subscription
+            - purchased
+            - promotional
+            - overdraft
+          type: object
+        entryType:
+          enum:
+            - hold
+            - settle
+            - release
+            - refund
+            - topup
+            - grant
+            - adjust
+          type: string
+        reason:
+          enum:
+            - model_usage
+            - media_generation
+            - asr_transcription
+            - usage_correction
+            - payment_refund
+            - chargeback
+            - sandbox_cost
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - entryType
+        - reason
+        - bucketDeltas
+      title: BillingLedgerEntry
+      type: object
+    BillingSettleRequest:
+      additionalProperties: false
+      properties:
+        credits:
+          minimum: 0
+          type: number
+        holdId:
+          minLength: 1
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+        - holdId
+        - credits
+      title: BillingSettleRequest
+      type: object
     ContinueTurnRequest:
       additionalProperties: false
       properties:
@@ -46,6 +425,16 @@ components:
       required:
         - prompt
       title: ContinueTurnRequest
+      type: object
+    DeleteSessionResponse:
+      additionalProperties: false
+      properties:
+        deleted:
+          const: true
+          type: boolean
+      required:
+        - deleted
+      title: DeleteSessionResponse
       type: object
     EmptyRequest:
       additionalProperties: false
@@ -94,6 +483,81 @@ components:
       required:
         - error
       type: object
+    FileDeleteResponse:
+      additionalProperties: false
+      properties:
+        deleted:
+          const: true
+          type: boolean
+      required:
+        - deleted
+      title: FileDeleteResponse
+      type: object
+    FileSyncStatus:
+      additionalProperties: false
+      properties:
+        path:
+          minLength: 1
+          type: string
+        status:
+          enum:
+            - pending
+            - synced
+            - failed
+          type: string
+      required:
+        - path
+        - status
+      title: FileSyncStatus
+      type: object
+    FileUploadIntent:
+      additionalProperties: false
+      properties:
+        mimeType:
+          minLength: 1
+          type: string
+        path:
+          minLength: 1
+          type: string
+        sizeBytes:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+      required:
+        - path
+        - sizeBytes
+        - mimeType
+      title: FileUploadIntent
+      type: object
+    GatewayRpcRequest:
+      additionalProperties: false
+      properties:
+        method:
+          minLength: 1
+          type: string
+        params:
+          additionalProperties: {}
+          propertyNames:
+            type: string
+          type: object
+      required:
+        - method
+        - params
+      title: GatewayRpcRequest
+      type: object
+    GatewayRpcResponse:
+      additionalProperties: false
+      properties:
+        error:
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+        result: {}
+      required:
+        - requestId
+      title: GatewayRpcResponse
+      type: object
     GenericRequest:
       additionalProperties: {}
       properties: {}
@@ -104,6 +568,18 @@ components:
       properties:
         data: {}
       title: GenericResponse
+      type: object
+    GoalUpdate:
+      additionalProperties: false
+      properties:
+        goal: {}
+        sessionId:
+          minLength: 1
+          type: string
+      required:
+        - sessionId
+        - goal
+      title: GoalUpdate
       type: object
     LoginRequest:
       additionalProperties: false
@@ -143,6 +619,53 @@ components:
         - success
       title: LogoutResponse
       type: object
+    McpLaunchResolution:
+      additionalProperties: false
+      properties:
+        integrity:
+          minLength: 1
+          type: string
+        resolvedCommand:
+          minLength: 1
+          type: string
+        riskLevel:
+          enum:
+            - low
+            - medium
+            - high
+          type: string
+        serverId:
+          minLength: 1
+          type: string
+      required:
+        - serverId
+        - resolvedCommand
+        - integrity
+        - riskLevel
+      title: McpLaunchResolution
+      type: object
+    McpServerConfig:
+      additionalProperties: false
+      properties:
+        command:
+          minLength: 1
+          type: string
+        enabled:
+          type: boolean
+        id:
+          minLength: 1
+          type: string
+        secretRefs:
+          items:
+            type: string
+          type: array
+      required:
+        - id
+        - command
+        - enabled
+        - secretRefs
+      title: McpServerConfig
+      type: object
     MediaCancelResponse:
       additionalProperties: false
       properties:
@@ -156,6 +679,56 @@ components:
         - taskId
         - status
       title: MediaCancelResponse
+      type: object
+    MediaStatusPollUpdate:
+      additionalProperties: false
+      properties:
+        resultKey:
+          minLength: 1
+          type: string
+        resultUrl:
+          format: uri
+          type: string
+        status:
+          enum:
+            - pending
+            - running
+            - succeeded
+            - failed
+            - canceled
+          type: string
+        taskId:
+          minLength: 1
+          type: string
+      required:
+        - taskId
+        - status
+      title: MediaStatusPollUpdate
+      type: object
+    MediaTaskDto:
+      additionalProperties: false
+      properties:
+        resultKey:
+          minLength: 1
+          type: string
+        resultUrl:
+          format: uri
+          type: string
+        status:
+          enum:
+            - pending
+            - running
+            - succeeded
+            - failed
+            - canceled
+          type: string
+        taskId:
+          minLength: 1
+          type: string
+      required:
+        - taskId
+        - status
+      title: MediaTaskDto
       type: object
     MediaTaskStatusResponse:
       additionalProperties: false
@@ -181,6 +754,114 @@ components:
         - taskId
         - status
       title: MediaTaskStatusResponse
+      type: object
+    Membership:
+      additionalProperties: false
+      properties:
+        role:
+          enum:
+            - owner
+            - admin
+            - member
+            - viewer
+          type: string
+        tenantId:
+          minLength: 1
+          type: string
+        userId:
+          minLength: 1
+          type: string
+      required:
+        - tenantId
+        - userId
+        - role
+      title: Membership
+      type: object
+    MessageCursor:
+      minLength: 1
+      title: MessageCursor
+      type: string
+    MessageDto:
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+        createdAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        id:
+          minLength: 1
+          type: string
+        role:
+          enum:
+            - user
+            - assistant
+            - tool
+            - system
+          type: string
+        sequence:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+      required:
+        - id
+        - role
+        - content
+        - sequence
+        - createdAt
+      title: MessageDto
+      type: object
+    MessageListResponse:
+      additionalProperties: false
+      properties:
+        messages:
+          items:
+            additionalProperties: false
+            properties:
+              content:
+                type: string
+              createdAt:
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                type: string
+              id:
+                minLength: 1
+                type: string
+              role:
+                enum:
+                  - user
+                  - assistant
+                  - tool
+                  - system
+                type: string
+              sequence:
+                maximum: 9007199254740991
+                minimum: 0
+                type: integer
+            required:
+              - id
+              - role
+              - content
+              - sequence
+              - createdAt
+            type: object
+          type: array
+        pageInfo:
+          additionalProperties: false
+          properties:
+            hasMore:
+              type: boolean
+            nextCursor:
+              minLength: 1
+              type: string
+          required:
+            - hasMore
+          type: object
+      required:
+        - messages
+        - pageInfo
+      title: MessageListResponse
       type: object
     ModelDetailResponse:
       additionalProperties: false
@@ -225,6 +906,31 @@ components:
         - fallbackChain
       title: ModelDetailResponse
       type: object
+    ModelDto:
+      additionalProperties: false
+      properties:
+        costMultiplier:
+          exclusiveMinimum: 0
+          type: number
+        id:
+          minLength: 1
+          type: string
+        kind:
+          enum:
+            - text
+            - image
+            - video
+          type: string
+        name:
+          minLength: 1
+          type: string
+      required:
+        - id
+        - name
+        - kind
+        - costMultiplier
+      title: ModelDto
+      type: object
     OAuthTokenRequest:
       additionalProperties: false
       properties:
@@ -242,6 +948,28 @@ components:
         - verifier
         - redirectUri
       title: OAuthTokenRequest
+      type: object
+    PageInfo:
+      additionalProperties: false
+      properties:
+        hasMore:
+          type: boolean
+        nextCursor:
+          minLength: 1
+          type: string
+      required:
+        - hasMore
+      title: PageInfo
+      type: object
+    PermissionDismissEvent:
+      additionalProperties: false
+      properties:
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - requestId
+      title: PermissionDismissEvent
       type: object
     PermissionRespondRequest:
       oneOf:
@@ -317,6 +1045,135 @@ components:
             - answers
           type: object
       title: PermissionRespondRequest
+    PermissionResult:
+      oneOf:
+        - additionalProperties: false
+          properties:
+            behavior:
+              const: allow
+              type: string
+            updatedInput: {}
+            updatedPermissions:
+              items:
+                additionalProperties: false
+                properties:
+                  allow:
+                    type: boolean
+                  toolName:
+                    minLength: 1
+                    type: string
+                required:
+                  - toolName
+                  - allow
+                type: object
+              type: array
+          required:
+            - behavior
+          type: object
+        - additionalProperties: false
+          properties:
+            behavior:
+              const: deny
+              type: string
+            interrupt:
+              type: boolean
+            message:
+              minLength: 1
+              type: string
+          required:
+            - behavior
+            - message
+          type: object
+      title: PermissionResult
+    PermissionUpdate:
+      additionalProperties: false
+      properties:
+        allow:
+          type: boolean
+        toolName:
+          minLength: 1
+          type: string
+      required:
+        - toolName
+        - allow
+      title: PermissionUpdate
+      type: object
+    PodLease:
+      additionalProperties: false
+      properties:
+        expiresAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        holderId:
+          minLength: 1
+          type: string
+        workspaceId:
+          minLength: 1
+          type: string
+      required:
+        - workspaceId
+        - holderId
+        - expiresAt
+      title: PodLease
+      type: object
+    PreviewEvent:
+      additionalProperties: false
+      properties:
+        previewSessionId:
+          minLength: 1
+          type: string
+        status:
+          enum:
+            - ready
+            - expired
+            - revoked
+          type: string
+      required:
+        - previewSessionId
+        - status
+      title: PreviewEvent
+      type: object
+    PreviewTokenRequest:
+      additionalProperties: false
+      properties:
+        artifactId:
+          minLength: 1
+          type: string
+        cspMode:
+          enum:
+            - strict
+            - script-enabled
+          type: string
+      required:
+        - artifactId
+      title: PreviewTokenRequest
+      type: object
+    PreviewTokenResponse:
+      additionalProperties: false
+      properties:
+        cspMode:
+          enum:
+            - strict
+            - script-enabled
+          type: string
+        expiresAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        previewSessionId:
+          minLength: 1
+          type: string
+        tokenPrefix:
+          minLength: 1
+          type: string
+      required:
+        - previewSessionId
+        - tokenPrefix
+        - expiresAt
+        - cspMode
+      title: PreviewTokenResponse
+      type: object
     PricingCatalogResponse:
       additionalProperties: false
       properties:
@@ -404,6 +1261,55 @@ components:
         - videoModels
       title: PricingCatalogResponse
       type: object
+    ProviderConfig:
+      additionalProperties: false
+      properties:
+        configured:
+          type: boolean
+        provider:
+          minLength: 1
+          type: string
+        secretRef:
+          minLength: 1
+          type: string
+      required:
+        - provider
+        - configured
+      title: ProviderConfig
+      type: object
+    QuotaBuckets:
+      additionalProperties: false
+      properties:
+        overdraft:
+          maximum: 0
+          type: number
+        promotional:
+          minimum: 0
+          type: number
+        purchased:
+          minimum: 0
+          type: number
+        subscription:
+          minimum: 0
+          type: number
+      required:
+        - subscription
+        - purchased
+        - promotional
+        - overdraft
+      title: QuotaBuckets
+      type: object
+    ReadFileAsDataUrlResponse:
+      additionalProperties: false
+      properties:
+        dataUrl:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+      title: ReadFileAsDataUrlResponse
+      type: object
     RefreshRequest:
       additionalProperties: false
       properties:
@@ -411,6 +1317,325 @@ components:
           minLength: 1
           type: string
       title: RefreshRequest
+      type: object
+    Role:
+      enum:
+        - owner
+        - admin
+        - member
+        - viewer
+      title: Role
+      type: string
+    RuntimeClass:
+      enum:
+        - gvisor
+        - kata
+      title: RuntimeClass
+      type: string
+    RuntimeHealthEvent:
+      additionalProperties: false
+      properties:
+        ready:
+          type: boolean
+        runtimeClassName:
+          enum:
+            - gvisor
+            - kata
+          type: string
+      required:
+        - ready
+        - runtimeClassName
+      title: RuntimeHealthEvent
+      type: object
+    RuntimeSessionClaim:
+      additionalProperties: false
+      properties:
+        sessionId:
+          minLength: 1
+          type: string
+        sessionKeys:
+          items:
+            minLength: 1
+            type: string
+          type: array
+        tenantId:
+          minLength: 1
+          type: string
+      required:
+        - tenantId
+        - sessionId
+        - sessionKeys
+      title: RuntimeSessionClaim
+      type: object
+    SaveInlineFileRequest:
+      additionalProperties: false
+      properties:
+        cwd:
+          minLength: 1
+          type: string
+        dataBase64:
+          maxLength: 35000000
+          type: string
+        fileName:
+          minLength: 1
+          type: string
+        mimeType:
+          minLength: 1
+          type: string
+      required:
+        - dataBase64
+        - fileName
+        - mimeType
+        - cwd
+      title: SaveInlineFileRequest
+      type: object
+    SaveInlineFileResponse:
+      additionalProperties: false
+      properties:
+        path:
+          type: string
+        success:
+          type: boolean
+      required:
+        - success
+      title: SaveInlineFileResponse
+      type: object
+    ScheduledTaskDto:
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        id:
+          minLength: 1
+          type: string
+        name:
+          minLength: 1
+          type: string
+        schedule:
+          minLength: 1
+          type: string
+      required:
+        - id
+        - name
+        - schedule
+        - enabled
+      title: ScheduledTaskDto
+      type: object
+    SessionDetail:
+      additionalProperties: false
+      properties:
+        agentId:
+          minLength: 1
+          type: string
+        capsule: {}
+        createdAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        goal: {}
+        id:
+          minLength: 1
+          type: string
+        sessionKeys:
+          items:
+            minLength: 1
+            type: string
+          type: array
+        status:
+          enum:
+            - idle
+            - running
+            - completed
+            - error
+          type: string
+        title:
+          type: string
+        updatedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - updatedAt
+        - agentId
+        - sessionKeys
+      title: SessionDetail
+      type: object
+    SessionPatchRequest:
+      additionalProperties: false
+      properties:
+        goal: {}
+        pinned:
+          type: boolean
+        title:
+          minLength: 1
+          type: string
+      title: SessionPatchRequest
+      type: object
+    SessionStopped:
+      additionalProperties: false
+      properties:
+        sessionId:
+          minLength: 1
+          type: string
+        stopped:
+          const: true
+          type: boolean
+      required:
+        - sessionId
+        - stopped
+      title: SessionStopped
+      type: object
+    SessionSummary:
+      additionalProperties: false
+      properties:
+        capsule: {}
+        createdAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+        goal: {}
+        id:
+          minLength: 1
+          type: string
+        status:
+          enum:
+            - idle
+            - running
+            - completed
+            - error
+          type: string
+        title:
+          type: string
+        updatedAt:
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+          type: string
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - updatedAt
+      title: SessionSummary
+      type: object
+    ShareAbuseReport:
+      additionalProperties: false
+      properties:
+        reason:
+          minLength: 1
+          type: string
+        shareId:
+          minLength: 1
+          type: string
+      required:
+        - shareId
+        - reason
+      title: ShareAbuseReport
+      type: object
+    ShareCreateRequest:
+      additionalProperties: false
+      properties:
+        accessMode:
+          enum:
+            - private
+            - unlisted
+            - public
+          type: string
+        sourceKey:
+          minLength: 1
+          type: string
+      required:
+        - sourceKey
+        - accessMode
+      title: ShareCreateRequest
+      type: object
+    ShareDto:
+      additionalProperties: false
+      properties:
+        id:
+          minLength: 1
+          type: string
+        noindex:
+          type: boolean
+        status:
+          enum:
+            - active
+            - disabled
+            - takedown
+          type: string
+        url:
+          format: uri
+          type: string
+      required:
+        - id
+        - url
+        - noindex
+        - status
+      title: ShareDto
+      type: object
+    ShareTakedownEvent:
+      additionalProperties: false
+      properties:
+        cdnInvalidated:
+          type: boolean
+        shareId:
+          minLength: 1
+          type: string
+        status:
+          const: takedown
+          type: string
+      required:
+        - shareId
+        - status
+        - cdnInvalidated
+      title: ShareTakedownEvent
+      type: object
+    SkillManifest:
+      additionalProperties: false
+      properties:
+        id:
+          minLength: 1
+          type: string
+        integrity:
+          minLength: 1
+          type: string
+        registry:
+          minLength: 1
+          type: string
+        version:
+          minLength: 1
+          type: string
+      required:
+        - id
+        - version
+        - integrity
+        - registry
+      title: SkillManifest
+      type: object
+    SkillScanResult:
+      additionalProperties: false
+      properties:
+        allowed:
+          type: boolean
+        lifecycleScripts:
+          items:
+            type: string
+          type: array
+        riskLevel:
+          enum:
+            - low
+            - medium
+            - high
+          type: string
+      required:
+        - riskLevel
+        - lifecycleScripts
+        - allowed
+      title: SkillScanResult
       type: object
     StartSessionRequest:
       additionalProperties: false
@@ -512,6 +1737,154 @@ components:
         - expiresAt
       title: StreamTicketResponse
       type: object
+    SupplyChainPolicyError:
+      additionalProperties: false
+      properties:
+        code:
+          const: PERMISSION_DENIED
+          type: string
+        policy:
+          const: mcpCommandPolicy
+          type: string
+        reason:
+          minLength: 1
+          type: string
+      required:
+        - code
+        - policy
+        - reason
+      title: SupplyChainPolicyError
+      type: object
+    SwitchTenantRequest:
+      additionalProperties: false
+      properties:
+        tenantId:
+          minLength: 1
+          type: string
+      required:
+        - tenantId
+      title: SwitchTenantRequest
+      type: object
+    TaskCreateRequest:
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        name:
+          minLength: 1
+          type: string
+        schedule:
+          minLength: 1
+          type: string
+      required:
+        - name
+        - schedule
+        - enabled
+      title: TaskCreateRequest
+      type: object
+    TaskRunDto:
+      additionalProperties: false
+      properties:
+        runId:
+          minLength: 1
+          type: string
+        status:
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+            - stopped
+          type: string
+        taskId:
+          minLength: 1
+          type: string
+      required:
+        - runId
+        - taskId
+        - status
+      title: TaskRunDto
+      type: object
+    TaskRunEvent:
+      additionalProperties: false
+      properties:
+        runId:
+          minLength: 1
+          type: string
+        status:
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+            - stopped
+          type: string
+        taskId:
+          minLength: 1
+          type: string
+      required:
+        - runId
+        - taskId
+        - status
+      title: TaskRunEvent
+      type: object
+    TaskStatusEvent:
+      additionalProperties: false
+      properties:
+        status:
+          minLength: 1
+          type: string
+        taskId:
+          minLength: 1
+          type: string
+      required:
+        - taskId
+        - status
+      title: TaskStatusEvent
+      type: object
+    TaskUpdateRequest:
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        name:
+          minLength: 1
+          type: string
+        schedule:
+          minLength: 1
+          type: string
+      title: TaskUpdateRequest
+      type: object
+    TenantScopedError:
+      additionalProperties: false
+      properties:
+        code:
+          enum:
+            - NOT_FOUND
+            - PERMISSION_DENIED
+          type: string
+        requestId:
+          minLength: 1
+          type: string
+      required:
+        - code
+        - requestId
+      title: TenantScopedError
+      type: object
+    TenantSummary:
+      additionalProperties: false
+      properties:
+        id:
+          minLength: 1
+          type: string
+        name:
+          minLength: 1
+          type: string
+      required:
+        - id
+        - name
+      title: TenantSummary
+      type: object
     TokenResponse:
       additionalProperties: false
       properties:
@@ -539,6 +1912,146 @@ components:
       required:
         - requestId
       title: TurnAcceptedResponse
+      type: object
+    UploadCompleteRequest:
+      additionalProperties: false
+      properties:
+        etag:
+          minLength: 1
+          type: string
+        uploadId:
+          minLength: 1
+          type: string
+      required:
+        - uploadId
+        - etag
+      title: UploadCompleteRequest
+      type: object
+    UploadCompleteResponse:
+      additionalProperties: false
+      properties:
+        path:
+          minLength: 1
+          type: string
+        syncStatus:
+          enum:
+            - pending
+            - synced
+            - failed
+          type: string
+      required:
+        - path
+        - syncStatus
+      title: UploadCompleteResponse
+      type: object
+    UsageReport:
+      additionalProperties: false
+      properties:
+        credits:
+          minimum: 0
+          type: number
+        requestId:
+          minLength: 1
+          type: string
+        tokens:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+      required:
+        - requestId
+        - tokens
+        - credits
+      title: UsageReport
+      type: object
+    WorkspaceCreateRequest:
+      additionalProperties: false
+      properties:
+        name:
+          minLength: 1
+          type: string
+      required:
+        - name
+      title: WorkspaceCreateRequest
+      type: object
+    WorkspaceCreateResponse:
+      additionalProperties: false
+      properties:
+        name:
+          minLength: 1
+          type: string
+        workspaceId:
+          minLength: 1
+          type: string
+      required:
+        - workspaceId
+        - name
+      title: WorkspaceCreateResponse
+      type: object
+    WorkspaceListResponse:
+      additionalProperties: false
+      properties:
+        workspaces:
+          items:
+            additionalProperties: false
+            properties:
+              id:
+                minLength: 1
+                type: string
+              name:
+                minLength: 1
+                type: string
+            required:
+              - id
+              - name
+            type: object
+          type: array
+      required:
+        - workspaces
+      title: WorkspaceListResponse
+      type: object
+    WorkspaceTreeRequest:
+      additionalProperties: false
+      properties:
+        cursor:
+          minLength: 1
+          type: string
+        depth:
+          maximum: 9007199254740991
+          minimum: 0
+          type: integer
+        path:
+          type: string
+      title: WorkspaceTreeRequest
+      type: object
+    WorkspaceTreeResponse:
+      additionalProperties: false
+      properties:
+        entries:
+          items:
+            additionalProperties: false
+            properties:
+              id:
+                minLength: 1
+                type: string
+              name:
+                type: string
+              type:
+                enum:
+                  - file
+                  - directory
+                type: string
+            required:
+              - id
+              - name
+              - type
+            type: object
+          type: array
+        nextCursor:
+          minLength: 1
+          type: string
+      required:
+        - entries
+      title: WorkspaceTreeResponse
       type: object
   securitySchemes:
     accessToken:

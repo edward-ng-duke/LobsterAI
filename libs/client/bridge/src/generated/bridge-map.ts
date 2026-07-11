@@ -905,6 +905,22 @@ export const ElectronBridgeMap = [
     "sourceRef": "src/renderer/types/electron.d.ts:IElectronAPI"
   },
   {
+    "propertyPath": "cowork.getDreamingStatus",
+    "transport": "rest",
+    "disposition": "ga",
+    "optional": false,
+    "signature": "() => Promise<{ success: boolean; data?: Record<string, unknown> | null; error?: string }>",
+    "sourceRef": "src/renderer/types/electron.d.ts:IElectronAPI"
+  },
+  {
+    "propertyPath": "cowork.getDreamDiary",
+    "transport": "rest",
+    "disposition": "ga",
+    "optional": false,
+    "signature": "() => Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }>",
+    "sourceRef": "src/renderer/types/electron.d.ts:IElectronAPI"
+  },
+  {
     "propertyPath": "cowork.notifyOpenSessionFromNotificationReady",
     "transport": "rest",
     "disposition": "ga",
@@ -2380,7 +2396,7 @@ export const ElectronBridgeMap = [
     "propertyPath": "qwen",
     "transport": "rest",
     "disposition": "ga",
-    "optional": false,
+    "optional": true,
     "signature": "Record<string, never>",
     "sourceRef": "src/renderer/types/electron.d.ts:IElectronAPI"
   },

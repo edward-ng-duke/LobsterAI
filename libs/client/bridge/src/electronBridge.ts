@@ -1134,6 +1134,16 @@ export interface ElectronBridge {
             success: boolean;
             error?: string;
         }>;
+        getDreamingStatus: () => Promise<{
+            success: boolean;
+            data?: Record<string, unknown> | null;
+            error?: string;
+        }>;
+        getDreamDiary: () => Promise<{
+            success: boolean;
+            data?: Record<string, unknown>;
+            error?: string;
+        }>;
         notifyOpenSessionFromNotificationReady: () => Promise<{
             success: boolean;
             error?: string;
@@ -2105,7 +2115,7 @@ export interface ElectronBridge {
     networkStatus: {
         send: (status: 'online' | 'offline') => void;
     };
-    qwen: Record<string, never>;
+    qwen?: Record<string, never>;
     feishu: {
         install: {
             qrcode: (isLark: boolean) => Promise<{

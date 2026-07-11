@@ -119,4 +119,10 @@ export const AskUserQuestionSchema = z.strictObject({
   question: z.string().min(1),
   choices: z.array(z.string().min(1)).optional(),
 });
-
+export const PermissionDismissEventSchema = z.strictObject({ requestId: z.string().min(1) });
+export const ApiStreamChunkSchema = z.strictObject({ requestId: z.string().min(1), chunk: z.unknown() });
+export const ApiStreamDoneSchema = z.strictObject({ requestId: z.string().min(1), done: z.literal(true) });
+export const ApiStreamErrorSchema = z.strictObject({ requestId: z.string().min(1), error: z.unknown() });
+export const ApiStreamAbortSchema = z.strictObject({ requestId: z.string().min(1), aborted: z.literal(true) });
+export const GoalUpdateSchema = z.strictObject({ sessionId: z.string().min(1), goal: z.unknown() });
+export const SessionStoppedSchema = z.strictObject({ sessionId: z.string().min(1), stopped: z.literal(true) });

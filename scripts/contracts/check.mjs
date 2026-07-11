@@ -198,7 +198,13 @@ const checkCoworkStream = () => {
   equalSets('cowork-stream', new Set(CoworkStreamRegistry.map((entry) => entry.wireType)), new Set(ChannelRegistry.filter((entry) => entry.path === '/api/v1/stream' && expected.has(entry.messageType)).map((entry) => entry.messageType)), 'AsyncAPI registry');
   equalSets('cowork-stream', new Set(CoworkStreamRegistry.map((entry) => entry.wireType)), new Set(Object.keys(asyncapi.components.messages).filter((name) => expected.has(name))), 'AsyncAPI messages');
   const bridgePaths = new Set(BridgeRegistry.map((entry) => entry.propertyPath));
-  for (const entry of CoworkStreamRegistry) assert('cowork-stream', bridgePaths.has(entry.bridgeMethod), `bridge missing ${entry.bridgeMethod}`);
+  for (const entry of CoworkStreamRegistry) {
+    assert('cowork-stream', bridgePaths.has(entry.bridgeMethod), `bridge missing ${entry.bridgeMethod}`);
+    const valid = JSON.parse(readFileSync(path.join(repositoryRoot, `libs/shared/contracts/fixtures/valid/cowork/${entry.wireType}.json`), 'utf8'));
+    const invalid = JSON.parse(readFileSync(path.join(repositoryRoot, `libs/shared/contracts/fixtures/invalid/cowork/${entry.wireType}.json`), 'utf8'));
+    assert('cowork-stream', entry.schema.safeParse(valid).success, `valid fixture rejected ${entry.wireType}`);
+    assert('cowork-stream', entry.schema.safeParse(invalid).success === false, `invalid fixture accepted ${entry.wireType}`);
+  }
   assert('cowork-stream', ![...expected].some((name) => ['delta', 'tool', 'thinking', 'done', 'abort'].includes(name)), 'internal event leaked');
   const dismiss = CoworkStreamRegistry.find((entry) => entry.wireType === 'permissionDismiss');
   assert('cowork-stream', dismiss.schema.safeParse({ requestId: 'r' }).success, 'permissionDismiss payload invalid');

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ElectronBridge } from '../../libs/client/bridge/src/electronBridge';
 
 import { IpcChannel as ScheduledTaskIpc } from '../scheduledTask/constants';
 import { AgentIpcChannel, AgentLegacyIdentityCleanupStatus } from '../shared/agent/constants';
@@ -50,7 +51,7 @@ import { OpenClawSessionIpc } from './openclawSession/constants';
 import { OpenClawSessionPolicyIpc } from './openclawSessionPolicy/constants';
 
 // 暴露安全的 API 到渲染进程
-contextBridge.exposeInMainWorld('electron', {
+const electronBridge = {
   platform: process.platform,
   arch: process.arch,
   store: {
@@ -525,8 +526,8 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on(CoworkIpcChannel.MediaStatusPollUpdate, handler);
       return () => ipcRenderer.removeListener(CoworkIpcChannel.MediaStatusPollUpdate, handler);
     },
-    onStreamSessionStatus: (callback: (data: { sessionId: string; status: string }) => void) => {
-      const handler = (_event: any, data: { sessionId: string; status: string }) => callback(data);
+    onStreamSessionStatus: (callback: (data: { sessionId: string; status: 'idle' | 'running' | 'completed' | 'error' }) => void) => {
+      const handler = (_event: any, data: { sessionId: string; status: 'idle' | 'running' | 'completed' | 'error' }) => callback(data);
       ipcRenderer.on('cowork:stream:sessionStatus', handler);
       return () => ipcRenderer.removeListener('cowork:stream:sessionStatus', handler);
     },
@@ -1027,9 +1028,24 @@ contextBridge.exposeInMainWorld('electron', {
   },
   media: {
     getModels: (type: 'image' | 'video') =>
-      ipcRenderer.invoke('media:getModels', type) as Promise<{ success: boolean; models?: unknown[]; error?: string }>,
+      ipcRenderer.invoke('media:getModels', type) as Promise<{
+        success: boolean;
+        models?: Array<{
+          modelId: string;
+          displayName: string;
+          provider: string;
+          mediaType: string;
+          generationTimeout: number;
+          pricing: Record<string, unknown>;
+        }>;
+        error?: string;
+      }>,
     getTaskStatus: (taskId: number, type: 'image' | 'video') =>
-      ipcRenderer.invoke('media:getTaskStatus', taskId, type) as Promise<{ success: boolean; task?: unknown; error?: string }>,
+      ipcRenderer.invoke('media:getTaskStatus', taskId, type) as Promise<{
+        success: boolean;
+        task?: Record<string, unknown>;
+        error?: string;
+      }>,
   },
   feishu: {
     install: {
@@ -1164,4 +1180,6 @@ contextBridge.exposeInMainWorld('electron', {
       return () => ipcRenderer.removeListener('xai-oauth:device-code', handler);
     },
   },
-});
+} satisfies ElectronBridge;
+
+contextBridge.exposeInMainWorld('electron', electronBridge);
