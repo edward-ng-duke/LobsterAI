@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
+
+import { validateEvidenceOnlyDescendant } from '../../scripts/db/evidence-provenance.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const temporaryRoots: string[] = [];
@@ -52,6 +54,12 @@ const runEvidence = (root: string) =>
     ['scripts/db/validate-evidence.mjs', '--root', root, '--git-root', repositoryRoot],
     { cwd: root, encoding: 'utf8' },
   );
+
+const git = (root: string, ...args: string[]) => {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  return result.stdout.trim();
+};
 
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
@@ -107,5 +115,38 @@ describe('P02 static gate mutation resistance', () => {
     report.sourceSha = '0000000000000000000000000000000000000000';
     writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`);
     expect(runEvidence(root).status).not.toBe(0);
+  });
+
+  test('evidence provenance rejects a code commit inserted after the implementation SHA', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-evidence-git-'));
+    temporaryRoots.push(root);
+    git(root, 'init');
+    git(root, 'config', 'user.name', 'P02 Evidence Test');
+    git(root, 'config', 'user.email', 'p02-evidence@example.invalid');
+    writeFileSync(path.join(root, 'implementation.ts'), 'export const implemented = true;\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'feat: implementation');
+    const implementationSha = git(root, 'rev-parse', 'HEAD');
+
+    mkdirSync(path.join(root, 'docs/db/evidence'), { recursive: true });
+    writeFileSync(path.join(root, 'docs/db/evidence/report.json'), '{}\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'docs: evidence');
+    const allowedEvidencePath = (file: string) => file.startsWith('docs/db/evidence/');
+    expect(validateEvidenceOnlyDescendant({
+      gitRoot: root,
+      sourceSha: implementationSha,
+      allowedEvidencePath,
+    })).toEqual([]);
+
+    mkdirSync(path.join(root, 'src'), { recursive: true });
+    writeFileSync(path.join(root, 'src/arbitrary.ts'), 'export const inserted = true;\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'feat: inserted code');
+    expect(validateEvidenceOnlyDescendant({
+      gitRoot: root,
+      sourceSha: implementationSha,
+      allowedEvidencePath,
+    })).toContain('non-evidence change after source SHA: src/arbitrary.ts');
   });
 });

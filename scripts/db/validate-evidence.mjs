@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
 import { repositoryRoot as defaultRepositoryRoot } from './common.mjs';
+import { validateEvidenceOnlyDescendant } from './evidence-provenance.mjs';
 
 const argument = (name) => {
   const index = process.argv.indexOf(name);
@@ -122,24 +122,24 @@ for (const [file, entry] of Object.entries(manifest.reports ?? {})) {
   }
 }
 
-const ensureAncestor = (sourceSha, label) => {
-  const result = spawnSync('git', ['merge-base', '--is-ancestor', sourceSha, 'HEAD'], { cwd: gitRoot });
-  if (result.status !== 0) errors.push(`${label}: evidence SHA is not an ancestor of HEAD`);
-};
-ensureAncestor(manifest.codeEvidenceSha, 'codeEvidenceSha');
-if (manifest.stageEvidenceSha) ensureAncestor(manifest.stageEvidenceSha, 'stageEvidenceSha');
-
 const allowedEvidencePath = (file) =>
   file.startsWith('docs/db/20260711_P02_Prisma与RLS脚手架证据/') ||
   file === '改造计划/20260711_V2单租户Web闭环开发/任务/P02-PR2数据库脚手架/开发记录.md';
-const changed = spawnSync('git', ['diff', '--name-only', `${manifest.codeEvidenceSha}..HEAD`], {
-  cwd: gitRoot,
-  encoding: 'utf8',
-});
-if (changed.status !== 0) errors.push('unable to inspect evidence-only commits');
-else {
-  for (const file of changed.stdout.trim().split(/\r?\n/).filter(Boolean)) {
-    if (!allowedEvidencePath(file)) errors.push(`non-evidence change after codeEvidenceSha: ${file}`);
+for (const provenanceError of validateEvidenceOnlyDescendant({
+  gitRoot,
+  sourceSha: manifest.codeEvidenceSha,
+  allowedEvidencePath,
+})) {
+  errors.push(`codeEvidenceSha: ${provenanceError}`);
+}
+if (manifest.stageEvidenceSha) {
+  const stageErrors = validateEvidenceOnlyDescendant({
+    gitRoot,
+    sourceSha: manifest.stageEvidenceSha,
+    allowedEvidencePath,
+  });
+  for (const provenanceError of stageErrors) {
+    errors.push(`stageEvidenceSha: ${provenanceError}`);
   }
 }
 
