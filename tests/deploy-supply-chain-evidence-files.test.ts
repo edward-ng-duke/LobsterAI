@@ -461,6 +461,28 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
   });
 
+  test('rejects duplicate Grype vulnerability/package identity even when severity differs', () => {
+    const root = createFixtureRoot();
+    const report = readJson(reportPath(root));
+    const web = report.images.find((image: Record<string, string>) => image.imageName === 'web');
+    const scanPath = path.join(evidenceDirectory(root), web.vulnerabilityScan.path);
+    const scan = readJson(scanPath);
+    const duplicatedMatch = structuredClone(scan.matches[0]);
+    duplicatedMatch.vulnerability.severity = 'Unknown';
+    scan.matches.push(duplicatedMatch);
+    writeJson(scanPath, scan);
+    web.vulnerabilityScan.sha256 = sha256File(scanPath);
+    web.vulnerabilityScan.findings.push({
+      id: duplicatedMatch.vulnerability.id,
+      severity: duplicatedMatch.vulnerability.severity,
+      package: duplicatedMatch.artifact.name,
+      version: duplicatedMatch.artifact.version,
+    });
+    writeJson(reportPath(root), report);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
   test('rejects unavailable and digest-drifted local Docker image metadata', () => {
     const missingRoot = createFixtureRoot();
     const missingBin = path.join(missingRoot, 'bin');
@@ -516,6 +538,12 @@ describe('P03 on-disk supply-chain evidence verification', () => {
       name: 'optional plugin claimed installed while absent from the bound final image',
       mutate: (installations: Array<Record<string, unknown>>) => {
         installations.find(plugin => plugin.id === 'moltbot-popo')!.status = 'installed';
+      },
+    },
+    {
+      name: 'optional plugin claimed skipped while present in the bound final image',
+      mutate: (installations: Array<Record<string, unknown>>) => {
+        installations.find(plugin => plugin.id === 'openclaw-nim-channel')!.status = 'skipped';
       },
     },
   ])('rejects plugin installation drift: $name', ({ mutate }) => {
