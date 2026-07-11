@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -46,6 +46,7 @@ const copyNativeReport = (source, destination, expectedSourceSha) => {
 
 const manifestPath = path.join(evidenceDirectory, 'evidence-manifest.json');
 if (mode === '--code') {
+  rmSync(path.join(evidenceDirectory, 'prisma-stage-gate.json'), { force: true });
   const codeReports = [
     ['.reports/db/contracts-preflight.json', 'contracts-preflight.json', 'scripts/db/preflight.mjs'],
     ['.reports/db/preflight.json', 'preflight.json', 'scripts/db/preflight.mjs'],

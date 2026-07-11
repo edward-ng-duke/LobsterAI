@@ -87,7 +87,12 @@ for (const required of ['unknown property', 'source SHA', 'runner SHA mismatch']
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {
   if (!evidenceProvenance.includes(required)) errors.push(`evidence provenance lacks ${required}`);
 }
-for (const required of ['copyNativeReport', "report.sourceSha !== expectedSourceSha", 'atomicWrite']) {
+for (const required of [
+  'copyNativeReport',
+  "report.sourceSha !== expectedSourceSha",
+  'atomicWrite',
+  "rmSync(path.join(evidenceDirectory, 'prisma-stage-gate.json')",
+]) {
   if (!evidenceSnapshot.includes(required)) errors.push(`native evidence snapshot lacks ${required}`);
 }
 for (const [dependency, version] of Object.entries({
