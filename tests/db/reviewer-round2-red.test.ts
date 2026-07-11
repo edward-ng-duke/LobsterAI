@@ -5,8 +5,8 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 import {
-  TenantDatabaseOperation,
   scopeTenantOperation,
+  TenantDatabaseOperation,
 } from '../../libs/server/db/src/tenant-scope.js';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
@@ -85,25 +85,41 @@ describe('P02 Reviewer Round 1 P1 red baseline', () => {
   });
 
   test('committed evidence preserves native runner shape and one frozen code-evidence SHA', () => {
-    const reportNames = [
+    const codeReportNames = [
       'contracts-preflight.json',
       'preflight.json',
       'integration.json',
       'validation.json',
-      'prisma-stage-gate.json',
     ];
-    const reports = reportNames.map((name) => {
+    const reports = codeReportNames.map((name) => {
       const target = path.join(evidenceDirectory, name);
       expect(existsSync(target), name).toBe(true);
       return JSON.parse(existsSync(target) ? readFileSync(target, 'utf8') : '{}') as Record<string, unknown>;
     });
+    const manifestPath = path.join(evidenceDirectory, 'evidence-manifest.json');
+    const stagePath = path.join(evidenceDirectory, 'prisma-stage-gate.json');
+    expect(existsSync(manifestPath)).toBe(true);
+    expect(existsSync(stagePath)).toBe(true);
+    const manifest = JSON.parse(
+      existsSync(manifestPath) ? readFileSync(manifestPath, 'utf8') : '{}',
+    ) as Record<string, unknown>;
+    const stage = JSON.parse(
+      existsSync(stagePath) ? readFileSync(stagePath, 'utf8') : '{}',
+    ) as Record<string, unknown>;
     const sourceShas = new Set(reports.map((report) => report.sourceSha));
 
     expect(sourceShas.size).toBe(1);
     const [sourceSha] = sourceShas;
+    expect(sourceSha).toBe(manifest.codeEvidenceSha);
+    expect(stage.sourceSha).toBe(manifest.stageEvidenceSha);
     expect(sourceSha).toMatch(/^[a-f0-9]{40}$/);
     expect(
       spawnSync('git', ['merge-base', '--is-ancestor', String(sourceSha), 'HEAD'], {
+        cwd: repositoryRoot,
+      }).status,
+    ).toBe(0);
+    expect(
+      spawnSync('git', ['merge-base', '--is-ancestor', String(stage.sourceSha), 'HEAD'], {
         cwd: repositoryRoot,
       }).status,
     ).toBe(0);

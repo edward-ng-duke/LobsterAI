@@ -14,11 +14,11 @@ const createCopy = (): string => {
   for (const relativePath of [
     '.github/workflows/saas-scaffold.yml',
     'apps',
+    'docs/db/20260711_P02_Prisma与RLS脚手架证据',
     'libs/server/db',
     'package.json',
     'prisma',
-    'scripts/db/run-integration.mjs',
-    'scripts/db/validate-static.mjs',
+    'scripts/db',
     'scripts/saas-stage-gates.json',
     'tests/integration/db/postgres-image.json',
     'tests/integration/db/tenant-extension.test.ts',
@@ -45,6 +45,13 @@ const run = (root: string) =>
     cwd: root,
     encoding: 'utf8',
   });
+
+const runEvidence = (root: string) =>
+  spawnSync(
+    process.execPath,
+    ['scripts/db/validate-evidence.mjs', '--root', root, '--git-root', repositoryRoot],
+    { cwd: root, encoding: 'utf8' },
+  );
 
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
@@ -76,5 +83,29 @@ describe('P02 static gate mutation resistance', () => {
     const target = path.join(root, 'apps/api/src/index.ts');
     writeFileSync(target, `${readFileSync(target, 'utf8')}\nimport '@prisma/client';\n`);
     expect(run(root).status).not.toBe(0);
+  });
+
+  test('evidence schema rejects an unknown report field', () => {
+    const root = createCopy();
+    const target = path.join(
+      root,
+      'docs/db/20260711_P02_Prisma与RLS脚手架证据/integration.json',
+    );
+    const report = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>;
+    report.untrustedSummary = true;
+    writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`);
+    expect(runEvidence(root).status).not.toBe(0);
+  });
+
+  test('evidence provenance rejects a stale report source SHA', () => {
+    const root = createCopy();
+    const target = path.join(
+      root,
+      'docs/db/20260711_P02_Prisma与RLS脚手架证据/preflight.json',
+    );
+    const report = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>;
+    report.sourceSha = '0000000000000000000000000000000000000000';
+    writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`);
+    expect(runEvidence(root).status).not.toBe(0);
   });
 });

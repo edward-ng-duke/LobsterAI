@@ -91,7 +91,7 @@
     "test:contract": "npm run build --workspace @lobsterai/shared-contracts && node scripts/contracts/check.mjs --only",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
-    "prisma:validate:active": "node scripts/db/validate.mjs",
+    "prisma:validate:active": "node scripts/db/validate.mjs && node scripts/db/validate-evidence.mjs",
     "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate",
     "test:db:preflight": "node scripts/db/preflight.mjs",
     "test:db:unit": "vitest run tests/db",

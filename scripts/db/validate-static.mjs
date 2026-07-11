@@ -42,6 +42,8 @@ const integrationRunner = read('scripts/db/run-integration.mjs');
 const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
+const evidenceValidator = read('scripts/db/validate-evidence.mjs');
+const evidenceSchema = read('scripts/db/evidence-bundle.schema.json');
 
 const migrationRoot = path.join(root, 'prisma/migrations');
 const migrationDirectories = existsSync(migrationRoot)
@@ -70,6 +72,15 @@ for (const [script, fragment] of Object.entries({
   if (!packageJson.scripts?.[script]?.includes(fragment)) {
     errors.push(`root script ${script} must execute ${fragment}`);
   }
+}
+if (!packageJson.scripts?.['prisma:validate:active']?.includes('validate-evidence.mjs')) {
+  errors.push('active Prisma gate must validate committed native evidence');
+}
+for (const required of ['additionalProperties', 'codeEvidenceSha', 'stageEvidenceSha']) {
+  if (!evidenceSchema.includes(required)) errors.push(`evidence JSON schema lacks ${required}`);
+}
+for (const required of ['unknown property', 'source SHA', 'runner SHA mismatch']) {
+  if (!evidenceValidator.includes(required)) errors.push(`evidence validator lacks ${required}`);
 }
 for (const [dependency, version] of Object.entries({
   prisma: '6.19.3',

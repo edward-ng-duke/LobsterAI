@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lobsterai.internal/schemas/p02-db-evidence-bundle.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractsPreflight", "preflight", "integration", "validation", "manifest"],
+  "properties": {
+    "contractsPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "checks"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "P02_CONTRACT_PREFLIGHT" },
+        "runId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "nodeVersion": { "type": "string" },
+        "platform": { "type": "string" },
+        "status": { "const": "PASS" },
+        "checks": { "$ref": "#/$defs/contractsChecks" }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "checks", "cleanup"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "P02_DATABASE_PREFLIGHT" },
+        "runId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "nodeVersion": { "type": "string" },
+        "platform": { "type": "string" },
+        "status": { "const": "PASS" },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contracts", "provider"],
+          "properties": {
+            "contracts": { "$ref": "#/$defs/contracts" },
+            "provider": { "$ref": "#/$defs/preflightProvider" }
+          }
+        },
+        "cleanup": { "$ref": "#/$defs/cleanup" }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "skipped", "checks", "cleanup"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "P02_DATABASE_INTEGRATION" },
+        "runId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "nodeVersion": { "type": "string" },
+        "platform": { "type": "string" },
+        "status": { "const": "PASS" },
+        "skipped": { "const": 0 },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "migrations", "rls", "roles", "seed", "testOutputSha256"],
+          "properties": {
+            "provider": { "$ref": "#/$defs/integrationProvider" },
+            "migrations": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["migration_name", "finished"],
+                "properties": {
+                  "migration_name": { "type": "string" },
+                  "finished": { "const": true }
+                }
+              }
+            },
+            "rls": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["relrowsecurity", "relforcerowsecurity", "table_owner", "policyname", "qual", "with_check"],
+                "properties": {
+                  "relrowsecurity": { "const": true },
+                  "relforcerowsecurity": { "const": true },
+                  "table_owner": { "type": "string" },
+                  "policyname": { "type": "string" },
+                  "qual": { "type": "string" },
+                  "with_check": { "type": "string" }
+                }
+              }
+            },
+            "roles": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["rolname", "rolsuper", "rolbypassrls"],
+                "properties": {
+                  "rolname": { "type": "string" },
+                  "rolsuper": { "type": "boolean" },
+                  "rolbypassrls": { "type": "boolean" }
+                }
+              }
+            },
+            "seed": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["tenant_id", "logical_id", "id"],
+                "properties": {
+                  "tenant_id": { "type": "string" },
+                  "logical_id": { "type": "string" },
+                  "id": { "type": "string" }
+                }
+              }
+            },
+            "testOutputSha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "cleanup": { "$ref": "#/$defs/cleanup" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "commands", "generatedClientHash"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "P02_PRISMA_STAGE_GATE" },
+        "runId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "nodeVersion": { "type": "string" },
+        "platform": { "type": "string" },
+        "status": { "const": "PASS" },
+        "commands": {
+          "type": "array",
+          "minItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "exitCode", "outputSha256"],
+            "properties": {
+              "command": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+              "exitCode": { "const": 0 },
+              "outputSha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "generatedClientHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "prismaStageGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "gate", "stage", "status", "activationTask", "reason", "fixturesChecked", "invocationId", "generatedAt", "sourceSha", "runnerSha256", "command", "commandOutputSha256"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "gate": { "const": "prisma:validate" },
+        "stage": { "type": "string" },
+        "status": { "const": "PASS" },
+        "activationTask": { "const": "P02-PR2数据库脚手架" },
+        "reason": { "type": "string" },
+        "fixturesChecked": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "invocationId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "runnerSha256": { "$ref": "#/$defs/sha256" },
+        "command": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+        "commandOutputSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "generatedAt", "codeEvidenceSha", "reports"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "generatedAt": { "type": "string", "pattern": "Z$" },
+        "codeEvidenceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "stageEvidenceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "reports": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contracts-preflight.json", "preflight.json", "integration.json", "validation.json"],
+          "properties": {
+            "contracts-preflight.json": { "$ref": "#/$defs/reportDigest" },
+            "preflight.json": { "$ref": "#/$defs/reportDigest" },
+            "integration.json": { "$ref": "#/$defs/reportDigest" },
+            "validation.json": { "$ref": "#/$defs/reportDigest" },
+            "prisma-stage-gate.json": { "$ref": "#/$defs/reportDigest" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "imageDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "contractsChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contracts"],
+      "properties": { "contracts": { "$ref": "#/$defs/contracts" } }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptedSha", "testerReportSha", "contractVersion", "sourceHash"],
+      "properties": {
+        "acceptedSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "testerReportSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "contractVersion": { "type": "string" },
+        "sourceHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "preflightProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dockerPlatform", "image", "immutableReference", "digest", "containerId", "serverVersion", "citextAvailableVersion", "generatedUuid", "migrationRole"],
+      "properties": {
+        "dockerPlatform": { "type": "string" },
+        "image": { "type": "string" },
+        "immutableReference": { "type": "string" },
+        "digest": { "$ref": "#/$defs/imageDigest" },
+        "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "serverVersion": { "type": "string" },
+        "citextAvailableVersion": { "type": "string" },
+        "generatedUuid": { "type": "string" },
+        "migrationRole": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rolsuper", "rolbypassrls"],
+          "properties": {
+            "rolsuper": { "const": true },
+            "rolbypassrls": { "const": true }
+          }
+        }
+      }
+    },
+    "integrationProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dockerPlatform", "image", "immutableReference", "digest", "containerId", "serverVersion"],
+      "properties": {
+        "dockerPlatform": { "type": "string" },
+        "image": { "type": "string" },
+        "immutableReference": { "type": "string" },
+        "digest": { "$ref": "#/$defs/imageDigest" },
+        "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "serverVersion": { "type": "string" }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containerId", "removed"],
+      "properties": {
+        "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "removed": { "const": true }
+      }
+    },
+    "reportDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceSha", "sha256", "runner", "runnerSha256"],
+      "properties": {
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "runner": { "type": "string" },
+        "runnerSha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

@@ -52,7 +52,7 @@ const requiredRootScripts = {
     'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts" "tests/db/**/*.test.ts" "tests/integration/db/**/*.ts" "tests/deploy-*.test.ts"',
   'poc:v1:check': 'node scripts/run-saas-stage-gate.mjs poc:v1:check',
   'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate',
-  'prisma:validate:active': 'node scripts/db/validate.mjs',
+  'prisma:validate:active': 'node scripts/db/validate.mjs && node scripts/db/validate-evidence.mjs',
   'scaffold:check': 'node scripts/check-saas-scaffold.mjs',
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',
   'supply-chain:validate': 'node scripts/check-supply-chain.mjs',
