@@ -220,7 +220,26 @@ describe('P03 active and deferred stage gate integrity', () => {
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const result = runNodeScript(root, 'scripts/run-saas-stage-gate.mjs', 'prisma:validate');
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('trusted file integrity mismatch');
+    expect(result.stderr).toContain('external stage manifest digest mismatch');
+  });
+
+  test('the Prisma stage refuses to run without an external manifest digest', () => {
+    const root = createRepositoryCopy();
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/run-saas-stage-gate.mjs', 'prisma:validate'],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          SAAS_SOURCE_SHA: '0123456789abcdef0123456789abcdef01234567',
+          SAAS_EXPECTED_STAGE_MANIFEST_SHA256: '',
+        },
+      },
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('external stage manifest digest is required');
   });
 
   test('a three-line stdout-only fake runner fails verifier and scaffold checker', () => {
