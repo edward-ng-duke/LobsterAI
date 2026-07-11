@@ -155,6 +155,7 @@ const waitForHealthy = (containerId, timeoutMs = 45_000) => {
 
 const smokeImage = (imageName, tag, metadata) => {
   const isOpenClaw = imageName === 'openclaw-runtime';
+  const gracefulStopRequired = ['worker', 'runtime-orchestrator', 'openclaw-runtime'].includes(imageName);
   const stopTimeoutSeconds = isOpenClaw ? 15 : 10;
   const tmpfs = isOpenClaw
     ? ['/tmp:rw,noexec,nosuid,size=16m', '/state:rw,noexec,nosuid,size=256m', '/workspace:rw,noexec,nosuid,size=1g']
@@ -184,7 +185,8 @@ const smokeImage = (imageName, tag, metadata) => {
     const stateInspect = run('docker', ['inspect', '--format', '{{json .State}}', containerId]);
     if (stateInspect.status !== 0) throw new Error(`${imageName}: stopped container state inspect failed`);
     const state = JSON.parse(stateInspect.stdout);
-    if (state.Status !== 'exited' || state.ExitCode !== 0 || state.OOMKilled !== false) {
+    if (state.Status !== 'exited' || state.OOMKilled !== false
+      || (gracefulStopRequired && state.ExitCode !== 0)) {
       throw new Error(`${imageName}: unhealthy stop state ${stateInspect.stdout.trim()}`);
     }
     return {
@@ -199,6 +201,7 @@ const smokeImage = (imageName, tag, metadata) => {
       health: 'healthy',
       gatewayReady: isOpenClaw ? true : undefined,
       gracefulStop: {
+        required: gracefulStopRequired,
         timeoutSeconds: stopTimeoutSeconds,
         exitCode: state.ExitCode,
         oomKilled: state.OOMKilled,

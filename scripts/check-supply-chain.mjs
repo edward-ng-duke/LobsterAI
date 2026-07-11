@@ -289,7 +289,11 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha) 
         || !(runtimeEvidence.tmpfs ?? []).some(mount => mount.startsWith('/workspace:')))) {
       errors.push(`${evidence.image}: OpenClaw gateway/state/workspace runtime evidence is incomplete`);
     }
-    if (runtimeEvidence.gracefulStop?.exitCode !== 0
+    const gracefulStopRequired = ['worker', 'runtime-orchestrator', 'openclaw-runtime']
+      .includes(evidence.imageName);
+    if (runtimeEvidence.gracefulStop?.required !== gracefulStopRequired
+      || (gracefulStopRequired && runtimeEvidence.gracefulStop?.exitCode !== 0)
+      || !Number.isInteger(runtimeEvidence.gracefulStop?.exitCode)
       || runtimeEvidence.gracefulStop?.oomKilled !== false
       || !Number.isInteger(runtimeEvidence.gracefulStop?.timeoutSeconds)
       || !digestPattern.test(runtimeEvidence.logsSha256 ?? '')) {

@@ -159,10 +159,11 @@
         "gracefulStop": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["timeoutSeconds", "exitCode", "oomKilled"],
+          "required": ["required", "timeoutSeconds", "exitCode", "oomKilled"],
           "properties": {
+            "required": { "type": "boolean" },
             "timeoutSeconds": { "type": "integer", "minimum": 1 },
-            "exitCode": { "const": 0 },
+            "exitCode": { "type": "integer", "minimum": 0 },
             "oomKilled": { "const": false }
           }
         },

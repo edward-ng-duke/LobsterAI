@@ -195,7 +195,12 @@ describe('P03 supply-chain inventory and evidence policy', () => {
           : ['/tmp:rw,noexec'],
         health: 'healthy',
         gatewayReady: imageName === 'openclaw-runtime' ? true : undefined,
-        gracefulStop: { timeoutSeconds: 10, exitCode: 0, oomKilled: false },
+        gracefulStop: {
+          required: ['worker', 'runtime-orchestrator', 'openclaw-runtime'].includes(imageName),
+          timeoutSeconds: 10,
+          exitCode: 0,
+          oomKilled: false,
+        },
         logsSha256: `sha256:${'d'.repeat(64)}`,
       },
       imageHistoryScan: {
@@ -246,6 +251,12 @@ describe('P03 supply-chain inventory and evidence policy', () => {
     leakedHistory.imageEvidence[0].imageHistoryScan.secretLikeFindings = 1;
     expect(validateEvidence(leakedHistory, new Date(), expectedSourceSha).join('\n'))
       .toContain('history secret-scan evidence');
+    const swallowedSignal = structuredClone(exact);
+    const worker = swallowedSignal.imageEvidence.find(evidence => evidence.imageName === 'worker')!;
+    worker.runtimeEvidence.gracefulStop.required = false;
+    worker.runtimeEvidence.gracefulStop.exitCode = 137;
+    expect(validateEvidence(swallowedSignal, new Date(), expectedSourceSha).join('\n'))
+      .toContain('graceful stop/log evidence');
   });
 
   test('critical vulnerability waivers must match image digest and finding and remain unexpired', async () => {
