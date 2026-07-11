@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { parse as parseYaml } from 'yaml';
+import { z } from 'zod';
 
 import * as Schemas from '../../libs/shared/contracts/dist/index.schemas.js';
 import {
@@ -40,6 +41,15 @@ const equalSets = (check, left, right, label) => {
   const extra = [...left].filter((item) => !right.has(item));
   assert(check, missing.length === 0 && extra.length === 0, `${label}; missing=${missing.join(',')} extra=${extra.join(',')}`);
 };
+const canonicalJson = (value) => JSON.stringify(
+  Array.isArray(value)
+    ? value.map((entry) => JSON.parse(canonicalJson(entry)))
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(
+          ([key, entry]) => [key, JSON.parse(canonicalJson(entry))],
+        ))
+      : value,
+);
 
 const checkSchema = () => {
   const required = [
@@ -66,6 +76,8 @@ const checkRoutes = () => {
     assert('routes', /^\/(?:api\/v1\/|auth\/|oauth\/|\.well-known\/)/.test(route.path), `unversioned formal route ${route.path}`);
     assert('routes', !/:([A-Za-z]|$)/.test(route.path), `colon parameter/action in ${route.path}`);
     assert('routes', route.request && route.response, `missing schema reference for ${route.operationId}`);
+    assert('routes', !route.requestName.startsWith('Generic'), `generic request schema ${route.operationId}`);
+    assert('routes', !route.responseName.startsWith('Generic'), `generic response schema ${route.operationId}`);
   }
   summaries.routeCount = RouteRegistry.length;
 };
@@ -169,6 +181,20 @@ const checkErrors = () => {
     }
   }
   for (const code of responseCodes) assert('errors', errorCodes.has(code), `OpenAPI uses unknown error ${code}`);
+  equalSets(
+    'errors',
+    new Set(RouteRegistry.flatMap((route) => route.errors)),
+    errorCodes,
+    'ErrorRegistry/RouteRegistry error set',
+  );
+  equalSets(
+    'errors',
+    new Set(Object.values(openapi.paths).flatMap((pathItem) => Object.values(pathItem).flatMap(
+      (operation) => operation['x-lobster-error-codes'] ?? [],
+    ))),
+    errorCodes,
+    'ErrorRegistry/OpenAPI operation error set',
+  );
 };
 
 const checkOpenapi = async () => {
@@ -177,7 +203,16 @@ const checkOpenapi = async () => {
   const registry = new Set(RouteRegistry.map((route) => `${route.method.toLowerCase()} ${route.path}`));
   const spec = new Set(Object.entries(openapi.paths).flatMap(([routePath, item]) => Object.keys(item).map((method) => `${method} ${routePath}`)));
   equalSets('openapi', spec, registry, 'route registry/spec mismatch');
+  const routesByOperation = new Map(RouteRegistry.map((route) => [route.operationId, route]));
   for (const [routePath, item] of Object.entries(openapi.paths)) for (const operation of Object.values(item)) {
+    const route = routesByOperation.get(operation.operationId);
+    assert('openapi', route !== undefined, `unknown operation ${operation.operationId}`);
+    if (route) {
+      const expectedSecurity = route.auth === 'access-token' ? [{ accessToken: [] }] : [];
+      assert('openapi', JSON.stringify(operation.security ?? []) === JSON.stringify(expectedSecurity), `security mismatch ${operation.operationId}`);
+      assert('openapi', operation.responses[String(route.successStatus)] !== undefined, `success status mismatch ${operation.operationId}`);
+      equalSets('openapi', new Set(operation['x-lobster-error-codes'] ?? []), new Set(route.errors), `error policy mismatch ${operation.operationId}`);
+    }
     for (const name of [...routePath.matchAll(/\{([^}]+)\}/g)].map((match) => match[1])) {
       assert('openapi', operation.parameters?.some((parameter) => parameter.name === name && parameter.in === 'path' && parameter.required === true), `${operation.operationId} missing required path parameter ${name}`);
     }
@@ -219,13 +254,25 @@ const checkCoworkStream = () => {
   equalSets('cowork-stream', new Set(CoworkStreamRegistry.map((entry) => entry.wireType)), expected, 'wire events');
   equalSets('cowork-stream', new Set(CoworkStreamRegistry.map((entry) => entry.wireType)), new Set(ChannelRegistry.filter((entry) => entry.path === '/api/v1/stream' && expected.has(entry.messageType)).map((entry) => entry.messageType)), 'AsyncAPI registry');
   equalSets('cowork-stream', new Set(CoworkStreamRegistry.map((entry) => entry.wireType)), new Set(Object.keys(asyncapi.components.messages).filter((name) => expected.has(name))), 'AsyncAPI messages');
-  const bridgePaths = new Set(BridgeRegistry.map((entry) => entry.propertyPath));
+  const bridgePaths = new Map(BridgeRegistry.map((entry) => [entry.propertyPath, entry]));
   for (const entry of CoworkStreamRegistry) {
     assert('cowork-stream', bridgePaths.has(entry.bridgeMethod), `bridge missing ${entry.bridgeMethod}`);
     const valid = JSON.parse(readFileSync(path.join(repositoryRoot, `libs/shared/contracts/fixtures/valid/cowork/${entry.wireType}.json`), 'utf8'));
     const invalid = JSON.parse(readFileSync(path.join(repositoryRoot, `libs/shared/contracts/fixtures/invalid/cowork/${entry.wireType}.json`), 'utf8'));
     assert('cowork-stream', entry.schema.safeParse(valid).success, `valid fixture rejected ${entry.wireType}`);
     assert('cowork-stream', entry.schema.safeParse(invalid).success === false, `invalid fixture accepted ${entry.wireType}`);
+    const message = asyncapi.components.messages[entry.wireType];
+    assert('cowork-stream', message['x-lobster-ipc-topic'] === entry.ipcTopic, `IPC topic mismatch ${entry.wireType}`);
+    assert('cowork-stream', message['x-lobster-async-channel'] === entry.asyncChannel, `AsyncAPI channel mismatch ${entry.wireType}`);
+    assert('cowork-stream', message['x-lobster-bridge-method'] === entry.bridgeMethod, `bridge extension mismatch ${entry.wireType}`);
+    const expectedPayload = z.toJSONSchema(entry.schema, { target: 'draft-7', unrepresentable: 'any' });
+    delete expectedPayload.$schema;
+    delete expectedPayload.title;
+    const actualPayload = structuredClone(message.payload.properties.data);
+    delete actualPayload.title;
+    assert('cowork-stream', canonicalJson(actualPayload) === canonicalJson(expectedPayload), `payload schema mismatch ${entry.wireType}`);
+    const signature = bridgePaths.get(entry.bridgeMethod)?.signature ?? '';
+    for (const field of Object.keys(valid)) assert('cowork-stream', signature.includes(field), `bridge payload missing ${entry.wireType}.${field}`);
   }
   assert('cowork-stream', ![...expected].some((name) => ['delta', 'tool', 'thinking', 'done', 'abort'].includes(name)), 'internal event leaked');
   const dismiss = CoworkStreamRegistry.find((entry) => entry.wireType === 'permissionDismiss');
@@ -243,6 +290,23 @@ const checkBridge = () => {
   for (const [propertyPath, optional] of source) assert('bridge', registry.get(propertyPath) === optional, `optional mismatch ${propertyPath}`);
   assert('bridge', registry.has('api.onStreamError') && registry.has('cowork.onStreamError'), 'same leaf names collapsed');
   assert('bridge', BridgeRegistry.every((row) => row.signature.length > 0), 'bridge return signature missing');
+  const routeTargets = new Set(RouteRegistry.map((route) => route.operationId));
+  const channelTargets = new Set(ChannelRegistry.map((channel) => channel.messageType));
+  const inventoryPaths = new Set(IpcGaInventory.flatMap((row) => row.bridgePaths));
+  const generatedBridge = readFileSync(path.join(repositoryRoot, 'libs/client/bridge/src/electronBridge.ts'), 'utf8');
+  assert('bridge', !/^type .* = unknown;$/m.test(generatedBridge), 'generated bridge erased a named type');
+  for (const row of BridgeRegistry) {
+    assert('bridge', row.disposition !== 'ga' || row.targets.length > 0, `GA bridge has no target ${row.propertyPath}`);
+    for (const target of row.targets) assert('bridge', routeTargets.has(target) || channelTargets.has(target), `bridge has invalid target ${row.propertyPath}:${target}`);
+    assert('bridge', row.disposition === 'ga' ? inventoryPaths.has(row.propertyPath) : !inventoryPaths.has(row.propertyPath), `bridge disposition mismatch ${row.propertyPath}`);
+  }
+  for (const inventory of IpcGaInventory) {
+    for (const propertyPath of inventory.bridgePaths) {
+      const bridge = BridgeRegistry.find((row) => row.propertyPath === propertyPath);
+      assert('bridge', bridge !== undefined, `inventory missing bridge ${inventory.id}:${propertyPath}`);
+      for (const target of inventory.targets) assert('bridge', bridge?.targets.includes(target), `inventory/bridge target mismatch ${inventory.id}:${target}`);
+    }
+  }
   summaries.bridgePropertyCount = registry.size;
 };
 
