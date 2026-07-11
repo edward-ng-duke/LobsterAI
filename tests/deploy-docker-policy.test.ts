@@ -74,10 +74,12 @@ describe('P03 production image policy', () => {
     expect(dockerfile).toMatch(/^FROM ubuntu:26\.04@sha256:[a-f0-9]{64} AS production$/m);
     expect(dockerfile).toMatch(/^RUN corepack enable$/m);
     expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
-    expect(readFileSync(
+    const entrypoint = readFileSync(
       path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'entrypoint.sh'),
       'utf8',
-    )).toContain('gateway --allow-unconfigured --bind lan');
+    );
+    expect(entrypoint).toContain('${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN is required}');
+    expect(entrypoint).toContain('gateway --allow-unconfigured --bind lan');
 
     const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
     expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
