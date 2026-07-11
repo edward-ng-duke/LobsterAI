@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
 export const EmptyRequestSchema = z.strictObject({});
-export const GenericResponseSchema = z.object({ data: z.unknown().optional() });
-export const GenericRequestSchema = z.object({}).catchall(z.unknown());
 const OperationScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const OperationValueSchema = z.union([
   OperationScalarSchema,

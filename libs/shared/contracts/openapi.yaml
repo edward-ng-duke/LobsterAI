@@ -681,37 +681,6 @@ components:
       required:
         - success
       type: object
-    DeleteApiV1SessionsIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     DeleteApiV1SkillsIdResponse:
       additionalProperties: false
       properties:
@@ -929,45 +898,6 @@ components:
       required:
         - requestId
       type: object
-    GenericRequest:
-      additionalProperties: {}
-      properties: {}
-      type: object
-    GenericResponse:
-      properties:
-        data: {}
-      type: object
-    GetApiV1AgentsIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     GetApiV1AgentsPresetTemplatesResponse:
       additionalProperties: false
       properties:
@@ -1000,68 +930,6 @@ components:
         - success
       type: object
     GetApiV1AgentsPresetsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1AgentsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1BillingAccountResponse:
       additionalProperties: false
       properties:
         data:
@@ -1310,37 +1178,6 @@ components:
         - success
       type: object
     GetApiV1CoworkDreamingStatusResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1CoworkMemoryEntriesResponse:
       additionalProperties: false
       properties:
         data:
@@ -2022,100 +1859,7 @@ components:
       required:
         - success
       type: object
-    GetApiV1ScheduledTasksIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     GetApiV1ScheduledTasksIdRunsCountResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1ScheduledTasksIdRunsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1ScheduledTasksResponse:
       additionalProperties: false
       properties:
         data:
@@ -2270,37 +2014,6 @@ components:
       required:
         - success
       type: object
-    GetApiV1SessionsIdMessagesResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     GetApiV1SessionsIdRailIndexResponse:
       additionalProperties: false
       properties:
@@ -2332,69 +2045,7 @@ components:
       required:
         - success
       type: object
-    GetApiV1SessionsIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     GetApiV1SessionsIdSubagentsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1SessionsResponse:
       additionalProperties: false
       properties:
         data:
@@ -2642,37 +2293,6 @@ components:
       required:
         - success
       type: object
-    GetApiV1WorkspacesResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     GetApiV1WorkspacesWidFilesDownloadResponse:
       additionalProperties: false
       properties:
@@ -2736,37 +2356,6 @@ components:
         - success
       type: object
     GetApiV1WorkspacesWidFilesThumbnailResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    GetApiV1WorkspacesWidFilesTreeResponse:
       additionalProperties: false
       properties:
         data:
@@ -3291,67 +2880,6 @@ components:
       required:
         - hasMore
       type: object
-    PatchApiV1AgentsIdRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PatchApiV1AgentsIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     PatchApiV1CoworkConfigRequest:
       additionalProperties: false
       properties:
@@ -3596,67 +3124,6 @@ components:
       required:
         - success
       type: object
-    PatchApiV1McpServersIdRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PatchApiV1McpServersIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     PatchApiV1PluginsIdRequest:
       additionalProperties: false
       properties:
@@ -3688,128 +3155,6 @@ components:
             - type: "null"
       type: object
     PatchApiV1PluginsIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PatchApiV1ScheduledTasksIdRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PatchApiV1ScheduledTasksIdResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PatchApiV1SessionsIdRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PatchApiV1SessionsIdResponse:
       additionalProperties: false
       properties:
         data:
@@ -4177,128 +3522,6 @@ components:
       required:
         - success
       type: object
-    PostApiV1AgentsRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1AgentsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1ArtifactsArtifactIdPreviewRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1ArtifactsArtifactIdPreviewResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     PostApiV1BillingByokRequest:
       additionalProperties: false
       properties:
@@ -4574,67 +3797,6 @@ components:
             - type: "null"
       type: object
     PostApiV1McpServersIdLaunchResolutionRetryResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1McpServersRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1McpServersResponse:
       additionalProperties: false
       properties:
         data:
@@ -5641,67 +4803,6 @@ components:
       required:
         - success
       type: object
-    PostApiV1ScheduledTasksIdRunsRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1ScheduledTasksIdRunsResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     PostApiV1ScheduledTasksIdStopRequest:
       additionalProperties: false
       properties:
@@ -5733,67 +4834,6 @@ components:
             - type: "null"
       type: object
     PostApiV1ScheduledTasksIdStopResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1ScheduledTasksRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1ScheduledTasksResponse:
       additionalProperties: false
       properties:
         data:
@@ -6465,128 +5505,6 @@ components:
       required:
         - success
       type: object
-    PostApiV1ShareDeploymentsAnalyzeRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1ShareDeploymentsAnalyzeResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1ShareDeploymentsCandidatesRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1ShareDeploymentsCandidatesResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
     PostApiV1ShareDeploymentsNodeRequest:
       additionalProperties: false
       properties:
@@ -6953,250 +5871,6 @@ components:
             - type: "null"
       type: object
     PostApiV1SkillsSyncResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1WorkspacesRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1WorkspacesResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1WorkspacesWidFilesUploadRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1WorkspacesWidFilesUploadResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1WorkspacesWidUploadsIdCompleteRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1WorkspacesWidUploadsIdCompleteResponse:
-      additionalProperties: false
-      properties:
-        data:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-        success:
-          type: boolean
-      required:
-        - success
-      type: object
-    PostApiV1WorkspacesWidUploadsRequest:
-      additionalProperties: false
-      properties:
-        idempotencyKey:
-          minLength: 1
-          type: string
-        input:
-          anyOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: "null"
-            - items:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: array
-            - additionalProperties:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                  - type: "null"
-              type: object
-            - type: "null"
-      type: object
-    PostApiV1WorkspacesWidUploadsResponse:
       additionalProperties: false
       properties:
         data:
@@ -8618,7 +7292,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1AgentsResponse"
+                $ref: "#/components/schemas/AgentDto"
           description: Successful response
         "400":
           content:
@@ -8679,14 +7353,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1AgentsRequest"
+              $ref: "#/components/schemas/AgentCreateRequest"
         required: true
       responses:
         "201":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1AgentsResponse"
+                $ref: "#/components/schemas/AgentDto"
           description: Successful response
         "400":
           content:
@@ -9024,7 +7698,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1AgentsIdResponse"
+                $ref: "#/components/schemas/AgentDto"
           description: Successful response
         "400":
           content:
@@ -9091,14 +7765,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PatchApiV1AgentsIdRequest"
+              $ref: "#/components/schemas/AgentUpdateRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PatchApiV1AgentsIdResponse"
+                $ref: "#/components/schemas/AgentDto"
           description: Successful response
         "400":
           content:
@@ -9235,14 +7909,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1ArtifactsArtifactIdPreviewRequest"
+              $ref: "#/components/schemas/PreviewTokenRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1ArtifactsArtifactIdPreviewResponse"
+                $ref: "#/components/schemas/PreviewTokenResponse"
           description: Successful response
         "400":
           content:
@@ -9383,7 +8057,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1BillingAccountResponse"
+                $ref: "#/components/schemas/QuotaBuckets"
           description: Successful response
         "400":
           content:
@@ -10255,7 +8929,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1CoworkMemoryEntriesResponse"
+                $ref: "#/components/schemas/MessageListResponse"
           description: Successful response
         "400":
           content:
@@ -11688,14 +10362,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1McpServersRequest"
+              $ref: "#/components/schemas/McpServerConfig"
         required: true
       responses:
         "201":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1McpServersResponse"
+                $ref: "#/components/schemas/McpServerConfig"
           description: Successful response
         "400":
           content:
@@ -11831,14 +10505,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PatchApiV1McpServersIdRequest"
+              $ref: "#/components/schemas/McpServerConfig"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PatchApiV1McpServersIdResponse"
+                $ref: "#/components/schemas/McpServerConfig"
           description: Successful response
         "400":
           content:
@@ -14473,7 +13147,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1ScheduledTasksResponse"
+                $ref: "#/components/schemas/ScheduledTaskDto"
           description: Successful response
         "400":
           content:
@@ -14535,14 +13209,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1ScheduledTasksRequest"
+              $ref: "#/components/schemas/TaskCreateRequest"
         required: true
       responses:
         "201":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1ScheduledTasksResponse"
+                $ref: "#/components/schemas/ScheduledTaskDto"
           description: Successful response
         "400":
           content:
@@ -14949,7 +13623,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1ScheduledTasksIdResponse"
+                $ref: "#/components/schemas/ScheduledTaskDto"
           description: Successful response
         "400":
           content:
@@ -15017,14 +13691,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PatchApiV1ScheduledTasksIdRequest"
+              $ref: "#/components/schemas/TaskUpdateRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PatchApiV1ScheduledTasksIdResponse"
+                $ref: "#/components/schemas/ScheduledTaskDto"
           description: Successful response
         "400":
           content:
@@ -15095,7 +13769,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1ScheduledTasksIdRunsResponse"
+                $ref: "#/components/schemas/TaskRunDto"
           description: Successful response
         "400":
           content:
@@ -15163,14 +13837,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1ScheduledTasksIdRunsRequest"
+              $ref: "#/components/schemas/EmptyRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1ScheduledTasksIdRunsResponse"
+                $ref: "#/components/schemas/TaskRunDto"
           description: Successful response
         "400":
           content:
@@ -15380,7 +14054,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1SessionsResponse"
+                $ref: "#/components/schemas/SessionSummary"
           description: Successful response
         "400":
           content:
@@ -15610,7 +14284,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeleteApiV1SessionsIdResponse"
+                $ref: "#/components/schemas/DeleteSessionResponse"
           description: Successful response
         "400":
           content:
@@ -15686,7 +14360,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1SessionsIdResponse"
+                $ref: "#/components/schemas/SessionDetail"
           description: Successful response
         "400":
           content:
@@ -15761,14 +14435,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PatchApiV1SessionsIdRequest"
+              $ref: "#/components/schemas/SessionPatchRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PatchApiV1SessionsIdResponse"
+                $ref: "#/components/schemas/SessionDetail"
           description: Successful response
         "400":
           content:
@@ -16332,7 +15006,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1SessionsIdMessagesResponse"
+                $ref: "#/components/schemas/MessageListResponse"
           description: Successful response
         "400":
           content:
@@ -17240,14 +15914,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1ShareDeploymentsAnalyzeRequest"
+              $ref: "#/components/schemas/ShareCreateRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1ShareDeploymentsAnalyzeResponse"
+                $ref: "#/components/schemas/ShareDto"
           description: Successful response
         "400":
           content:
@@ -17309,14 +15983,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1ShareDeploymentsCandidatesRequest"
+              $ref: "#/components/schemas/ShareCreateRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1ShareDeploymentsCandidatesResponse"
+                $ref: "#/components/schemas/ShareDto"
           description: Successful response
         "400":
           content:
@@ -18607,7 +17281,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1WorkspacesResponse"
+                $ref: "#/components/schemas/WorkspaceListResponse"
           description: Successful response
         "400":
           content:
@@ -18667,14 +17341,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1WorkspacesRequest"
+              $ref: "#/components/schemas/WorkspaceCreateRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1WorkspacesResponse"
+                $ref: "#/components/schemas/WorkspaceCreateResponse"
           description: Successful response
         "400":
           content:
@@ -19137,7 +17811,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetApiV1WorkspacesWidFilesTreeResponse"
+                $ref: "#/components/schemas/WorkspaceTreeResponse"
           description: Successful response
         "400":
           content:
@@ -19219,14 +17893,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1WorkspacesWidFilesUploadRequest"
+              $ref: "#/components/schemas/SaveInlineFileRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1WorkspacesWidFilesUploadResponse"
+                $ref: "#/components/schemas/SaveInlineFileResponse"
           description: Successful response
         "400":
           content:
@@ -19309,14 +17983,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1WorkspacesWidUploadsRequest"
+              $ref: "#/components/schemas/FileUploadIntent"
         required: true
       responses:
         "201":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1WorkspacesWidUploadsResponse"
+                $ref: "#/components/schemas/FileUploadIntent"
           description: Successful response
         "400":
           content:
@@ -19403,14 +18077,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostApiV1WorkspacesWidUploadsIdCompleteRequest"
+              $ref: "#/components/schemas/UploadCompleteRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PostApiV1WorkspacesWidUploadsIdCompleteResponse"
+                $ref: "#/components/schemas/UploadCompleteResponse"
           description: Successful response
         "400":
           content:

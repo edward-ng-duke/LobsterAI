@@ -7,8 +7,6 @@ export {
   ContinueTurnRequestSchema as ContinueTurnRequest,
   DeleteSessionResponseSchema as DeleteSessionResponse,
   EmptyRequestSchema as EmptyRequest,
-  GenericRequestSchema as GenericRequest,
-  GenericResponseSchema as GenericResponse,
   GoalUpdateSchema as GoalUpdate,
   LoginRequestSchema as LoginRequest,
   LoginResponseSchema as LoginResponse,
