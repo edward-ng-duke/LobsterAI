@@ -2,9 +2,9 @@
 
 - 状态：`REVIEW_PENDING`（Reviewer Round 4）
 - Developer：`/root/p02_developer`
-- codeEvidenceSha：`c3b625243b76a34aef6e8936bc3f09c50131ae6f`
-- code evidence-only commit：`f079413bfe27df3a9a07c236e7597f5ccc3c345e`
-- stageEvidenceSha：`f079413bfe27df3a9a07c236e7597f5ccc3c345e`
+- codeEvidenceSha：`20b95e3c1324fd368e8345d2b362d972c43c745c`
+- code evidence-only commit：`b07694d936097c0d91fd6e2b6aca48abe80cbfb1`
+- stageEvidenceSha：`b07694d936097c0d91fd6e2b6aca48abe80cbfb1`
 - 环境：macOS arm64 / Node `v24.15.0` / PostgreSQL `17.10 (Debian 17.10-1.pgdg12+1)`
 - 镜像：`postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a`
 - P01 接受 SHA：`a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28`
@@ -15,8 +15,8 @@
 
 报告不能把包含自身的提交 SHA 写进自身内容。本目录采用可机器验证的两段 evidence-only descendant 链：
 
-1. 四份 code report 由实现提交 `c3b62524...` 的原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`f079413b...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
-2. 正式 `prisma:validate` stage 在 `f079413b...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
+1. 四份 code report 由 P03 accepted merge 后的实现提交 `20b95e3c...` 原生 runner 生成，`report.sourceSha` 均等于该实现 SHA；`b07694d9...` 只提交这些 raw report、manifest，并移除上一轮 stage snapshot。
+2. 正式 `prisma:validate` stage 在 `b07694d9...` 上运行，stage report 的 `sourceSha` 等于该证据提交。
 3. `validate-evidence.mjs` 用严格 schema 拒绝未知字段，核对每份报告内容 SHA-256 与 runner SHA-256，并要求 code/stage SHA 位于最终 HEAD 的 first-parent 链。
 4. validator 从 source SHA 的下一提交起到 HEAD，逐个审计 first-parent commit；每个 commit 都与其唯一父提交做 `--name-status -z -M` 比较。A/M/D 路径和 R/C 的旧、新两端都必须在严格 allowlist，任何 merge commit 均 fail-closed。
 5. mutation 测试覆盖 add、modify、delete、code→evidence rename、code→revert、merge 与 source 仅在 non-first-parent 可达。后续 revert 不能再洗掉历史代码提交。
@@ -39,11 +39,11 @@
 
 | 文件 | 原生标识 | source SHA | 结果 |
 |---|---|---|---|
-| `contracts-preflight.json` | runId `53c25a50-2092-4bcd-a759-989250af8b21` | `c3b62524...` | PASS |
-| `preflight.json` | runId `0d45db68-4e20-42b6-943e-42d6c2933b82` | `c3b62524...` | PASS；container removed |
-| `integration.json` | runId `3aaf2faa-f882-4b2f-b89b-2b29e12297f3` | `c3b62524...` | PASS；24/24；skipped=0；container removed |
-| `validation.json` | runId `f74eb514-6263-4869-b0fc-45b15705b015` | `c3b62524...` | PASS；原生 `commands[]` 共 8 项 |
-| `prisma-stage-gate.json` | invocationId `d15fb42f-0488-4128-9a48-ae703b525178` | `f079413b...` | PASS；outer digests 一致 |
+| `contracts-preflight.json` | runId `150f5ba5-1628-4d80-9efb-07c9ab826672` | `20b95e3c...` | PASS |
+| `preflight.json` | runId `f6c65487-b55a-4765-9344-6ea40abe2a3c` | `20b95e3c...` | PASS；container removed |
+| `integration.json` | runId `d524744f-44f2-4689-84c9-3ddbe2045e64` | `20b95e3c...` | PASS；24/24；skipped=0；container removed |
+| `validation.json` | runId `88a78d74-90d9-4e4c-9e9e-5887389c235c` | `20b95e3c...` | PASS；原生 `commands[]` 共 8 项 |
+| `prisma-stage-gate.json` | invocationId `bb9fab84-6c45-4b90-9972-dd58877906f4` | `b07694d9...` | PASS；outer digests 一致 |
 
 `evidence-manifest.json` 保存上述文件摘要、source SHA、runner 路径和 runner 摘要。当前实现与报告中的 generated Prisma client hash 均为 `c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441`。
 
@@ -91,13 +91,14 @@
 
 | 命令 | 结果 |
 |---|---|
-| `node scripts/db/validate.mjs` | exit 0；原生 validation runId `f74eb514-...` |
+| `node scripts/db/validate.mjs` | exit 0；原生 validation runId `88a78d74-...` |
+| P03 merge evidence integration | Red 2/2 → Green 2/2；codeEvidence 包含 accepted merge `43665ce1...` |
 | Tester evidence boundary | exit 0；6/6 |
 | external/bootstrap/outer boundary | exit 0；10/10（含双文件协同与 manifest+launcher 协同） |
 | provenance/static mutation | exit 0；21/21，覆盖 add/modify/delete/rename/revert/merge/non-first-parent 与移除 bootstrap 入口 |
 | `npm run test:db:unit` | exit 0；7 files / 72 tests |
 | `npm run test:db:integration`（由 validation 调用） | exit 0；24/24，skipped=0 |
-| `npm run prisma:validate` | exit 0；冻结 invocationId `d15fb42f-...`；交付前重跑 `6eba84f6-...`；外部 manifest digest 均匹配 |
+| `npm run prisma:validate` | exit 0；冻结 invocationId `bb9fab84-...`；外部 manifest digest 匹配 |
 | trusted evidence launcher | exit 0；code/stage/raw/provenance/outer digests PASS |
 | `npm ci` | exit 0；lockfile clean install 与 Prisma postinstall generate 成功 |
 | `npm run contracts:check` / `npm run test:contract` | exit 0；15/15 contract checks |
@@ -107,7 +108,7 @@
 | `npm run build:saas` | exit 0；9 workspaces / 18 fresh artifacts |
 | `npm run build` / `npm run compile:electron` | exit 0；仅既有 Vite/eval/chunk warning |
 
-原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `c3b62524...` 与 `f079413b...`；不声称报告与包含报告的提交自引用同 SHA。
+原生机器报告以本目录 JSON 与 manifest 为准。冻结证据链由 manifest 指向 `20b95e3c...` 与 `b07694d9...`；implementation SHA 位于 P03 accepted merge `43665ce1...` 之后；不声称报告与包含报告的提交自引用同 SHA。
 
 ## 已知非 P02 风险
 
