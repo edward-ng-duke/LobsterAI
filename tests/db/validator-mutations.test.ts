@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -61,6 +69,31 @@ const git = (root: string, ...args: string[]) => {
   return result.stdout.trim();
 };
 
+const createEvidenceRepository = (): { root: string; implementationSha: string } => {
+  const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-evidence-git-'));
+  temporaryRoots.push(root);
+  git(root, 'init', '-b', 'main');
+  git(root, 'config', 'user.name', 'P02 Evidence Test');
+  git(root, 'config', 'user.email', 'p02-evidence@example.invalid');
+  mkdirSync(path.join(root, 'src'), { recursive: true });
+  writeFileSync(path.join(root, 'src/existing.ts'), 'export const value = 1;\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-m', 'feat: implementation');
+  const implementationSha = git(root, 'rev-parse', 'HEAD');
+
+  mkdirSync(path.join(root, 'docs/db/evidence'), { recursive: true });
+  writeFileSync(path.join(root, 'docs/db/evidence/report.json'), '{}\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-m', 'docs: evidence');
+  return { root, implementationSha };
+};
+
+const evidenceErrors = (root: string, sourceSha: string) => validateEvidenceOnlyDescendant({
+  gitRoot: root,
+  sourceSha,
+  allowedEvidencePath: (file: string) => file.startsWith('docs/db/evidence/'),
+});
+
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
@@ -117,36 +150,71 @@ describe('P02 static gate mutation resistance', () => {
     expect(runEvidence(root).status).not.toBe(0);
   });
 
-  test('evidence provenance rejects a code commit inserted after the implementation SHA', () => {
-    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-evidence-git-'));
-    temporaryRoots.push(root);
-    git(root, 'init');
-    git(root, 'config', 'user.name', 'P02 Evidence Test');
-    git(root, 'config', 'user.email', 'p02-evidence@example.invalid');
-    writeFileSync(path.join(root, 'implementation.ts'), 'export const implemented = true;\n');
-    git(root, 'add', '.');
-    git(root, 'commit', '-m', 'feat: implementation');
-    const implementationSha = git(root, 'rev-parse', 'HEAD');
+  test('evidence provenance accepts direct evidence-only first-parent commits', () => {
+    const { root, implementationSha } = createEvidenceRepository();
+    expect(evidenceErrors(root, implementationSha)).toEqual([]);
+  });
 
-    mkdirSync(path.join(root, 'docs/db/evidence'), { recursive: true });
-    writeFileSync(path.join(root, 'docs/db/evidence/report.json'), '{}\n');
-    git(root, 'add', '.');
-    git(root, 'commit', '-m', 'docs: evidence');
-    const allowedEvidencePath = (file: string) => file.startsWith('docs/db/evidence/');
-    expect(validateEvidenceOnlyDescendant({
-      gitRoot: root,
-      sourceSha: implementationSha,
-      allowedEvidencePath,
-    })).toEqual([]);
+  test.each([
+    ['add', (root: string) => writeFileSync(path.join(root, 'src/added.ts'), 'export {};\n')],
+    ['modify', (root: string) => writeFileSync(path.join(root, 'src/existing.ts'), 'export const value = 2;\n')],
+    ['delete', (root: string) => rmSync(path.join(root, 'src/existing.ts'))],
+  ] as const)('evidence provenance rejects a non-evidence %s commit', (_status, mutateRepository) => {
+    const { root, implementationSha } = createEvidenceRepository();
+    mutateRepository(root);
+    git(root, 'add', '-A');
+    git(root, 'commit', '-m', `feat: ${_status} code`);
+    expect(evidenceErrors(root, implementationSha).join('\n')).toContain('src/');
+  });
 
-    mkdirSync(path.join(root, 'src'), { recursive: true });
+  test('evidence provenance audits both sides of a code-to-evidence rename', () => {
+    const { root, implementationSha } = createEvidenceRepository();
+    renameSync(
+      path.join(root, 'src/existing.ts'),
+      path.join(root, 'docs/db/evidence/disguised.ts'),
+    );
+    git(root, 'add', '-A');
+    git(root, 'commit', '-m', 'docs: rename code into evidence');
+    expect(evidenceErrors(root, implementationSha).join('\n')).toContain('src/existing.ts');
+  });
+
+  test('evidence provenance rejects inserted code even after a later revert', () => {
+    const { root, implementationSha } = createEvidenceRepository();
     writeFileSync(path.join(root, 'src/arbitrary.ts'), 'export const inserted = true;\n');
     git(root, 'add', '.');
     git(root, 'commit', '-m', 'feat: inserted code');
-    expect(validateEvidenceOnlyDescendant({
-      gitRoot: root,
-      sourceSha: implementationSha,
-      allowedEvidencePath,
-    })).toContain('non-evidence change after source SHA: src/arbitrary.ts');
+    const codeSha = git(root, 'rev-parse', 'HEAD');
+    git(root, 'revert', '--no-edit', codeSha);
+    expect(evidenceErrors(root, implementationSha).join('\n')).toContain('src/arbitrary.ts');
+  });
+
+  test('evidence provenance rejects merge commits after the implementation SHA', () => {
+    const { root, implementationSha } = createEvidenceRepository();
+    git(root, 'branch', 'evidence-side');
+    writeFileSync(path.join(root, 'docs/db/evidence/main.json'), '{}\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'docs: main evidence');
+    git(root, 'checkout', 'evidence-side');
+    writeFileSync(path.join(root, 'docs/db/evidence/side.json'), '{}\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'docs: side evidence');
+    git(root, 'checkout', 'main');
+    git(root, 'merge', '--no-ff', 'evidence-side', '-m', 'merge: evidence histories');
+    expect(evidenceErrors(root, implementationSha).join('\n')).toContain('merge commit');
+  });
+
+  test('evidence provenance rejects a source SHA reachable only through a non-first parent', () => {
+    const { root } = createEvidenceRepository();
+    git(root, 'checkout', '-b', 'source-side');
+    writeFileSync(path.join(root, 'docs/db/evidence/source.json'), '{}\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'docs: side source');
+    const sideSourceSha = git(root, 'rev-parse', 'HEAD');
+    git(root, 'checkout', 'main');
+    writeFileSync(path.join(root, 'docs/db/evidence/main-2.json'), '{}\n');
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'docs: main evidence again');
+    git(root, 'merge', '--no-ff', 'source-side', '-m', 'merge: source side');
+    expect(evidenceErrors(root, sideSourceSha).join('\n')).toContain('first-parent history');
   });
 });
