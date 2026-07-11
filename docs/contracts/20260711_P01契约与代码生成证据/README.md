@@ -107,3 +107,12 @@ exit 1; 5 tests failed
 - gate invocationId：`c3dc0efb-240e-4f3a-82e3-ce7900f9e72b`；本地 CI runId 不可用，未伪造。
 - 最终总门：`contracts:check`、15/15 `test:contract`、workspace typecheck、zero-warning changed-file ESLint、192-file Vitest（2064 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、renderer build、Electron compile 均 exit 0。
 - 两个原子生成破坏性 mutation 已在 `304e9755` / `aae6cc82` 迁入独立临时仓库，不再与全仓并行测试竞争真实 generated 目录。
+
+## Round 5 Reviewer 退回修复（2026-07-11 16:59 +0800）
+
+- Red `3716b670`：12 tests 中 11 failed / 1 passed；Green 后 12/12 PASS，覆盖 scheduled runs query、真实 schedule bridge shape、158-route 独立 error policy 双向分母、19 条假错误与 task stop 专用错误。
+- 两条 runs 路由的 OpenAPI query 均为 `cursor/endDate/limit/startDate/status`；schedule 只接受真实 `at`、`everyMs/anchorMs`、`expr/tz/staggerMs` 判别联合。
+- `ExpectedRouteOperationIds` 独立显式列出 158 个 operation；checker 要求 expectation/registry 双向相等并逐项 exact errors。GET/DELETE 与 `QUOTA_EXCEEDED/TASK_LIMIT_EXCEEDED/PAYLOAD_TOO_LARGE/STORAGE_QUOTA_EXCEEDED` 交集为 0。
+- task stop 精确含 `NO_RUNNING_TASK_RUN/CANCEL_NOT_OWNED/CANCEL_FAILED`，不含 `TASK_LIMIT_EXCEEDED/SESSION_BUSY/IN_PROGRESS`。
+- 最新 counts/hash：schema `216`；route `158`；channel `32`；inventory `184/184`；bridge `321`；Cowork `10`；source `a7672b976c10ea78a8b18518ddb4ab98f02c417d62e7182937acacbb6f47fe39`；output `99a3b2a1ad3927447330925bab2ee87887952678f290d757ee5a933298a6e9bb`。
+- 最终总门：`contracts:check`、15/15 `test:contract`、typecheck、changed-file ESLint、193-file Vitest（2076 passed / 1 skipped）、SaaS 9-workspace/18-artifact build、renderer build、Electron compile 均 exit 0。Gate invocationId `7f64369b-88f4-41aa-a24a-2dadb6849fe0`；本地无 CI runId。
