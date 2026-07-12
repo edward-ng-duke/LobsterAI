@@ -9,6 +9,13 @@ import { afterEach, describe, expect, test } from 'vitest';
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
 const trustedBootstrapSha256 = '7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3';
+const postgresManifest = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'tests/integration/db/postgres-image.json'),
+  'utf8',
+)) as {
+  image: string;
+  platforms: Array<{ platform: 'linux/amd64' | 'linux/arm64'; digest: string }>;
+};
 const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
@@ -239,6 +246,26 @@ const exactShapeMutations: NamedMutation[] = [
   }],
 ];
 
+const bindPostgresPlatform = (
+  reports: Record<EvidenceReportName, EvidenceReport>,
+  platform: 'linux/amd64' | 'linux/arm64',
+  digest: string,
+): void => {
+  const nodeArch = platform === 'linux/amd64' ? 'x64' : 'arm64';
+  const inspectedArch = platform === 'linux/amd64' ? 'amd64' : 'arm64';
+  for (const name of ['preflight.json', 'integration.json'] as const) {
+    const report = reports[name];
+    report.platform = `linux/${nodeArch}`;
+    const provider = nestedRecord(report, 'checks', 'provider');
+    provider.dockerPlatform = platform;
+    provider.runnerArch = nodeArch;
+    provider.inspectedArch = inspectedArch;
+    provider.digest = digest;
+    provider.immutableReference = `${postgresManifest.image}@${digest}`;
+    provider.repoDigests = [`postgres@${digest}`];
+  }
+};
+
 const semanticMutations: NamedMutation[] = [
   ['provider and cleanup container IDs differ', (reports) => {
     nestedRecord(reports['integration.json'], 'cleanup').containerId = 'b'.repeat(64);
@@ -251,6 +278,9 @@ const semanticMutations: NamedMutation[] = [
   }],
   ['root and runner platforms differ', (reports) => {
     reports['integration.json'].platform = 'linux/arm64';
+  }],
+  ['both reports use one coherent unapproved digest', (reports) => {
+    bindPostgresPlatform(reports, 'linux/amd64', `sha256:${'b'.repeat(64)}`);
   }],
   ['RepoDigest differs from the approved digest', (reports) => {
     nestedRecord(reports['integration.json'], 'checks', 'provider').repoDigests = [
@@ -382,6 +412,18 @@ describe('P02 external evidence bootstrap boundary', () => {
     const bare = run(root, false);
     expect(bare.status).not.toBe(0);
     expect(bare.stderr).toContain('trusted bootstrap');
+  });
+
+  test('the official bootstrap accepts the manifest-approved arm64 report pair', () => {
+    const approvedArm64 = postgresManifest.platforms.find(
+      ({ platform }) => platform === 'linux/arm64',
+    );
+    expect(approvedArm64).toBeDefined();
+    const result = run(createFixture((reports) => {
+      bindPostgresPlatform(reports, 'linux/arm64', approvedArm64?.digest ?? '');
+    }), true);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
   test.each(exactShapeMutations)('rejects exact-shape mutation: %s', (_label, mutation) => {
