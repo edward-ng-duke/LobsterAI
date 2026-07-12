@@ -97,6 +97,40 @@ describe('main CI test evidence', () => {
 
     expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
   });
+
+  test.each([
+    '${{ github.sha }}',
+    '${{ github.event.pull_request.head.sha }}',
+    '${{ github.event.pull_request.merge_commit_sha || github.sha }}',
+  ])('rejects an official test source binding that is not PR/push compatible: %s', (sourceSha) => {
+    const workflow = structuredClone(parseWorkflow());
+    findCommandStep(workflow, 'npm test').env = { SAAS_SOURCE_SHA: sourceSha };
+
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
+  });
+
+  test('rejects a wrong step override even when the job binding is correct', () => {
+    const workflow = structuredClone(parseWorkflow());
+    const testJob = workflow.jobs?.test;
+    if (!testJob) throw new Error('main CI fixture is missing the test job');
+    testJob.env = {
+      SAAS_SOURCE_SHA: '${{ github.event.pull_request.head.sha || github.sha }}',
+    };
+    findCommandStep(workflow, 'npm test').env = { SAAS_SOURCE_SHA: '${{ github.sha }}' };
+
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
+  });
+
+  test('accepts the exact checkout expression at job scope', () => {
+    const workflow = structuredClone(parseWorkflow());
+    const testJob = workflow.jobs?.test;
+    if (!testJob) throw new Error('main CI fixture is missing the test job');
+    testJob.env = {
+      SAAS_SOURCE_SHA: '${{ github.event.pull_request.head.sha || github.sha }}',
+    };
+
+    expect(validateMainCiWorkflow(workflow)).toEqual([]);
+  });
 });
 
 describe('SaaS Scaffold exact-five evidence handoff', () => {

@@ -1,5 +1,6 @@
 export interface WorkflowStep {
   'continue-on-error'?: unknown;
+  env?: Record<string, unknown>;
   if?: string;
   name?: string;
   run?: string;
@@ -9,6 +10,7 @@ export interface WorkflowStep {
 
 export interface WorkflowJob {
   'continue-on-error'?: unknown;
+  env?: Record<string, unknown>;
   if?: string;
   needs?: string | string[];
   steps?: WorkflowStep[];
@@ -163,6 +165,14 @@ export const validateMainCiWorkflow = (workflow: Workflow): string[] => {
   const setupNode = setupNodeSteps[0];
   if (setupNode?.with?.['node-version'] !== '24.x') {
     errors.push('setup-node must use the frozen Node 24.x line');
+  }
+  const expectedSourceSha = '${{ github.event.pull_request.head.sha || github.sha }}';
+  const testStep = testSteps[0];
+  const effectiveSourceSha = testStep?.env && Object.hasOwn(testStep.env, 'SAAS_SOURCE_SHA')
+    ? testStep.env.SAAS_SOURCE_SHA
+    : job?.env?.SAAS_SOURCE_SHA;
+  if (effectiveSourceSha !== expectedSourceSha) {
+    errors.push('official npm test must bind SAAS_SOURCE_SHA to the checked-out PR head or push SHA');
   }
 
   const requiredIndexes = requiredSteps.map((matches) => steps.indexOf(matches[0]));
