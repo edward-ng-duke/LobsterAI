@@ -1,8 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   renameSync,
   rmSync,
   writeFileSync,
@@ -58,13 +60,23 @@ const parseGitNameStatusZ = (output: Buffer) => {
   return parser?.(output);
 };
 
-const createProductSourceShaResolver = (runGit: GitRunner) => {
+const createProductSourceShaResolver = (runGit?: GitRunner) => {
   const factory = (supplyChain as typeof supplyChain & {
     createProductSourceShaResolver?: CreateProductSourceShaResolver;
   }).createProductSourceShaResolver;
   expect(factory, 'check-supply-chain.mjs must export createProductSourceShaResolver')
     .toBeTypeOf('function');
   return (factory as CreateProductSourceShaResolver)(runGit);
+};
+
+const temporaryProductRoots = () => new Set(
+  readdirSync(tmpdir()).filter(entry => entry.startsWith('lobsterai-p03-product-source-')),
+);
+
+const cleanupTemporaryRoot = (root: string) => {
+  rmSync(root, { recursive: true, force: true });
+  const rootIndex = temporaryRoots.indexOf(root);
+  if (rootIndex >= 0) temporaryRoots.splice(rootIndex, 1);
 };
 
 const write = (root: string, relativePath: string, content: string) => {
@@ -136,7 +148,9 @@ const createFailingGitRunner = (mode: GitFailureMode) => {
 };
 
 afterEach(() => {
-  temporaryRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
+  const roots = temporaryRoots.splice(0);
+  roots.forEach(root => rmSync(root, { recursive: true, force: true }));
+  roots.forEach(root => expect(existsSync(root)).toBe(false));
 });
 
 describe('parseGitNameStatusZ', () => {
@@ -232,6 +246,164 @@ describe('parseGitNameStatusZ', () => {
 });
 
 describe('P03 product-source evidence boundaries', () => {
+  test('uses the exact root diff-tree command and fails closed at the root commit', () => {
+    const { root, baseline } = createRepository();
+    const calls: Array<{ args: string[]; options: GitRunnerOptions }> = [];
+    const runGit: GitRunner = (args, options) => {
+      calls.push({ args: [...args], options: { ...options } });
+      if (args[0] === 'diff-tree') {
+        return {
+          status: 73,
+          signal: null,
+          stdout: Buffer.alloc(0),
+          stderr: Buffer.from('controlled root diff-tree failure'),
+        };
+      }
+      return spawnSync('git', args, options) as unknown as GitRunnerResult;
+    };
+
+    expect(createProductSourceShaResolver(runGit)(root)).toBe(baseline);
+    expect(calls.map(call => call.args)).toEqual([
+      ['rev-list', '--first-parent', 'HEAD'],
+      ['rev-list', '--parents', '--max-count=1', baseline],
+      [
+        'diff-tree', '--root', '--no-commit-id', '-r',
+        '--name-status', '-z', '-M', '-C', baseline,
+      ],
+    ]);
+    expect(calls[2]?.options).toEqual({
+      cwd: root,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+  });
+
+  test('keeps the default factory behavior equivalent to the public resolver', () => {
+    const { root, baseline } = createRepository();
+    write(root, 'docs/default-factory-🦞.md', 'frozen documentation\n');
+    commit(root, 'docs: exercise default resolver factory');
+
+    expect(createProductSourceShaResolver()(root)).toBe(baseline);
+    expect(createProductSourceShaResolver()(root)).toBe(resolveProductSourceSha(root));
+  });
+
+  test('preserves real Git emoji, CR, leading-dash, and BOM-like Unicode paths', () => {
+    const environmentBefore = { ...process.env };
+    const rootsBefore = temporaryProductRoots();
+    const { root, baseline } = createRepository();
+    try {
+      const frozenPaths = [
+        'docs/emoji-🦞.md',
+        'docs/carriage\rreturn.md',
+        'docs/-leading-dash.md',
+        'docs/\uFEFFname.md',
+      ];
+      frozenPaths.forEach(relativePath => write(root, relativePath, 'frozen path\n'));
+      const frozenCommit = commit(root, 'docs: add control and Unicode path fixtures');
+      const frozenOutput = gitRaw(
+        root,
+        'diff', '--name-status', '-z', '-M', '-C', `${frozenCommit}^`, frozenCommit,
+      );
+      frozenPaths.forEach(relativePath => {
+        expect(frozenOutput.includes(Buffer.from(`${relativePath}\0`))).toBe(true);
+      });
+      expect(resolveProductSourceSha(root)).toBe(baseline);
+
+      const unknownPaths = [
+        '-leading-dash-🦞.bin',
+        '\uFEFFdocs/looks-frozen.md',
+      ];
+      unknownPaths.forEach(relativePath => write(root, relativePath, 'unknown product path\n'));
+      const unknownCommit = commit(root, 'feat: add deceptive Unicode product paths');
+      const unknownOutput = gitRaw(
+        root,
+        'diff', '--name-status', '-z', '-M', '-C', `${unknownCommit}^`, unknownCommit,
+      );
+      unknownPaths.forEach(relativePath => {
+        expect(unknownOutput.includes(Buffer.from(`${relativePath}\0`))).toBe(true);
+      });
+      expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+    } finally {
+      cleanupTemporaryRoot(root);
+    }
+    expect(existsSync(root)).toBe(false);
+    expect(temporaryProductRoots()).toEqual(rootsBefore);
+    expect(process.env).toEqual(environmentBefore);
+  });
+
+  test('fails closed for abnormal raw and text runner result shapes', () => {
+    const { root } = createRepository();
+    write(root, 'docs/abnormal-runner.md', 'frozen documentation\n');
+    const analyzedCommit = commit(root, 'docs: add abnormal runner fixture');
+    const rawResults: Array<[string, GitRunnerResult]> = [
+      ['string stdout', {
+        status: 0,
+        signal: null,
+        stdout: 'M\0docs/frozen.md\0',
+        stderr: '',
+      }],
+      ['Uint8Array stdout', {
+        status: 0,
+        signal: null,
+        stdout: new Uint8Array(Buffer.from('M\0docs/frozen.md\0')),
+        stderr: Buffer.alloc(0),
+      } as unknown as GitRunnerResult],
+      ['status zero with error', {
+        error: new Error('contradictory raw error'),
+        status: 0,
+        signal: null,
+        stdout: Buffer.from('M\0docs/frozen.md\0'),
+        stderr: Buffer.alloc(0),
+      }],
+    ];
+    for (const [label, abnormalResult] of rawResults) {
+      const runGit: GitRunner = (args, options) => (
+        ['diff', 'diff-tree'].includes(args[0]) && args.includes('--name-status')
+          ? abnormalResult
+          : spawnSync('git', args, options) as unknown as GitRunnerResult
+      );
+      expect(createProductSourceShaResolver(runGit)(root), label).toBe(analyzedCommit);
+    }
+
+    const textResults: Array<[string, Partial<GitRunnerResult>]> = [
+      ['Buffer stdout', { stdout: Buffer.from(`${analyzedCommit}\n`) }],
+      ['null stdout', { stdout: null }],
+      ['status zero with error', {
+        error: new Error('contradictory text error'),
+        stdout: `${analyzedCommit}\n`,
+      }],
+      ['status zero with signal', {
+        signal: 'SIGTERM',
+        stdout: `${analyzedCommit}\n`,
+      }],
+    ];
+    const outcomes = Object.fromEntries(textResults.map(([label, abnormalResult]) => {
+      let textCallCount = 0;
+      const runGit: GitRunner = (args, options) => {
+        if (args[0] === 'rev-list') {
+          textCallCount += 1;
+          if (textCallCount === 2) {
+            return {
+              status: 0,
+              signal: null,
+              stdout: '',
+              stderr: '',
+              ...abnormalResult,
+            } as GitRunnerResult;
+          }
+        }
+        return spawnSync('git', args, options) as unknown as GitRunnerResult;
+      };
+      try {
+        return [label, createProductSourceShaResolver(runGit)(root)];
+      } catch (error) {
+        return [label, `${error}`];
+      }
+    }));
+    expect(outcomes).toEqual(Object.fromEntries(
+      textResults.map(([label]) => [label, analyzedCommit]),
+    ));
+  });
+
   test.each([
     ['name-status Git nonzero exit', 'nonzero'],
     ['name-status spawnSync.error / ENOENT', 'enoent'],
