@@ -30,6 +30,7 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
       'scripts/db/postgres-image-policy.mjs',
       'scripts/db/postgres-container-cleanup.mjs',
       'scripts/db/postgres-migration-lifecycle.mjs',
+      'scripts/db/existing-schema-evidence.mjs',
       'scripts/db/vitest-json-evidence.mjs',
       'scripts/db/check-evidence-ci-state.mjs',
       'scripts/db/resolve-evidence-phase.mjs',
