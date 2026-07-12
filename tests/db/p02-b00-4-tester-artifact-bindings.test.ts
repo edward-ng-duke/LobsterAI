@@ -216,4 +216,51 @@ describe('P02 B00-4 independent Tester artifact fact bindings', () => {
 
     expect(run(writeArtifact(value)).status).toBe(1);
   });
+
+  test('does not let the Node amd64 aliases satisfy an arm64 report', () => {
+    const topLevelAlias = reports();
+    topLevelAlias.preflight.platform = 'linux/x64';
+    expect(run(writeArtifact(topLevelAlias)).status).toBe(1);
+
+    const runnerAlias = reports();
+    providerFrom(runnerAlias.integration).runnerArch = 'x64';
+    expect(run(writeArtifact(runnerAlias)).status).toBe(1);
+  });
+
+  test('requires serverMajor to remain an exact numeric runtime fact', () => {
+    const value = reports();
+    providerFrom(value.preflight).serverMajor = '17';
+
+    expect(run(writeArtifact(value)).status).toBe(1);
+  });
+
+  test.each([null, ''])('rejects PASS evidence with containerId %j', (containerId) => {
+    const value = reports();
+    providerFrom(value.preflight).containerId = containerId;
+    const cleanup = value.preflight.cleanup as Record<string, unknown>;
+    cleanup.containerId = containerId;
+
+    expect(run(writeArtifact(value)).status).toBe(1);
+  });
+
+  test('allows matched null container IDs only for a structurally FAILED integration report', () => {
+    const value = reports();
+    value.integration.status = 'FAILED';
+    value.integration.error = 'synthetic assertion failure after provider inspection';
+    providerFrom(value.integration).containerId = null;
+    const cleanup = value.integration.cleanup as Record<string, unknown>;
+    cleanup.containerId = null;
+    const checks = value.integration.checks as {
+      checksPassed: number;
+      testResults: { passed: number; failed: number };
+    };
+    checks.checksPassed = 23;
+    checks.testResults.passed = 23;
+    checks.testResults.failed = 1;
+
+    const result = run(writeArtifact(value));
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('structurally valid FAILED integration artifact');
+    expect(result.stderr).not.toContain('containerId');
+  });
 });
