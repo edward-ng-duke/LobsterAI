@@ -5,9 +5,9 @@ import path from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 
 import {
-  PostgresImagePolicyErrorCode,
   loadPostgresImageManifest,
   normalizeDockerPlatform,
+  PostgresImagePolicyErrorCode,
   selectApprovedPostgresImage,
 } from '../../scripts/db/postgres-image-policy.mjs';
 
