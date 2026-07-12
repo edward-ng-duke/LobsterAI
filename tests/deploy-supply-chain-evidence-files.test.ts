@@ -3,10 +3,13 @@ import { createHash } from 'node:crypto';
 import {
   cpSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
@@ -15,6 +18,7 @@ import { createSupplyChainEvidenceFixture } from './helpers/supply-chain-evidenc
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const fixtures = new Map<string, ReturnType<typeof createSupplyChainEvidenceFixture>>();
+const externalRoots: string[] = [];
 
 const sha256File = (filePath: string) =>
   `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
@@ -53,6 +57,7 @@ const mutateEvidenceDocument = (
 afterEach(() => {
   fixtures.forEach(fixture => fixture.cleanup());
   fixtures.clear();
+  externalRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
 });
 
 describe('P03 on-disk supply-chain evidence verification', () => {
@@ -281,6 +286,77 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(fixture.readReport().images).toHaveLength(5);
     expect(spawnSync(path.join(root, 'bin/docker'), ['version']).status).toBe(64);
   });
+
+  test.each([
+    {
+      name: 'regular-file requirement',
+      target: 'stat.isFile()',
+      replacement: 'true',
+    },
+    {
+      name: 'symlink rejection',
+      target: '!stat.isSymbolicLink()',
+      replacement: 'true',
+    },
+    {
+      name: 'root containment',
+      target: 'real.startsWith(`${rootReal}/`)',
+      replacement: 'true',
+    },
+    {
+      name: 'filter expression',
+      target: "'const installed = ids.filter(id => {',",
+      replacement: "'const installed = ids.filter( id => {',",
+    },
+    {
+      name: 'probe comments',
+      target: "'const rootReal = fs.realpathSync(root);',",
+      replacement: "'const rootReal = fs.realpathSync(root); /* mutated */',",
+    },
+  ])('rejects a temporary checker mutation of the plugin probe: $name', ({ target, replacement }) => {
+    const root = createFixtureRoot();
+    const checkerPath = path.join(root, 'scripts/check-supply-chain.mjs');
+    const source = readFileSync(checkerPath, 'utf8');
+    const mutated = source.replace(target, replacement);
+    expect(mutated).not.toBe(source);
+    writeFileSync(checkerPath, mutated);
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+  });
+
+  test.each(['relative traversal', 'absolute path', 'canonical symlink'])(
+    'keeps mutateEvidenceDocument inside its fixture for $case',
+    (mutationCase) => {
+      const root = createFixtureRoot();
+      const fixture = fixtureForRoot(root);
+      const report = fixture.readReport();
+      const web = report.images.find(
+        (image: Record<string, string>) => image.imageName === 'web',
+      );
+      const canonicalPath = path.join(fixture.evidenceDirectory, web.sbom.path);
+      const externalRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-evidence-sentinel-'));
+      externalRoots.push(externalRoot);
+      const sentinelPath = path.join(externalRoot, 'sentinel.spdx.json');
+      cpSync(canonicalPath, sentinelPath);
+      const sentinelBefore = readFileSync(sentinelPath);
+
+      if (mutationCase === 'relative traversal') {
+        web.sbom.path = path.relative(fixture.evidenceDirectory, sentinelPath);
+        fixture.writeReport(report);
+      } else if (mutationCase === 'absolute path') {
+        web.sbom.path = sentinelPath;
+        fixture.writeReport(report);
+      } else {
+        rmSync(canonicalPath);
+        symlinkSync(sentinelPath, canonicalPath);
+      }
+
+      expect(() => fixture.mutateEvidenceDocument('web', 'sbom', document => {
+        document.name = 'escaped-fixture-mutation';
+      })).toThrow();
+      expect(readFileSync(sentinelPath)).toEqual(sentinelBefore);
+    },
+  );
 
   test('declares machine-readable OpenClaw plugin installation evidence', () => {
     const schema = readFileSync(
