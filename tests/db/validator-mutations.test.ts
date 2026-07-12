@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   mkdirSync,
@@ -28,6 +29,7 @@ const createCopy = (): string => {
     'libs/server/db',
     'package.json',
     'prisma',
+    'scripts/check-saas-scaffold.mjs',
     'scripts/db',
     'scripts/json-without-duplicate-keys.mjs',
     'scripts/saas-stage-gates.json',
@@ -130,6 +132,55 @@ describe('P02 static gate mutation resistance', () => {
     const root = createCopy();
     const target = path.join(root, 'apps/api/src/index.ts');
     writeFileSync(target, `${readFileSync(target, 'utf8')}\nimport '@prisma/client';\n`);
+    expect(run(root).status).not.toBe(0);
+  });
+
+  test('rejects a duplicate root key in the PostgreSQL manifest', () => {
+    const root = createCopy();
+    mutate(
+      root,
+      'tests/integration/db/postgres-image.json',
+      '"schemaVersion": 2',
+      '"schemaVersion": 2, "schemaVersion": 2',
+    );
+    expect(run(root).status).not.toBe(0);
+  });
+
+  test('rejects missing duplicate and reordered PostgreSQL platforms', () => {
+    for (const mutation of ['missing', 'duplicate', 'reordered'] as const) {
+      const root = createCopy();
+      const target = path.join(root, 'tests/integration/db/postgres-image.json');
+      const image = JSON.parse(readFileSync(target, 'utf8')) as {
+        platforms: Array<Record<string, unknown>>;
+      };
+      if (mutation === 'missing') image.platforms.shift();
+      if (mutation === 'duplicate') image.platforms[1] = { ...image.platforms[0] };
+      if (mutation === 'reordered') image.platforms.reverse();
+      writeFileSync(target, `${JSON.stringify(image, null, 2)}\n`);
+      expect(run(root).status).not.toBe(0);
+    }
+  });
+
+  test('rejects coordinated removal of a policy fixture and both external digest updates', () => {
+    const root = createCopy();
+    const manifestPath = path.join(root, 'scripts/saas-stage-gates.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+      gates: Record<string, { fixtures: string[] }>;
+    };
+    manifest.gates['prisma:validate'].fixtures = manifest.gates['prisma:validate'].fixtures.filter(
+      (fixture) => fixture !== 'scripts/db/postgres-image-policy.mjs',
+    );
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const digest = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+    for (const relativePath of ['package.json', 'scripts/check-saas-scaffold.mjs']) {
+      const target = path.join(root, relativePath);
+      const source = readFileSync(target, 'utf8');
+      writeFileSync(
+        target,
+        source.replace(/(?<=prisma:validate )[a-f0-9]{64}/, digest),
+      );
+    }
+
     expect(run(root).status).not.toBe(0);
   });
 
