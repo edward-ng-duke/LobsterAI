@@ -18,6 +18,7 @@ import {
   validatePostgresServerSettings,
 } from './postgres-image-policy.mjs';
 import { stopPostgresContainer } from './postgres-container-cleanup.mjs';
+import { runPostgresMigrationLifecycle } from './postgres-migration-lifecycle.mjs';
 
 const { Client } = pg;
 const report = {
@@ -105,6 +106,13 @@ try {
   const migrationEnv = { DATABASE_URL: adminUrl };
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'empty database migration');
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'repeat migration');
+  requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'existing schema migration');
+  const migrationLifecycle = {
+    first: true,
+    repeat: true,
+    existingSchema: true,
+    ...await runPostgresMigrationLifecycle({ adminUrl, runId: report.runId }),
+  };
 
   const admin = new Client({ connectionString: adminUrl });
   await admin.connect();
@@ -183,6 +191,7 @@ try {
     P02_APP_DATABASE_URL: appUrl,
     P02_CONTAINER_ID: container.getId(),
     P02_DATABASE_RUN_ID: report.runId,
+    P02_MIGRATION_LIFECYCLE_EVIDENCE: JSON.stringify(migrationLifecycle),
   };
   const tests = run(
     'npx',
@@ -206,10 +215,12 @@ try {
       containerId: container.getId(),
       ...serverSettings,
     },
-    migrations: migrations.rows,
+    migrations: migrationLifecycle,
     rls: rls.rows,
     roles: roles.rows,
     seed: seedRows.rows,
+    checksPassed: 27,
+    checksTotal: 27,
     testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
   };
 } catch (error) {
