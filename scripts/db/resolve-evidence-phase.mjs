@@ -27,6 +27,35 @@ export const resolveEvidencePhase = ({ eventName, evidenceReady, trustedEvidence
   return trustedEvidenceValid ? 'post-freeze' : 'pre-freeze';
 };
 
+export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) => {
+  if (status === 0) return true;
+  const bootstrapMismatch = stderr.trim().match(
+    /^P02 evidence bootstrap: trusted file mismatch ([^\r\n]+)$/,
+  );
+  if (status === 86 && bootstrapMismatch) return false;
+
+  try {
+    const result = JSON.parse(stdout);
+    if (
+      status === 1 &&
+      result?.status === 'FAILED' &&
+      Array.isArray(result.errors) &&
+      result.errors.length > 0 &&
+      result.errors.every((error) =>
+        /^(codeEvidenceSha|stageEvidenceSha): non-evidence change after source SHA:/.test(error),
+      )
+    ) {
+      return false;
+    }
+  } catch {
+    // Non-JSON validator output is handled as an illegal evidence failure below.
+  }
+  throw new Error(
+    `trusted evidence validation failed outside the auditable source-drift states: ` +
+    `exit=${status ?? 'unknown'} ${stderr.trim() || stdout.trim()}`,
+  );
+};
+
 const inspectTrustedEvidence = () => {
   const gates = JSON.parse(
     readFileSync(path.join(repositoryRoot, 'scripts/saas-stage-gates.json'), 'utf8'),
@@ -50,7 +79,7 @@ const inspectTrustedEvidence = () => {
     },
   );
   return {
-    valid: validation.status === 0,
+    valid: classifyTrustedEvidenceValidation(validation),
     exitCode: validation.status ?? 1,
   };
 };
