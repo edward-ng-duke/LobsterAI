@@ -518,6 +518,35 @@ describe('P02 external evidence bootstrap boundary', () => {
     expect(official.status, `${official.stdout}\n${official.stderr}`).toBe(0);
   });
 
+  test('accepts identical output hashes from repeated deterministic Prisma generation', () => {
+    const result = run(createFixture((reports) => {
+      const commands = arrayAt(reports['validation.json'], 'commands');
+      nestedRecord(commands[4]).outputSha256 = nestedRecord(commands[3]).outputSha256;
+    }), true);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test('rejects a zero output hash without relying on command-sequence drift', () => {
+    const result = run(createFixture((reports) => {
+      const commands = arrayAt(reports['validation.json'], 'commands');
+      nestedRecord(commands[0]).outputSha256 = '0'.repeat(64);
+    }), true);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain('command output hashes must be nonzero');
+  });
+
+  test('rejects command-sequence drift when every output hash remains nonzero', () => {
+    const result = run(createFixture((reports) => {
+      const commands = arrayAt(reports['validation.json'], 'commands');
+      nestedRecord(commands[0]).command = ['node', 'scripts/db/untrusted-static.mjs'];
+    }), true);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain('command sequence does not match');
+  });
+
   test('a bare validator is not qualified evidence', () => {
     const root = createFixture();
     const bare = run(root, false);
