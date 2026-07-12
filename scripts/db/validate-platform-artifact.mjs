@@ -60,12 +60,18 @@ const requireEqual = (actual, expected, label) => {
   if (actual !== expected) fail(`${label} differs: expected ${expected}, received ${actual}`);
 };
 
-const normalizeReportPlatform = (value) => {
-  if (typeof value !== 'string') return null;
-  const [os, arch, extra] = value.split('/');
-  if (os !== 'linux' || !arch || extra !== undefined) return null;
-  return normalizeDockerPlatform(arch);
+const runtimeReportPlatform = {
+  'linux/amd64': 'linux/amd64',
+  'linux/x64': 'linux/amd64',
+  'linux/arm64': 'linux/arm64',
 };
+const runtimeRunnerArch = {
+  x64: 'linux/amd64',
+  arm64: 'linux/arm64',
+};
+
+const normalizeRuntimeReportPlatform = (value) => runtimeReportPlatform[value] ?? null;
+const normalizeRuntimeRunnerArch = (value) => runtimeRunnerArch[value] ?? null;
 
 const validateProvider = (provider, name, kind) => {
   const commonFields = [
@@ -248,19 +254,19 @@ try {
 
     const provider = report.checks?.provider;
     requireEqual(
-      normalizeReportPlatform(report.platform),
+      normalizeRuntimeReportPlatform(report.platform),
       normalizedPlatform,
       `${name} platform`,
     );
     requireEqual(provider?.dockerPlatform, normalizedPlatform, `${name} dockerPlatform`);
     requireEqual(
-      normalizeReportPlatform(report.platform),
+      normalizeRuntimeReportPlatform(report.platform),
       provider?.dockerPlatform,
       `${name} platform/provider dockerPlatform`,
     );
     requireEqual(provider?.runnerOs, 'linux', `${name} runnerOs`);
     requireEqual(
-      normalizeDockerPlatform(provider?.runnerArch),
+      normalizeRuntimeRunnerArch(provider?.runnerArch),
       normalizedPlatform,
       `${name} runnerArch`,
     );
