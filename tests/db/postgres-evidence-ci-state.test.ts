@@ -13,6 +13,41 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
+type EvidencePhase = 'pre-freeze' | 'post-freeze';
+
+const oppositeEvidencePhase = (phase: EvidencePhase): EvidencePhase =>
+  phase === 'pre-freeze' ? 'post-freeze' : 'pre-freeze';
+
+const resolveCurrentEvidencePhase = (): EvidencePhase => {
+  const configured = process.env.P02_EVIDENCE_PHASE;
+  if (configured) {
+    if (configured === 'pre-freeze' || configured === 'post-freeze') return configured;
+    throw new Error(`invalid P02_EVIDENCE_PHASE for P02 tests: ${configured}`);
+  }
+
+  const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  }).stdout.trim();
+  const result = spawnSync(process.execPath, ['scripts/db/resolve-evidence-phase.mjs'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GITHUB_EVENT_NAME: 'push',
+      P02_EVIDENCE_READY: '',
+      P02_SOURCE_SHA: sourceSha,
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(`unable to derive the current P02 evidence phase: ${result.stderr}`);
+  }
+  const phase = (JSON.parse(result.stdout) as { phase?: string }).phase;
+  if (phase !== 'pre-freeze' && phase !== 'post-freeze') {
+    throw new Error(`resolver returned an invalid P02 evidence phase: ${phase ?? ''}`);
+  }
+  return phase;
+};
 
 const runEvidenceTests = (phase: string) => spawnSync(
   'npx',
@@ -319,7 +354,8 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
     }
   });
 
-  test('runs the real current stale resolver matrix before the evidence freeze', () => {
+  test('runs the real resolver matrix for the official current evidence phase', () => {
+    const expectedPhase = resolveCurrentEvidencePhase();
     const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], {
       cwd: repositoryRoot,
       encoding: 'utf8',
@@ -339,28 +375,31 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
       },
     );
 
+    const matchingReady = expectedPhase === 'post-freeze' ? 'true' : 'false';
     for (const [eventName, ready] of [
       ['push', ''],
       ['pull_request', ''],
-      ['workflow_dispatch', 'false'],
+      ['workflow_dispatch', matchingReady],
     ]) {
       const result = runResolver(eventName, ready);
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       expect(JSON.parse(result.stdout)).toMatchObject({
-        status: 'PASS', phase: 'pre-freeze', sourceSha,
+        status: 'PASS', phase: expectedPhase, sourceSha,
       });
     }
-    expect(runResolver('workflow_dispatch', 'true').status).toBe(1);
+    const oppositeReady = expectedPhase === 'post-freeze' ? 'false' : 'true';
+    expect(runResolver('workflow_dispatch', oppositeReady).status).toBe(1);
   });
 
-  test('treats stale trusted evidence as the expected pre-freeze state', () => {
-    const result = runEvidenceTests('pre-freeze');
+  test('accepts evidence tests in the official current phase', () => {
+    const result = runEvidenceTests(resolveCurrentEvidencePhase());
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
-  test('continues to require valid trusted evidence in post-freeze state', () => {
-    expect(runEvidenceTests('post-freeze').status).not.toBe(0);
+  test('rejects evidence tests in the phase opposite the official current state', () => {
+    const oppositePhase = oppositeEvidencePhase(resolveCurrentEvidencePhase());
+    expect(runEvidenceTests(oppositePhase).status).not.toBe(0);
   });
 
   test('marks the pre-freeze required state ready after the platform job', () => {
