@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -40,7 +48,7 @@ const writeArtifact = (): string => {
     runId: 'preflight-run',
     status: 'PASS',
     checks: { provider: provider() },
-    cleanup: { containerId: 'container-id', removed: true },
+    cleanup: { attempted: true, containerId: 'container-id', removed: true },
   })}\n`);
   writeFileSync(path.join(root, 'integration.json'), `${JSON.stringify({
     schemaVersion: 1,
@@ -86,7 +94,7 @@ const writeArtifact = (): string => {
         total: 24,
       },
     },
-    cleanup: { containerId: 'container-id', removed: true },
+    cleanup: { attempted: true, containerId: 'container-id', removed: true },
   })}\n`);
   return root;
 };
@@ -99,7 +107,7 @@ const run = (root: string, platform = 'linux/arm64') => spawnSync(
     '--source-sha', sourceSha,
     '--platform', platform,
   ],
-  { cwd: repositoryRoot, encoding: 'utf8' },
+  { cwd: repositoryRoot, encoding: 'utf8', timeout: 1_500 },
 );
 
 const mutate = (
@@ -150,6 +158,76 @@ describe('PostgreSQL native platform artifact boundary', () => {
     });
 
     expect(run(root).status).toBe(1);
+  });
+
+  test('rejects unknown root and nested fields', () => {
+    for (const location of ['root', 'provider'] as const) {
+      const root = writeArtifact();
+      mutate(root, 'integration.json', (value) => {
+        if (location === 'root') value.untrusted = true;
+        else {
+          const checks = value.checks as { provider: Record<string, unknown> };
+          checks.provider.untrusted = true;
+        }
+      });
+      expect(run(root).status).toBe(1);
+    }
+  });
+
+  test('rejects missing cleanup attempted evidence', () => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      const cleanup = value.cleanup as Record<string, unknown>;
+      delete cleanup.attempted;
+    });
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects report symlinks even when their targets contain valid JSON', () => {
+    const root = writeArtifact();
+    const external = writeArtifact();
+    for (const reportName of ['preflight.json', 'integration.json']) {
+      const target = path.join(root, reportName);
+      rmSync(target);
+      symlinkSync(path.join(external, reportName), target);
+    }
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects a FIFO before attempting to read it', () => {
+    const root = writeArtifact();
+    const target = path.join(root, 'integration.json');
+    rmSync(target);
+    const fifo = spawnSync('mkfifo', [target], { encoding: 'utf8' });
+    expect(fifo.status, fifo.stderr).toBe(0);
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects a report larger than one MiB before parsing it', () => {
+    const root = writeArtifact();
+    appendFileSync(path.join(root, 'integration.json'), ' '.repeat(1024 * 1024));
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects duplicate and missing required fields', () => {
+    const duplicateRoot = writeArtifact();
+    const duplicatePath = path.join(duplicateRoot, 'integration.json');
+    writeFileSync(
+      duplicatePath,
+      readFileSync(duplicatePath, 'utf8').replace(
+        '"schemaVersion":1',
+        '"schemaVersion":1,"schemaVersion":1',
+      ),
+    );
+    expect(run(duplicateRoot).status).toBe(1);
+
+    const missingRoot = writeArtifact();
+    mutate(missingRoot, 'preflight.json', (value) => { delete value.runId; });
+    expect(run(missingRoot).status).toBe(1);
   });
 
   test('rejects a structured test result containing one skipped test', () => {
