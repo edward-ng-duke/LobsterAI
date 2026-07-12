@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-12T19:32:46.564Z",
+  "generatedAt": "2026-07-12T19:33:35.976Z",
   "codeEvidenceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
   "reports": {
     "contracts-preflight.json": {
@@ -26,6 +26,13 @@
       "sha256": "03fbede3d4fa8dad84c25e1d41ddc1158ee844fd7ae3b8063b46ebc69cb15990",
       "runner": "scripts/db/validate.mjs",
       "runnerSha256": "dc3bbd447d980d7a45e19fba2e15f7c2bb76542e2023613cc404cfeb857277f9"
+    },
+    "prisma-stage-gate.json": {
+      "sourceSha": "a61a9793eb3d01469f9c683a151f26cc416472e1",
+      "sha256": "9288ba03226c9e18128f12539dd11bb92c6b4fb7e02597d3f22d3fa214ae02a9",
+      "runner": "scripts/run-saas-stage-gate.mjs",
+      "runnerSha256": "af982ca6ed4f5e0c0573abf976e08ab1d2c33d4e46615ff575a2fa892a1c03e6"
     }
-  }
+  },
+  "stageEvidenceSha": "a61a9793eb3d01469f9c683a151f26cc416472e1"
 }
