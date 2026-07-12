@@ -55,6 +55,7 @@ const platformArtifactValidator = read('scripts/db/validate-platform-artifact.mj
 const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
+const scaffoldChecker = read('scripts/check-saas-scaffold.mjs');
 const evidenceValidator = read('scripts/db/validate-evidence.mjs');
 const evidenceBootstrap = read('scripts/db/evidence-bootstrap.mjs');
 const evidenceTrustLauncher = read('scripts/db/evidence-trust-launcher.mjs');
@@ -142,6 +143,35 @@ for (const relativePath of [
 const stageManifestSha256 = sha256File('scripts/saas-stage-gates.json');
 if (!packageJson.scripts?.['prisma:validate']?.endsWith(stageManifestSha256)) {
   errors.push('Prisma stage entry must include the externally accepted gate manifest digest');
+}
+if (!scaffoldChecker.includes(
+  `'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate ${stageManifestSha256}'`,
+)) {
+  errors.push('scaffold policy must include the externally accepted gate manifest digest');
+}
+const requiredPrismaFixtures = [
+  '.github/workflows/saas-scaffold.yml',
+  'package.json',
+  'scripts/json-without-duplicate-keys.mjs',
+  'scripts/db/postgres-image-policy.mjs',
+  'scripts/db/postgres-container-cleanup.mjs',
+  'scripts/db/postgres-migration-lifecycle.mjs',
+  'scripts/db/validate-platform-artifact.mjs',
+  'scripts/db/preflight.mjs',
+  'scripts/db/run-integration.mjs',
+  'scripts/db/validate-static.mjs',
+  'tests/integration/db/postgres-image.json',
+  'tests/integration/db/migration-lifecycle.test.ts',
+  'tests/db/postgres-image-policy.test.ts',
+  'tests/db/postgres-platform-artifact.test.ts',
+  'tests/db/postgres-platform-workflow.test.ts',
+  'tests/db/postgres-container-cleanup.test.ts',
+  'vitest.db.config.ts',
+];
+for (const fixture of requiredPrismaFixtures) {
+  if (!stageManifest.gates?.['prisma:validate']?.fixtures?.includes(fixture)) {
+    errors.push(`Prisma stage fixture missing ${fixture}`);
+  }
 }
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {
   if (!evidenceProvenance.includes(required)) errors.push(`evidence provenance lacks ${required}`);
