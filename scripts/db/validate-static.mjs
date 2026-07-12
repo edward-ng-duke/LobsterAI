@@ -129,6 +129,7 @@ for (const required of [
 for (const relativePath of [
   'scripts/db/evidence-bootstrap.mjs',
   'scripts/db/evidence-trust-launcher.mjs',
+  'scripts/db/vitest-json-evidence.mjs',
 ]) {
   if (!stageManifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]) {
     errors.push(`Prisma stage must externally pin ${relativePath}`);

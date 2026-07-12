@@ -16,7 +16,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = 'bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f';
+const trustedBootstrapSha256 = '802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8';
 const postgresManifest = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'tests/integration/db/postgres-image.json'),
   'utf8',
@@ -112,6 +112,7 @@ const createFixture = (
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
     'scripts/db/validate.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
   ]) {
     const target = path.join(root, relativePath);
     mkdirSync(path.dirname(target), { recursive: true });
@@ -592,6 +593,7 @@ describe('P02 external evidence bootstrap boundary', () => {
 
   test.each([
     'scripts/db/postgres-image-policy.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
     'scripts/json-without-duplicate-keys.mjs',
     'tests/integration/db/postgres-image.json',
   ])('rejects a worktree replacement of protected policy input %s', (relativePath) => {
@@ -606,6 +608,7 @@ describe('P02 external evidence bootstrap boundary', () => {
 
   test.each([
     'scripts/db/validate-evidence.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
     'scripts/json-without-duplicate-keys.mjs',
     'tests/integration/db/postgres-image.json',
   ])('rejects an external same-byte symlink for protected input %s', (relativePath) => {

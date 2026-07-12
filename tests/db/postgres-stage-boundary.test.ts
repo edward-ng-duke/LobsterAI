@@ -10,7 +10,7 @@ const manifestSource = readFileSync(
   'utf8',
 );
 const manifest = JSON.parse(manifestSource) as {
-  gates?: Record<string, { fixtures?: string[] }>;
+  gates?: Record<string, { fixtures?: string[]; trustedFiles?: Record<string, string> }>;
 };
 const packageJson = JSON.parse(
   readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'),
@@ -67,5 +67,13 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
     expect(scaffoldChecker).toContain(
       `'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate ${digest}'`,
     );
+  });
+
+  test('hash-pins the suite evidence parser as trusted gate input', () => {
+    const relativePath = 'scripts/db/vitest-json-evidence.mjs';
+    const source = readFileSync(path.join(repositoryRoot, relativePath));
+    const digest = createHash('sha256').update(source).digest('hex');
+
+    expect(manifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]).toBe(digest);
   });
 });

@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const acceptedP03MergeSha = '43665ce1b7519ed5dbd47591d7efabd9d436f366';
 const trustedBootstrapSha256 =
-  'bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f';
+  '802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8';
 const manifest = JSON.parse(
   readFileSync(
     path.join(

@@ -18,7 +18,7 @@ import { validateEvidenceOnlyDescendant } from '../../scripts/db/evidence-proven
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = 'bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f';
+const trustedBootstrapSha256 = '802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8';
 const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
@@ -99,6 +99,7 @@ const createTrustedEvidenceRepository = (
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
     'scripts/db/validate.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
   ]) {
     const target = path.join(root, relativePath);
     mkdirSync(path.dirname(target), { recursive: true });
@@ -213,7 +214,7 @@ describe('P02 static gate mutation resistance', () => {
     [
       'removed evidence bootstrap entry',
       'package.json',
-      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f',
+      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8',
       'node scripts/db/validate-evidence.mjs',
     ],
   ] as const)('rejects the %s mutation', (_label, relativePath, from, to) => {

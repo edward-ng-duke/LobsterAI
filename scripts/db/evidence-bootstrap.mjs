@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export const evidenceRequiredProtectedFiles = Object.freeze([
   'scripts/db/validate-evidence.mjs',
+  'scripts/db/vitest-json-evidence.mjs',
   'scripts/db/evidence-provenance.mjs',
   'scripts/db/evidence-bundle.schema.json',
   'scripts/db/existing-schema-evidence.mjs',

@@ -30,11 +30,12 @@
     "prisma:validate": {
       "status": "PASS",
       "activationTask": "P02-PR2数据库脚手架",
-      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation and validation output, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, portable trusted-file identity corners, stale-safe trusted pre/post-freeze phase transitions, and a real PostgreSQL 17 Testcontainers run.",
+      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation and validation output, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, strict Vitest suite accounting with bounded failure identity, portable trusted-file identity corners, stale-safe trusted pre/post-freeze phase transitions, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "trustedFiles": {
-        "scripts/db/evidence-bootstrap.mjs": "bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f",
-        "scripts/db/evidence-trust-launcher.mjs": "a6449cb4b6f53d748466462aab4b49b3e4f6ef60a658880a4ef53fba0c0cada4"
+        "scripts/db/evidence-bootstrap.mjs": "802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8",
+        "scripts/db/evidence-trust-launcher.mjs": "a6449cb4b6f53d748466462aab4b49b3e4f6ef60a658880a4ef53fba0c0cada4",
+        "scripts/db/vitest-json-evidence.mjs": "45cbfc44ba2f816f3a02827097687af5fdd1fad8c621935fb9e8f1954ff7e850"
       },
       "fixtures": [
         ".github/workflows/saas-scaffold.yml",
