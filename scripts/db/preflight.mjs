@@ -10,6 +10,15 @@ import {
   repositoryRoot,
   writeAtomicJson,
 } from './common.mjs';
+import {
+  createPostgresImagePolicyError,
+  loadPostgresImageManifest,
+  normalizeDockerPlatform,
+  PostgresImagePolicyErrorCode,
+  selectApprovedPostgresImage,
+  validateApprovedPostgresImageInspection,
+  validatePostgresServerSettings,
+} from './postgres-image-policy.mjs';
 
 const { Client } = pg;
 const contractsOnly = process.argv.includes('--contracts');
@@ -82,22 +91,21 @@ let exitCode = 0;
 try {
   verifyContracts();
   if (!contractsOnly) {
-    const image = readJson('tests/integration/db/postgres-image.json');
-    const expectedHostPlatform = image.platform.replace('linux/', '');
+    const manifest = loadPostgresImageManifest(repositoryRoot);
     const dockerInfo = run('docker', ['info', '--format', '{{.OSType}}/{{.Architecture}}']);
     if (dockerInfo.status !== 0) {
-      throw Object.assign(new Error('Docker provider is unavailable'), { blocked: true });
-    }
-    const dockerPlatform = dockerInfo.stdout.trim().replace('aarch64', 'arm64').replace('x86_64', 'amd64');
-    if (dockerPlatform !== image.platform) {
-      throw Object.assign(
-        new Error(`image platform ${image.platform} does not match Docker ${dockerPlatform}`),
-        { blocked: true },
+      throw createPostgresImagePolicyError(
+        PostgresImagePolicyErrorCode.DockerProviderUnavailable,
+        'Docker provider is unavailable',
+        true,
       );
     }
-    if (expectedHostPlatform !== process.arch.replace('x64', 'amd64')) {
-      throw Object.assign(new Error('Node and Docker image architectures do not match'), { blocked: true });
-    }
+    const dockerPlatform = normalizeDockerPlatform(dockerInfo.stdout.trim());
+    const approvedImage = selectApprovedPostgresImage(
+      manifest,
+      dockerInfo.stdout.trim(),
+      process.arch,
+    );
     if (!process.env.DOCKER_HOST) {
       process.env.DOCKER_HOST = requireSuccessful(
         run('docker', ['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']),
@@ -107,24 +115,23 @@ try {
     process.env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ??= '/var/run/docker.sock';
     const { GenericContainer, Wait } = await import('testcontainers');
 
-    let inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+    let inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
     if (inspect.status !== 0) {
-      const pull = run('docker', ['pull', image.immutableReference]);
+      const pull = run('docker', ['pull', approvedImage.immutableReference]);
       if (pull.status !== 0) {
-        throw Object.assign(new Error(`immutable PostgreSQL image unavailable: ${pull.stderr}`), {
-          blocked: true,
-        });
+        throw createPostgresImagePolicyError(
+          PostgresImagePolicyErrorCode.ImageUnavailable,
+          `immutable PostgreSQL image unavailable: ${pull.stderr}`,
+          true,
+        );
       }
-      inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+      inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
     }
     const inspected = JSON.parse(requireSuccessful(inspect, 'PostgreSQL image inspect'))[0];
-    const repoDigests = inspected.RepoDigests ?? [];
-    if (!repoDigests.some((value) => value.endsWith(`@${image.digest}`))) {
-      throw new Error('local PostgreSQL image digest differs from the immutable manifest');
-    }
+    const inspection = validateApprovedPostgresImageInspection(approvedImage, inspected);
 
     const password = `p02-${report.runId}`;
-    container = await new GenericContainer(image.immutableReference)
+    container = await new GenericContainer(approvedImage.immutableReference)
       .withEnvironment({
         POSTGRES_DB: 'p02_preflight',
         POSTGRES_PASSWORD: password,
@@ -144,6 +151,12 @@ try {
     });
     await client.connect();
     const version = await client.query('SHOW server_version');
+    const locale = await client.query(
+      'SELECT datcollate, datctype FROM pg_database WHERE datname = current_database()',
+    );
+    const runtimeSettings = await client.query(
+      "SELECT current_setting('TimeZone') AS timezone, current_setting('ssl') AS ssl",
+    );
     const extension = await client.query(
       "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'citext'",
     );
@@ -154,9 +167,13 @@ try {
     await client.end();
 
     const serverVersion = version.rows[0]?.server_version;
-    if (!String(serverVersion).startsWith(`${image.serverMajor}.`)) {
-      throw new Error(`PostgreSQL server major mismatch: ${serverVersion}`);
-    }
+    const serverSettings = validatePostgresServerSettings(manifest, {
+      serverVersion,
+      lcCollate: locale.rows[0]?.datcollate,
+      lcCtype: locale.rows[0]?.datctype,
+      timezone: runtimeSettings.rows[0]?.timezone,
+      ssl: runtimeSettings.rows[0]?.ssl,
+    });
     if (extension.rowCount !== 1 || !extension.rows[0]?.default_version) {
       throw new Error('citext is not available from pg_available_extensions');
     }
@@ -169,11 +186,14 @@ try {
 
     report.checks.provider = {
       dockerPlatform,
-      image: image.image,
-      immutableReference: image.immutableReference,
-      digest: image.digest,
+      runnerOs: process.platform,
+      runnerArch: process.arch,
+      image: manifest.image,
+      immutableReference: approvedImage.immutableReference,
+      digest: approvedImage.digest,
+      ...inspection,
       containerId: container.getId(),
-      serverVersion,
+      ...serverSettings,
       citextAvailableVersion: extension.rows[0].default_version,
       generatedUuid: uuid.rows[0].generated_uuid,
       migrationRole: { rolsuper: role.rows[0].rolsuper, rolbypassrls: role.rows[0].rolbypassrls },

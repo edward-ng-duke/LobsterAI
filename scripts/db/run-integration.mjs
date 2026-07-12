@@ -5,10 +5,18 @@ import pg from 'pg';
 
 import {
   createRunMetadata,
-  readJson,
   repositoryRoot,
   writeAtomicJson,
 } from './common.mjs';
+import {
+  createPostgresImagePolicyError,
+  loadPostgresImageManifest,
+  normalizeDockerPlatform,
+  PostgresImagePolicyErrorCode,
+  selectApprovedPostgresImage,
+  validateApprovedPostgresImageInspection,
+  validatePostgresServerSettings,
+} from './postgres-image-policy.mjs';
 
 const { Client } = pg;
 const report = {
@@ -25,8 +33,6 @@ const run = (command, args, env = {}) =>
     env: { ...process.env, ...env },
   });
 
-const blocked = (message) => Object.assign(new Error(message), { blocked: true });
-
 const requireSuccessful = (result, label) => {
   if (result.status !== 0) {
     throw new Error(`${label} failed: ${result.stderr || result.stdout}`.trim());
@@ -38,13 +44,21 @@ let container;
 let exitCode = 0;
 try {
   requireSuccessful(run(process.execPath, ['scripts/db/preflight.mjs', '--contracts']), 'contract preflight');
-  const image = readJson('tests/integration/db/postgres-image.json');
+  const manifest = loadPostgresImageManifest(repositoryRoot);
   const dockerInfo = run('docker', ['info', '--format', '{{.OSType}}/{{.Architecture}}']);
-  if (dockerInfo.status !== 0) throw blocked('Docker provider is unavailable');
-  const dockerPlatform = dockerInfo.stdout.trim().replace('aarch64', 'arm64').replace('x86_64', 'amd64');
-  if (dockerPlatform !== image.platform) {
-    throw blocked(`image platform ${image.platform} does not match Docker ${dockerPlatform}`);
+  if (dockerInfo.status !== 0) {
+    throw createPostgresImagePolicyError(
+      PostgresImagePolicyErrorCode.DockerProviderUnavailable,
+      'Docker provider is unavailable',
+      true,
+    );
   }
+  const dockerPlatform = normalizeDockerPlatform(dockerInfo.stdout.trim());
+  const approvedImage = selectApprovedPostgresImage(
+    manifest,
+    dockerInfo.stdout.trim(),
+    process.arch,
+  );
   if (!process.env.DOCKER_HOST) {
     process.env.DOCKER_HOST = requireSuccessful(
       run('docker', ['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']),
@@ -53,21 +67,25 @@ try {
   }
   process.env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ??= '/var/run/docker.sock';
 
-  let inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+  let inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
   if (inspect.status !== 0) {
-    const pull = run('docker', ['pull', image.immutableReference]);
-    if (pull.status !== 0) throw blocked(`immutable PostgreSQL image unavailable: ${pull.stderr}`);
-    inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+    const pull = run('docker', ['pull', approvedImage.immutableReference]);
+    if (pull.status !== 0) {
+      throw createPostgresImagePolicyError(
+        PostgresImagePolicyErrorCode.ImageUnavailable,
+        `immutable PostgreSQL image unavailable: ${pull.stderr}`,
+        true,
+      );
+    }
+    inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
   }
   const inspected = JSON.parse(requireSuccessful(inspect, 'PostgreSQL image inspect'))[0];
-  if (!(inspected.RepoDigests ?? []).some((value) => value.endsWith(`@${image.digest}`))) {
-    throw new Error('local PostgreSQL image digest differs from the immutable manifest');
-  }
+  const inspection = validateApprovedPostgresImageInspection(approvedImage, inspected);
 
   const { GenericContainer, Wait } = await import('testcontainers');
   const adminPassword = `p02-${report.runId}`;
   const database = 'p02_integration';
-  container = await new GenericContainer(image.immutableReference)
+  container = await new GenericContainer(approvedImage.immutableReference)
     .withEnvironment({
       POSTGRES_DB: database,
       POSTGRES_PASSWORD: adminPassword,
@@ -113,6 +131,12 @@ try {
   const catalog = new Client({ connectionString: adminUrl });
   await catalog.connect();
   const serverVersion = (await catalog.query('SHOW server_version')).rows[0].server_version;
+  const locale = await catalog.query(
+    'SELECT datcollate, datctype FROM pg_database WHERE datname = current_database()',
+  );
+  const runtimeSettings = await catalog.query(
+    "SELECT current_setting('TimeZone') AS timezone, current_setting('ssl') AS ssl",
+  );
   const migrations = await catalog.query(
     'SELECT migration_name, finished_at IS NOT NULL AS finished FROM _prisma_migrations ORDER BY started_at',
   );
@@ -130,6 +154,14 @@ try {
     'SELECT tenant_id::text, logical_id, id::text FROM agents ORDER BY tenant_id, logical_id',
   );
   await catalog.end();
+
+  const serverSettings = validatePostgresServerSettings(manifest, {
+    serverVersion,
+    lcCollate: locale.rows[0]?.datcollate,
+    lcCtype: locale.rows[0]?.datctype,
+    timezone: runtimeSettings.rows[0]?.timezone,
+    ssl: runtimeSettings.rows[0]?.ssl,
+  });
 
   if (migrations.rowCount !== 1 || migrations.rows[0]?.finished !== true) {
     throw new Error('repeat migrate did not preserve one completed Prisma migration history row');
@@ -164,11 +196,14 @@ try {
   report.checks = {
     provider: {
       dockerPlatform,
-      image: image.image,
-      immutableReference: image.immutableReference,
-      digest: image.digest,
+      runnerOs: process.platform,
+      runnerArch: process.arch,
+      image: manifest.image,
+      immutableReference: approvedImage.immutableReference,
+      digest: approvedImage.digest,
+      ...inspection,
       containerId: container.getId(),
-      serverVersion,
+      ...serverSettings,
     },
     migrations: migrations.rows,
     rls: rls.rows,

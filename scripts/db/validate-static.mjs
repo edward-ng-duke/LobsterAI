@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const rootArgument = process.argv.indexOf('--root');
@@ -35,7 +35,15 @@ const requirePattern = (content, pattern, message) => {
 
 const packageJson = json('package.json');
 const dbPackage = json('libs/server/db/package.json');
-const image = json('tests/integration/db/postgres-image.json');
+let image = {};
+let selectedImage;
+try {
+  const policy = await import(pathToFileURL(path.join(root, 'scripts/db/postgres-image-policy.mjs')));
+  image = policy.loadPostgresImageManifest(root);
+  selectedImage = policy.selectApprovedPostgresImage(image, process.arch, process.arch);
+} catch (error) {
+  errors.push(`invalid PostgreSQL image policy: ${error.message}`);
+}
 const schema = read('prisma/schema.prisma');
 const inventory = json('prisma/rls/tenant-scoped-models.json');
 const context = read('libs/server/db/src/tenant-context.ts');
@@ -159,19 +167,6 @@ if (
   dbPackage.dependencies?.pg !== '8.22.0'
 ) {
   errors.push('server-db Prisma client and pg dependencies are not pinned');
-}
-
-if (!/^postgres:17\.\d+-bookworm$/.test(image.image ?? '')) {
-  errors.push('PostgreSQL image must use an exact 17.x bookworm patch tag');
-}
-if (!/^linux\/(?:amd64|arm64)$/.test(image.platform ?? '')) {
-  errors.push('PostgreSQL image platform must be linux/amd64 or linux/arm64');
-}
-if (!/^sha256:[a-f0-9]{64}$/.test(image.digest ?? '')) {
-  errors.push('PostgreSQL image requires an immutable sha256 digest');
-}
-if (image.immutableReference !== `${image.image}@${image.digest}`) {
-  errors.push('PostgreSQL immutable reference must bind exact tag and digest');
 }
 
 requirePattern(schema, /model Tenant\s*\{/, 'schema lacks Tenant isolation root');
@@ -316,5 +311,6 @@ console.log(JSON.stringify({
   status: 'PASS',
   migration: migrationDirectories[0],
   tenantScopedTables: registered.map((entry) => entry.table),
-  image: image.immutableReference,
+  dockerPlatform: selectedImage.platform,
+  image: selectedImage.immutableReference,
 }));

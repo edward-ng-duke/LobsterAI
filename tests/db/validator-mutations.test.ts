@@ -29,6 +29,7 @@ const createCopy = (): string => {
     'package.json',
     'prisma',
     'scripts/db',
+    'scripts/json-without-duplicate-keys.mjs',
     'scripts/saas-stage-gates.json',
     'tests/integration/db/postgres-image.json',
     'tests/integration/db/tenant-extension.test.ts',

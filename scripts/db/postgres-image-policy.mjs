@@ -12,6 +12,10 @@ export const PostgresImagePolicyErrorCode = Object.freeze({
   InvalidManifest: 'POSTGRES_IMAGE_INVALID_MANIFEST',
   UnsupportedPlatform: 'POSTGRES_IMAGE_UNSUPPORTED_PLATFORM',
   ArchitectureMismatch: 'POSTGRES_IMAGE_ARCHITECTURE_MISMATCH',
+  InspectionMismatch: 'POSTGRES_IMAGE_INSPECTION_MISMATCH',
+  ServerSettingsMismatch: 'POSTGRES_SERVER_SETTINGS_MISMATCH',
+  DockerProviderUnavailable: 'POSTGRES_DOCKER_PROVIDER_UNAVAILABLE',
+  ImageUnavailable: 'POSTGRES_IMAGE_UNAVAILABLE',
 });
 
 export const POSTGRES_IMAGE_MANIFEST_RELATIVE_PATH =
@@ -32,6 +36,12 @@ const rootFields = [
   'platforms',
 ];
 const platformFields = ['platform', 'digest', 'immutableReference'];
+const expectedServerSettings = Object.freeze({
+  lcCollate: 'en_US.utf8',
+  lcCtype: 'en_US.utf8',
+  timezone: 'Etc/UTC',
+  ssl: 'off',
+});
 
 class PostgresImagePolicyError extends Error {
   constructor(code, message, blocked) {
@@ -43,6 +53,12 @@ class PostgresImagePolicyError extends Error {
   }
 }
 
+export const createPostgresImagePolicyError = (code, message, blocked, cause) => {
+  const error = new PostgresImagePolicyError(code, message, blocked);
+  if (cause !== undefined) error.cause = cause;
+  return error;
+};
+
 const invalidManifest = (message, cause) => {
   const error = new PostgresImagePolicyError(
     PostgresImagePolicyErrorCode.InvalidManifest,
@@ -52,6 +68,9 @@ const invalidManifest = (message, cause) => {
   if (cause !== undefined) error.cause = cause;
   return error;
 };
+
+const failedPolicy = (code, message) =>
+  new PostgresImagePolicyError(code, message, false);
 
 const blockedPlatform = (code, message) =>
   new PostgresImagePolicyError(code, message, true);
@@ -156,4 +175,55 @@ export const selectApprovedPostgresImage = (manifest, dockerPlatform, nodeArch) 
     );
   }
   return selected;
+};
+
+export const validateApprovedPostgresImageInspection = (selected, inspected) => {
+  const inspectedPlatform = normalizeDockerPlatform(`${inspected?.Os}/${inspected?.Architecture}`);
+  if (inspectedPlatform !== selected.platform) {
+    throw failedPolicy(
+      PostgresImagePolicyErrorCode.InspectionMismatch,
+      `inspected PostgreSQL platform does not match ${selected.platform}`,
+    );
+  }
+  const repoDigests = inspected?.RepoDigests;
+  if (!Array.isArray(repoDigests) || !repoDigests.some((value) =>
+    typeof value === 'string' && value.endsWith(`@${selected.digest}`))) {
+    throw failedPolicy(
+      PostgresImagePolicyErrorCode.InspectionMismatch,
+      'inspected PostgreSQL RepoDigests do not contain the approved digest',
+    );
+  }
+  return {
+    inspectedOs: inspected.Os,
+    inspectedArch: inspected.Architecture,
+    repoDigests,
+  };
+};
+
+export const validatePostgresServerSettings = (manifest, settings) => {
+  const validatedManifest = validateManifest(manifest);
+  const serverVersion = String(settings?.serverVersion ?? '');
+  const serverMajor = Number.parseInt(serverVersion.split('.')[0] ?? '', 10);
+  const versionMatches = serverMajor === validatedManifest.serverMajor &&
+    (serverVersion === validatedManifest.serverVersion ||
+      serverVersion.startsWith(`${validatedManifest.serverVersion} `));
+  if (!versionMatches) {
+    throw failedPolicy(
+      PostgresImagePolicyErrorCode.ServerSettingsMismatch,
+      `PostgreSQL server version differs from ${validatedManifest.serverVersion}`,
+    );
+  }
+  for (const [field, expected] of Object.entries(expectedServerSettings)) {
+    if (settings?.[field] !== expected) {
+      throw failedPolicy(
+        PostgresImagePolicyErrorCode.ServerSettingsMismatch,
+        `PostgreSQL ${field} differs from ${expected}`,
+      );
+    }
+  }
+  return {
+    serverVersion,
+    serverMajor,
+    ...expectedServerSettings,
+  };
 };
