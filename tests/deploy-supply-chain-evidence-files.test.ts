@@ -1,24 +1,20 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
-  chmodSync,
   cpSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
-  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
+import { createSupplyChainEvidenceFixture } from './helpers/supply-chain-evidence-fixture';
+
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
-const evidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
-const evidenceSourceSha = 'f93fdd59d98b029cb82da5cc4f5873520472bb7f';
-const temporaryRoots: string[] = [];
+const fixtures = new Map<string, ReturnType<typeof createSupplyChainEvidenceFixture>>();
 
 const sha256File = (filePath: string) =>
   `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
@@ -29,57 +25,21 @@ const writeJson = (filePath: string, value: unknown) => {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 };
 
-const evidenceDirectory = (root: string) => path.join(root, evidenceRelativeDirectory);
-const reportPath = (root: string) => path.join(evidenceDirectory(root), 'docker-build-check.json');
-
-const createFixtureRoot = () => {
-  const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p03-evidence-'));
-  temporaryRoots.push(root);
-  for (const relativePath of [
-    'SKILLs',
-    'openclaw-extensions',
-    'package.json',
-    'scripts/check-supply-chain.mjs',
-    'docs/supply-chain/skills-and-plugins.manifest.json',
-    'libs/shared/contracts/assets/supply-chain-inventory.schema.json',
-    'src/main/computerUse/computerUseKit.ts',
-    'src/main/computerUse/computerUseRuntime.ts',
-    'src/shared/computerUse/constants.ts',
-    'src/renderer/data/mcpRegistry.json',
-    evidenceRelativeDirectory,
-  ]) {
-    const destination = path.join(root, relativePath);
-    mkdirSync(path.dirname(destination), { recursive: true });
-    cpSync(path.join(repositoryRoot, relativePath), destination, { recursive: true });
-  }
-  symlinkSync(path.join(repositoryRoot, 'node_modules'), path.join(root, 'node_modules'), 'junction');
-
-  const report = readJson(reportPath(root));
-  for (const image of report.images) {
-    image.sbom.path = path.basename(image.sbom.path);
-    image.vulnerabilityScan.path = path.basename(image.vulnerabilityScan.path);
-  }
-  writeJson(reportPath(root), report);
-
-  const gitCommonDirectory = spawnSync(
-    'git',
-    ['rev-parse', '--path-format=absolute', '--git-common-dir'],
-    { cwd: repositoryRoot, encoding: 'utf8' },
-  ).stdout.trim();
-  expect(spawnSync('git', ['init', '--quiet'], { cwd: root }).status).toBe(0);
-  const alternatesPath = path.join(root, '.git/objects/info/alternates');
-  mkdirSync(path.dirname(alternatesPath), { recursive: true });
-  writeFileSync(alternatesPath, `${path.join(gitCommonDirectory, 'objects')}\n`);
-  expect(spawnSync('git', ['update-ref', 'refs/heads/fixture', evidenceSourceSha], { cwd: root }).status).toBe(0);
-  expect(spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/fixture'], { cwd: root }).status).toBe(0);
-  return root;
+const fixtureForRoot = (root: string) => {
+  const fixture = fixtures.get(root);
+  if (!fixture) throw new Error(`unknown supply-chain evidence fixture root: ${root}`);
+  return fixture;
 };
 
-const runChecker = (root: string, environment: NodeJS.ProcessEnv = process.env) => spawnSync(
-  process.execPath,
-  ['scripts/check-supply-chain.mjs'],
-  { cwd: root, encoding: 'utf8', env: environment },
-);
+const createFixtureRoot = (options?: Parameters<typeof createSupplyChainEvidenceFixture>[0]) => {
+  const fixture = createSupplyChainEvidenceFixture(options);
+  fixtures.set(fixture.root, fixture);
+  return fixture.root;
+};
+
+const evidenceDirectory = (root: string) => fixtureForRoot(root).evidenceDirectory;
+const reportPath = (root: string) => fixtureForRoot(root).reportPath;
+const runChecker = (root: string) => fixtureForRoot(root).runChecker();
 
 const mutateEvidenceDocument = (
   root: string,
@@ -87,18 +47,12 @@ const mutateEvidenceDocument = (
   kind: 'sbom' | 'vulnerabilityScan',
   mutate: (document: Record<string, any>) => void,
 ) => {
-  const report = readJson(reportPath(root));
-  const image = report.images.find((candidate: Record<string, unknown>) => candidate.imageName === imageName);
-  const documentPath = path.join(evidenceDirectory(root), image[kind].path);
-  const document = readJson(documentPath);
-  mutate(document);
-  writeJson(documentPath, document);
-  image[kind].sha256 = sha256File(documentPath);
-  writeJson(reportPath(root), report);
+  fixtureForRoot(root).mutateEvidenceDocument(imageName, kind, mutate);
 };
 
 afterEach(() => {
-  temporaryRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
+  fixtures.forEach(fixture => fixture.cleanup());
+  fixtures.clear();
 });
 
 describe('P03 on-disk supply-chain evidence verification', () => {
@@ -318,11 +272,14 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
   });
 
-  test('resolves the latest product source while allowing docs-only review commits', async () => {
-    const policy = await import('../scripts/check-supply-chain.mjs') as Record<string, unknown>;
-    expect(policy.resolveProductSourceSha).toEqual(expect.any(Function));
-    const resolveProductSourceSha = policy.resolveProductSourceSha as (root: string) => string;
-    expect(resolveProductSourceSha(repositoryRoot)).toBe(evidenceSourceSha);
+  test('creates an isolated exact-five source repository with a strict fake Docker', () => {
+    const root = createFixtureRoot();
+    const fixture = fixtureForRoot(root);
+    const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
+    expect(head.status, head.stderr).toBe(0);
+    expect(head.stdout.trim()).toBe(fixture.sourceSha);
+    expect(fixture.readReport().images).toHaveLength(5);
+    expect(spawnSync(path.join(root, 'bin/docker'), ['version']).status).toBe(64);
   });
 
   test('declares machine-readable OpenClaw plugin installation evidence', () => {
@@ -484,33 +441,13 @@ describe('P03 on-disk supply-chain evidence verification', () => {
   });
 
   test('rejects unavailable and digest-drifted local Docker image metadata', () => {
-    const missingRoot = createFixtureRoot();
-    const missingBin = path.join(missingRoot, 'bin');
-    mkdirSync(missingBin);
-    const missingDocker = path.join(missingBin, 'docker');
-    writeFileSync(missingDocker, '#!/bin/sh\nexit 1\n');
-    chmodSync(missingDocker, 0o755);
-    const missing = runChecker(missingRoot, {
-      ...process.env,
-      PATH: `${missingBin}:${process.env.PATH ?? ''}`,
-    });
+    const missingRoot = createFixtureRoot({ dockerMode: 'unavailable' });
+    const missing = runChecker(missingRoot);
     expect(`${missing.stdout}\n${missing.stderr}`).toContain('bound local Docker image is unavailable');
     expect(missing.status).not.toBe(0);
 
-    const driftRoot = createFixtureRoot();
-    const driftBin = path.join(driftRoot, 'bin');
-    mkdirSync(driftBin);
-    const driftDocker = path.join(driftBin, 'docker');
-    writeFileSync(driftDocker, [
-      '#!/bin/sh',
-      `printf '%s\\n' '{"Id":"sha256:${'0'.repeat(64)}","RepoDigests":[]}'`,
-      '',
-    ].join('\n'));
-    chmodSync(driftDocker, 0o755);
-    const drift = runChecker(driftRoot, {
-      ...process.env,
-      PATH: `${driftBin}:${process.env.PATH ?? ''}`,
-    });
+    const driftRoot = createFixtureRoot({ dockerMode: 'digest-drift' });
+    const drift = runChecker(driftRoot);
     expect(`${drift.stdout}\n${drift.stderr}`).toContain('local Docker image digest does not match evidence');
     expect(drift.status).not.toBe(0);
   });
