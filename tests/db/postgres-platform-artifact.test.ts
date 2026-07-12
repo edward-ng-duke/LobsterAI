@@ -280,6 +280,27 @@ describe('PostgreSQL native platform artifact boundary', () => {
     expect(run(root).status).toBe(1);
   });
 
+  test('recognizes a structurally complete failed integration artifact before failing the gate', () => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      value.status = 'FAILED';
+      value.error = 'database integration tests failed with exit 1';
+      const checks = value.checks as {
+        checksPassed: number;
+        checksTotal: number;
+        testResults: { passed: number; failed: number; total: number };
+      };
+      checks.checksPassed = 23;
+      checks.testResults.passed = 23;
+      checks.testResults.failed = 1;
+    });
+
+    const result = run(root);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('structurally valid FAILED integration artifact');
+    expect(result.stderr).not.toContain('fields differ');
+  });
+
   test('rejects an existing-schema claim without its preparation fact', () => {
     const root = writeArtifact();
     mutate(root, 'integration.json', (value) => {
