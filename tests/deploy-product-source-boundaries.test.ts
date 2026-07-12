@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   renameSync,
@@ -11,7 +12,11 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { resolveProductSourceSha } from '../scripts/check-supply-chain.mjs';
+import * as supplyChain from '../scripts/check-supply-chain.mjs';
+
+const { resolveProductSourceSha } = supplyChain;
+
+type ParseGitNameStatusZ = (output: Buffer) => string[] | undefined;
 
 const temporaryRoots: string[] = [];
 
@@ -19,6 +24,21 @@ const git = (root: string, ...args: string[]) => {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   return result.stdout.trim();
+};
+
+const gitRaw = (root: string, ...args: string[]) => {
+  const result = spawnSync('git', args, { cwd: root });
+  expect(result.status, `${result.stdout.toString()}\n${result.stderr.toString()}`).toBe(0);
+  expect(Buffer.isBuffer(result.stdout)).toBe(true);
+  return result.stdout;
+};
+
+const parseGitNameStatusZ = (output: Buffer) => {
+  const parser = (supplyChain as typeof supplyChain & {
+    parseGitNameStatusZ?: ParseGitNameStatusZ;
+  }).parseGitNameStatusZ;
+  expect(parser, 'check-supply-chain.mjs must export parseGitNameStatusZ').toBeTypeOf('function');
+  return parser?.(output);
 };
 
 const write = (root: string, relativePath: string, content: string) => {
@@ -48,7 +68,58 @@ afterEach(() => {
   temporaryRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
 });
 
+describe('parseGitNameStatusZ', () => {
+  test('parses empty and legal single-path records without normalizing Unicode', () => {
+    const nfcPath = 'docs/caf\u00e9.md';
+    const nfdPath = 'docs/cafe\u0301.md';
+
+    expect(parseGitNameStatusZ(Buffer.alloc(0))).toEqual([]);
+    expect(parseGitNameStatusZ(Buffer.from(`A\0${nfcPath}\0M\0${nfdPath}\0`))).toEqual([
+      nfcPath,
+      nfdPath,
+    ]);
+  });
+
+  test('parses both paths from rename and copy records', () => {
+    expect(parseGitNameStatusZ(Buffer.from(
+      'R100\0docs/old name.txt\0scripts/new\tname.txt\0'
+      + 'C087\0apps/source.ts\0tests/copy\nsource.ts\0',
+    ))).toEqual([
+      'docs/old name.txt',
+      'scripts/new\tname.txt',
+      'apps/source.ts',
+      'tests/copy\nsource.ts',
+    ]);
+  });
+
+  test.each([
+    ['missing trailing NUL', Buffer.from('M\0docs/file.md')],
+    ['truncated rename', Buffer.from('R100\0docs/old.md\0')],
+    ['unknown status', Buffer.from('Z\0docs/file.md\0')],
+    ['rename without similarity', Buffer.from('R\0docs/old.md\0docs/new.md\0')],
+    ['out-of-range similarity', Buffer.from('C101\0docs/old.md\0docs/new.md\0')],
+    ['empty path', Buffer.from('A\0\0')],
+    ['extra path', Buffer.from('M\0docs/file.md\0docs/extra.md\0')],
+    ['invalid UTF-8 path', Buffer.from([0x4d, 0x00, 0xc3, 0x28, 0x00])],
+  ])('fails closed for malformed output: %s', (_label, output) => {
+    expect(parseGitNameStatusZ(output)).toBeUndefined();
+  });
+});
+
 describe('P03 product-source evidence boundaries', () => {
+  test.each(['true', 'false'])(
+    'keeps pathological UTF-8 frozen paths frozen with core.quotepath=%s',
+    (quotePath) => {
+      const { root, baseline } = createRepository();
+      git(root, 'config', 'core.quotepath', quotePath);
+      write(root, '改造计划/含 空格\t引号“与换行\n记录.md', '# frozen role record\n');
+      write(root, '改造计划/Unicode-caf\u00e9-cafe\u0301.md', '# NFC and NFD\n');
+      commit(root, 'docs: add pathological UTF-8 records');
+
+      expect(resolveProductSourceSha(root)).toBe(baseline);
+    },
+  );
+
   test('ignores frozen documentation, plan, test, and role/evidence paths', () => {
     const { root, baseline } = createRepository();
     for (const [relativePath, content] of [
@@ -113,6 +184,75 @@ describe('P03 product-source evidence boundaries', () => {
     write(root, 'future-surface/input.bin', 'future image input\n');
     const unknownCommit = commit(root, 'feat: add unclassified source path');
     expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+  });
+
+  test('advances source for an unknown UTF-8 path containing whitespace and newlines', () => {
+    const { root } = createRepository();
+    write(root, '未来产品/中文 空格\t引号“与换行\n输入.bin', 'future image input\n');
+    const unknownCommit = commit(root, 'feat: add unclassified UTF-8 source path');
+
+    expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+  });
+
+  test('checks frozen and product paths on both sides of rename and copy records', () => {
+    const frozenToProductRename = createRepository();
+    write(frozenToProductRename.root, 'docs/重命名 源.txt', 'rename source\n');
+    commit(frozenToProductRename.root, 'docs: add frozen rename source');
+    mkdirSync(path.join(frozenToProductRename.root, 'scripts'), { recursive: true });
+    renameSync(
+      path.join(frozenToProductRename.root, 'docs/重命名 源.txt'),
+      path.join(frozenToProductRename.root, 'scripts/重命名 目标.txt'),
+    );
+    const promotedRename = commit(frozenToProductRename.root, 'feat: promote frozen rename source');
+    expect(resolveProductSourceSha(frozenToProductRename.root)).toBe(promotedRename);
+
+    const productToFrozenRename = createRepository();
+    write(productToFrozenRename.root, 'apps/api/降级 源.txt', 'rename source\n');
+    commit(productToFrozenRename.root, 'feat: add product rename source');
+    mkdirSync(path.join(productToFrozenRename.root, 'docs'), { recursive: true });
+    renameSync(
+      path.join(productToFrozenRename.root, 'apps/api/降级 源.txt'),
+      path.join(productToFrozenRename.root, 'docs/降级 目标.txt'),
+    );
+    const demotedRename = commit(productToFrozenRename.root, 'docs: demote product rename source');
+    expect(resolveProductSourceSha(productToFrozenRename.root)).toBe(demotedRename);
+
+    const repeatedLines = Array.from({ length: 200 }, (_, index) => `copy line ${index}`).join('\n');
+    const frozenToProductCopy = createRepository();
+    write(frozenToProductCopy.root, 'docs/复制 源.txt', `${repeatedLines}\n`);
+    commit(frozenToProductCopy.root, 'docs: add frozen copy source');
+    mkdirSync(path.join(frozenToProductCopy.root, 'scripts'), { recursive: true });
+    copyFileSync(
+      path.join(frozenToProductCopy.root, 'docs/复制 源.txt'),
+      path.join(frozenToProductCopy.root, 'scripts/复制 目标.txt'),
+    );
+    write(frozenToProductCopy.root, 'docs/复制 源.txt', `${repeatedLines}\nfrozen source changed\n`);
+    const promotedCopy = commit(frozenToProductCopy.root, 'feat: copy frozen source into product');
+    const promotedCopyOutput = gitRaw(
+      frozenToProductCopy.root,
+      'diff', '--name-status', '-z', '-M', '-C', `${promotedCopy}^`, promotedCopy,
+    );
+    expect(promotedCopyOutput.includes(Buffer.from('C100\0docs/复制 源.txt\0scripts/复制 目标.txt\0')))
+      .toBe(true);
+    expect(resolveProductSourceSha(frozenToProductCopy.root)).toBe(promotedCopy);
+
+    const productToFrozenCopy = createRepository();
+    write(productToFrozenCopy.root, 'apps/api/复制 源.txt', `${repeatedLines}\n`);
+    commit(productToFrozenCopy.root, 'feat: add product copy source');
+    mkdirSync(path.join(productToFrozenCopy.root, 'docs'), { recursive: true });
+    copyFileSync(
+      path.join(productToFrozenCopy.root, 'apps/api/复制 源.txt'),
+      path.join(productToFrozenCopy.root, 'docs/复制 目标.txt'),
+    );
+    write(productToFrozenCopy.root, 'apps/api/复制 源.txt', `${repeatedLines}\nproduct source changed\n`);
+    const demotedCopy = commit(productToFrozenCopy.root, 'docs: copy product source into frozen path');
+    const demotedCopyOutput = gitRaw(
+      productToFrozenCopy.root,
+      'diff', '--name-status', '-z', '-M', '-C', `${demotedCopy}^`, demotedCopy,
+    );
+    expect(demotedCopyOutput.includes(Buffer.from('C100\0apps/api/复制 源.txt\0docs/复制 目标.txt\0')))
+      .toBe(true);
+    expect(resolveProductSourceSha(productToFrozenCopy.root)).toBe(demotedCopy);
   });
 
   test('allows test and role-record commits without invalidating product evidence', () => {
