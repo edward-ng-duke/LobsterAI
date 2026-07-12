@@ -151,10 +151,12 @@ jobs:
 
   # ========== Stage 6: 测试 (Node.js 内置) ==========
   test:
-    needs: [build-main]
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24.x'
@@ -163,5 +165,5 @@ jobs:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
           restore-keys: npm-${{ runner.os }}-
-      - run: npm install
+      - run: npm ci
       - run: npm test
