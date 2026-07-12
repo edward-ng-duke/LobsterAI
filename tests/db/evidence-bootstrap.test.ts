@@ -42,12 +42,15 @@ const createFixture = (mutateReports?: EvidenceMutation): string => {
   git(root, 'config', 'user.email', 'p02-bootstrap@example.invalid');
   for (const relativePath of [
     'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
+    'tests/integration/db/postgres-image.json',
+    'scripts/json-without-duplicate-keys.mjs',
     'scripts/db/common.mjs',
     'scripts/db/evidence-bootstrap.mjs',
     'scripts/db/evidence-bundle.schema.json',
     'scripts/db/evidence-provenance.mjs',
     'scripts/db/evidence-trust-launcher.mjs',
     'scripts/db/existing-schema-evidence.mjs',
+    'scripts/db/postgres-image-policy.mjs',
     'scripts/db/preflight.mjs',
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',

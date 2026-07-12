@@ -6,6 +6,10 @@ import { spawnSync } from 'node:child_process';
 import { repositoryRoot as defaultRepositoryRoot } from './common.mjs';
 import { validateEvidenceOnlyDescendant } from './evidence-provenance.mjs';
 import { validateExistingSchemaEvidence } from './existing-schema-evidence.mjs';
+import {
+  loadPostgresImageManifest,
+  selectApprovedPostgresImage,
+} from './postgres-image-policy.mjs';
 
 const argument = (name) => {
   const index = process.argv.indexOf(name);
@@ -132,6 +136,39 @@ const validateDatabaseProvider = (report, label) => {
 
 validateDatabaseProvider(bundle.preflight, 'preflight.json');
 validateDatabaseProvider(bundle.integration, 'integration.json');
+
+let postgresManifest;
+try {
+  postgresManifest = loadPostgresImageManifest(root);
+} catch (error) {
+  errors.push(`PostgreSQL image policy: ${error instanceof Error ? error.message : String(error)}`);
+}
+if (postgresManifest) {
+  for (const [label, report] of [
+    ['preflight.json', bundle.preflight],
+    ['integration.json', bundle.integration],
+  ]) {
+    const provider = report?.checks?.provider;
+    try {
+      const approvedImage = selectApprovedPostgresImage(
+        postgresManifest,
+        provider?.dockerPlatform,
+        provider?.runnerArch,
+      );
+      const approvedRepoDigests = [`postgres@${approvedImage.digest}`];
+      if (
+        provider?.image !== postgresManifest.image ||
+        provider?.digest !== approvedImage.digest ||
+        provider?.immutableReference !== approvedImage.immutableReference ||
+        JSON.stringify(provider?.repoDigests) !== JSON.stringify(approvedRepoDigests)
+      ) {
+        errors.push(`${label}: provider does not match the approved PostgreSQL image`);
+      }
+    } catch (error) {
+      errors.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}
 
 const preflightProvider = bundle.preflight?.checks?.provider;
 const integrationProvider = bundle.integration?.checks?.provider;
