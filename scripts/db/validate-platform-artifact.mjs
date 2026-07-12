@@ -240,7 +240,17 @@ try {
     requireEqual(report.cleanup?.removed, true, `${name} cleanup.removed`);
 
     const provider = report.checks?.provider;
+    requireEqual(
+      normalizeDockerPlatform(report.platform),
+      normalizedPlatform,
+      `${name} platform`,
+    );
     requireEqual(provider?.dockerPlatform, normalizedPlatform, `${name} dockerPlatform`);
+    requireEqual(
+      normalizeDockerPlatform(report.platform),
+      provider?.dockerPlatform,
+      `${name} platform/provider dockerPlatform`,
+    );
     requireEqual(provider?.runnerOs, 'linux', `${name} runnerOs`);
     requireEqual(
       normalizeDockerPlatform(provider?.runnerArch),
@@ -259,7 +269,31 @@ try {
       Architecture: provider?.inspectedArch,
       RepoDigests: provider?.repoDigests,
     });
-    validatePostgresServerSettings(manifest, provider);
+    const serverSettings = validatePostgresServerSettings(manifest, provider);
+    requireEqual(provider?.serverMajor, serverSettings.serverMajor, `${name} serverMajor`);
+
+    const providerContainerId = provider?.containerId ?? null;
+    const cleanupContainerId = report.cleanup?.containerId ?? null;
+    if (providerContainerId === null || cleanupContainerId === null) {
+      requireEqual(
+        cleanupContainerId,
+        providerContainerId,
+        `${name} cleanup/provider null containerId`,
+      );
+      if (report.status === 'PASS') fail(`${name} PASS containerId must be non-null`);
+    } else {
+      if (
+        typeof providerContainerId !== 'string' || providerContainerId.length === 0 ||
+        typeof cleanupContainerId !== 'string' || cleanupContainerId.length === 0
+      ) {
+        fail(`${name} cleanup/provider containerId must be non-empty strings`);
+      }
+      requireEqual(
+        cleanupContainerId,
+        providerContainerId,
+        `${name} cleanup/provider containerId`,
+      );
+    }
   }
 
   requireEqual(preflight.status, 'PASS', 'preflight.json status');
