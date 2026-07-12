@@ -30,7 +30,7 @@
     "prisma:validate": {
       "status": "PASS",
       "activationTask": "P02-PR2数据库脚手架",
-      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
+      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, portable trusted-file identity corners, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "trustedFiles": {
         "scripts/db/evidence-bootstrap.mjs": "bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f",

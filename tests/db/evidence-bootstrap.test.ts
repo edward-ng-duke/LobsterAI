@@ -28,6 +28,51 @@ const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
 
+type MkfifoProbeResult = {
+  status: number | null;
+  error?: Error & { code?: string };
+  stderr?: string | null;
+};
+
+type FifoCapability =
+  | { available: true; reason: '' }
+  | { available: false; reason: string };
+type MkfifoSpawn = (target: string) => MkfifoProbeResult;
+
+const classifyMkfifoProbe = (result: MkfifoProbeResult): FifoCapability => {
+  if (result.status === 0) return { available: true, reason: '' };
+  if (result.error?.code) {
+    return {
+      available: false,
+      reason: `mkfifo spawn failed with ${result.error.code}`,
+    };
+  }
+  const stderr = result.stderr?.trim();
+  return {
+    available: false,
+    reason: `mkfifo could not create a FIFO (exit ${result.status ?? 'null'}${
+      stderr ? `: ${stderr}` : ''
+    })`,
+  };
+};
+
+const spawnMkfifo: MkfifoSpawn = (target) => spawnSync(
+  'mkfifo',
+  [target],
+  { encoding: 'utf8' },
+);
+
+const detectFifoCapability = (spawn: MkfifoSpawn = spawnMkfifo): FifoCapability => {
+  const probeRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-mkfifo-probe-'));
+  try {
+    return classifyMkfifoProbe(spawn(path.join(probeRoot, 'probe.fifo')));
+  } finally {
+    rmSync(probeRoot, { recursive: true, force: true });
+  }
+};
+
+const fifoCapability = detectFifoCapability();
+
 const git = (root: string, ...args: string[]): string => {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -571,7 +616,18 @@ describe('P02 external evidence bootstrap boundary', () => {
     );
   });
 
-  test('rejects a protected FIFO without trying to read it', () => {
+  test('records a controlled missing mkfifo spawn as an explicit capability failure', () => {
+    const missingCommand = Object.assign(new Error('spawn mkfifo ENOENT'), { code: 'ENOENT' });
+
+    expect(detectFifoCapability(() => ({ status: null, error: missingCommand }))).toEqual({
+      available: false,
+      reason: 'mkfifo spawn failed with ENOENT',
+    });
+  });
+
+  test.skipIf(!fifoCapability.available)(fifoCapability.available
+    ? 'rejects a protected FIFO without trying to read it'
+    : `skips the protected FIFO corner because ${fifoCapability.reason}`, () => {
     const root = createFixture();
     const relativePath = 'tests/integration/db/postgres-image.json';
     const protectedPath = path.join(root, relativePath);
@@ -581,6 +637,20 @@ describe('P02 external evidence bootstrap boundary', () => {
 
     const result = run(root, true);
     expect(result.signal, `${result.stdout}\n${result.stderr}`).not.toBe('SIGTERM');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
+    );
+  });
+
+  test('rejects a protected directory as a nonregular file on every platform', () => {
+    const root = createFixture();
+    const relativePath = 'tests/integration/db/postgres-image.json';
+    const protectedPath = path.join(root, relativePath);
+    rmSync(protectedPath);
+    mkdirSync(protectedPath);
+
+    const result = run(root, true);
     expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
     expect(result.stderr).toContain(
       `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
