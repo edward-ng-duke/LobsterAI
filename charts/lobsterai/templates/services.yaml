@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-web
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "web") | nindent 4 }}
+  ports:
+    - { name: http, port: 80, targetPort: http }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-api
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "api") | nindent 4 }}
+  ports:
+    - { name: http, port: 80, targetPort: http }

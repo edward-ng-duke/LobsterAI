@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "status": "NOT_APPLICABLE",
+  "activationTask": "P04-PR4PoC脚手架",
+  "requiredChecks": ["acquire", "turn", "egress", "storage"],
+  "requiredEnvironment": [
+    "POC_KUBERNETES_CONTEXT",
+    "POC_NAMESPACE",
+    "POC_RUNTIME_CLASS",
+    "POC_RUNTIME_IMAGE_DIGEST",
+    "POC_STORAGE_CLASS"
+  ]
+}

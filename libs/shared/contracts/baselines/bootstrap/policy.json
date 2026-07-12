@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "preContractRefs": ["cde584c0"],
+  "openapi": "libs/shared/contracts/baselines/bootstrap/pre-contract-openapi.yaml",
+  "asyncapi": "libs/shared/contracts/baselines/bootstrap/pre-contract-asyncapi.yaml",
+  "reason": "The allowlisted commit predates the first canonical contract release; no legacy Generic or fake-route surface is treated as public API."
+}

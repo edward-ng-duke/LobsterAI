@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "P02_DATABASE_PREFLIGHT",
+  "runId": "a2d17b66-259c-4fe7-a51d-be188c309907",
+  "generatedAt": "2026-07-11T20:18:48.674Z",
+  "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
+  "nodeVersion": "v24.15.0",
+  "platform": "darwin/arm64",
+  "status": "PASS",
+  "checks": {
+    "contracts": {
+      "acceptedSha": "a6066c3138e4d6c0f36462b9ad3fb8e0877d3a28",
+      "testerReportSha": "fc9f619fd46afe4622512c5d4168e220816f246a",
+      "contractVersion": "1.0.0",
+      "sourceHash": "897bd39077d409e52a88e9efe89383380564812f494efb88fe09e2af6a1ed2c8"
+    },
+    "provider": {
+      "dockerPlatform": "linux/arm64",
+      "image": "postgres:17.10-bookworm",
+      "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "containerId": "c2b292414aea706a78d3be2ca5427e32b119db9ecaf1396153e93fa3bfb7672d",
+      "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)",
+      "citextAvailableVersion": "1.6",
+      "generatedUuid": "5364fa34-7ab1-49d6-bdca-7c7864be4cf2",
+      "migrationRole": {
+        "rolsuper": true,
+        "rolbypassrls": true
+      }
+    }
+  },
+  "cleanup": {
+    "containerId": "c2b292414aea706a78d3be2ca5427e32b119db9ecaf1396153e93fa3bfb7672d",
+    "removed": true
+  }
+}

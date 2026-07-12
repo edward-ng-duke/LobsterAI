@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lobsterai.internal/schemas/supply-chain-inventory.schema.json",
+  "title": "LobsterAI production supply-chain inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "activationTask",
+    "productionNetwork",
+    "assets",
+    "imageEvidence",
+    "signature",
+    "waivers"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 2 },
+    "status": { "const": "ACTIVE" },
+    "activationTask": { "const": "P03-PR3部署供应链" },
+    "productionNetwork": { "const": "offline" },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "imageEvidence": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/imageEvidence" }
+    },
+    "signature": { "$ref": "#/$defs/signaturePolicy" },
+    "waivers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/waiver" }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "sourcePath",
+        "source",
+        "version",
+        "integrity",
+        "license",
+        "scanStatus",
+        "productionEligible",
+        "optional"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:@/-]+$" },
+        "kind": {
+          "enum": ["skill", "openclaw-plugin", "openclaw-extension", "kit", "mcp-package"]
+        },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "integrity": { "$ref": "#/$defs/digest" },
+        "license": { "type": "string", "minLength": 1 },
+        "scanStatus": { "enum": ["platform-reviewed", "blocked", "needs-rescan"] },
+        "productionEligible": { "type": "boolean" },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "sbom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "path", "sha256", "imageDigest", "sourceSha"],
+      "properties": {
+        "format": { "enum": ["spdx-json", "cyclonedx-json"] },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/digest" },
+        "imageDigest": { "$ref": "#/$defs/digest" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+      }
+    },
+    "imageEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image",
+        "imageName",
+        "digest",
+        "sourceSha",
+        "buildEvidence",
+        "runtimeEvidence",
+        "imageHistoryScan",
+        "sbom",
+        "vulnerabilityScan",
+        "criticalFindings"
+      ],
+      "properties": {
+        "image": { "type": "string", "minLength": 1, "not": { "pattern": ":latest(?:$|@)" } },
+        "imageName": {
+          "enum": ["api", "openclaw-runtime", "runtime-orchestrator", "web", "worker"]
+        },
+        "digest": { "$ref": "#/$defs/digest" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "buildEvidence": { "$ref": "#/$defs/buildEvidence" },
+        "runtimeEvidence": { "$ref": "#/$defs/runtimeEvidence" },
+        "imageHistoryScan": { "$ref": "#/$defs/imageHistoryScan" },
+        "sbom": { "$ref": "#/$defs/sbom" },
+        "vulnerabilityScan": { "$ref": "#/$defs/vulnerabilityScan" },
+        "criticalFindings": { "type": "integer", "minimum": 0 },
+        "pluginInstallations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/pluginInstallation" }
+        }
+      },
+      "allOf": [{
+        "if": { "properties": { "imageName": { "const": "openclaw-runtime" } } },
+        "then": {
+          "properties": { "pluginInstallations": {} },
+          "required": ["pluginInstallations"]
+        },
+        "else": { "not": { "required": ["pluginInstallations"] } }
+      }]
+    },
+    "pluginInstallation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "optional", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "optional": { "type": "boolean" },
+        "status": { "enum": ["installed", "skipped"] }
+      }
+    },
+    "buildEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dockerfile", "noCache", "pull", "platform"],
+      "properties": {
+        "dockerfile": { "type": "string", "pattern": "^docker/[^/]+/Dockerfile$" },
+        "noCache": { "const": true },
+        "pull": { "const": false },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] }
+      }
+    },
+    "runtimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "effectiveUser",
+        "platform",
+        "networkMode",
+        "readOnlyRootFilesystem",
+        "capDrop",
+        "noNewPrivileges",
+        "tmpfs",
+        "health",
+        "gracefulStop",
+        "logsSha256"
+      ],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "effectiveUser": { "type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$" },
+        "platform": { "enum": ["linux/amd64", "linux/arm64"] },
+        "networkMode": { "const": "none" },
+        "readOnlyRootFilesystem": { "const": true },
+        "capDrop": {
+          "type": "array",
+          "minItems": 1,
+          "contains": { "const": "ALL" }
+        },
+        "noNewPrivileges": { "const": true },
+        "tmpfs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "health": { "const": "healthy" },
+        "gatewayReady": { "type": "boolean" },
+        "gracefulStop": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "timeoutSeconds",
+            "durationMs",
+            "completedWithinTimeout",
+            "exitCode",
+            "oomKilled"
+          ],
+          "properties": {
+            "required": { "type": "boolean" },
+            "timeoutSeconds": { "type": "integer", "minimum": 1 },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "completedWithinTimeout": { "type": "boolean" },
+            "exitCode": { "enum": [0, 137, 143] },
+            "oomKilled": { "const": false }
+          }
+        },
+        "logsSha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "imageHistoryScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "secretLikeFindings", "sha256"],
+      "properties": {
+        "status": { "const": "PASSED" },
+        "secretLikeFindings": { "const": 0 },
+        "sha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "vulnerabilityScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scanner",
+        "scannerVersion",
+        "path",
+        "sha256",
+        "imageDigest",
+        "sourceSha",
+        "findings"
+      ],
+      "properties": {
+        "scanner": { "enum": ["grype", "trivy"] },
+        "scannerVersion": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/digest" },
+        "imageDigest": { "$ref": "#/$defs/digest" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "severity", "artifactId", "package", "version"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "severity": {
+                "enum": ["Unknown", "Negligible", "Low", "Medium", "High", "Critical"]
+              },
+              "artifactId": { "type": "string", "minLength": 1 },
+              "package": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "dockerBuildSignature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "enum": ["ACTIVE", "BLOCKED"] },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "dockerBuildReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "status",
+        "invocationId",
+        "generatedAt",
+        "sourceSha",
+        "dockerVersion",
+        "syftVersion",
+        "grypeVersion",
+        "productionNetwork",
+        "images",
+        "signature"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "status": { "const": "PASSED" },
+        "invocationId": { "type": "string", "format": "uuid" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "dockerVersion": { "type": "string", "minLength": 1 },
+        "syftVersion": { "type": "string", "minLength": 1 },
+        "grypeVersion": { "type": "string", "minLength": 1 },
+        "productionNetwork": { "const": "offline" },
+        "images": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/imageEvidence" }
+        },
+        "signature": { "$ref": "#/$defs/dockerBuildSignature" }
+      }
+    },
+    "signaturePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "requiredForPublish", "trustedIdentities"],
+      "properties": {
+        "status": { "enum": ["ACTIVE", "BLOCKED"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "requiredForPublish": { "const": true },
+        "trustedIdentities": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findingId", "imageDigest", "owner", "reason", "expiresAt"],
+      "properties": {
+        "findingId": { "type": "string", "minLength": 1 },
+        "imageDigest": { "$ref": "#/$defs/digest" },
+        "owner": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

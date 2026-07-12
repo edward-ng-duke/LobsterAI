@@ -13,11 +13,39 @@ const {
   isGitSpec,
   isLocalPathSpec,
   parseGitSpec,
+  resolvePluginInstallTimeoutMs,
   resolveGitPackSpec,
   resolvePluginInstallSource,
+  shouldSkipPluginInstallFailure,
 } = require('../scripts/ensure-openclaw-plugins.cjs');
 
 describe('ensure-openclaw-plugins', () => {
+  test('keeps required NetEase Bee installs fail-closed with a bounded timeout', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+    );
+    const bee = packageJson.openclaw.plugins.find(
+      (plugin: { id: string }) => plugin.id === 'openclaw-netease-bee',
+    );
+
+    expect(bee).toBeDefined();
+    expect(shouldSkipPluginInstallFailure(bee)).toBe(false);
+    expect(resolvePluginInstallTimeoutMs(bee)).toBe(10 * 60 * 1000);
+  });
+
+  test('rejects unbounded plugin install timeout overrides', () => {
+    expect(() => resolvePluginInstallTimeoutMs({ installTimeoutMs: 0 })).toThrow();
+    expect(() => resolvePluginInstallTimeoutMs({ installTimeoutMs: 15 * 60 * 1000 + 1 })).toThrow();
+    expect(resolvePluginInstallTimeoutMs({})).toBe(5 * 60 * 1000);
+  });
+
+  test('only explicitly optional plugins may skip installation failures', () => {
+    expect(shouldSkipPluginInstallFailure({ optional: true })).toBe(true);
+    expect(shouldSkipPluginInstallFailure({ optional: false })).toBe(false);
+    expect(shouldSkipPluginInstallFailure({})).toBe(false);
+    expect(shouldSkipPluginInstallFailure({ optional: 'true' })).toBe(false);
+  });
+
   test('detects local path specs', () => {
     expect(isLocalPathSpec('/tmp/openclaw-nim-channel')).toBe(true);
     expect(isLocalPathSpec('./plugins/openclaw-nim-channel')).toBe(true);

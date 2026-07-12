@@ -1,0 +1,137 @@
+import { spawnSync } from 'node:child_process';
+import { EventEmitter, once } from 'node:events';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
+import { describe, expect, test } from 'vitest';
+
+import {
+  installRuntimeOrchestratorSignalHandlers,
+  startRuntimeOrchestratorShell,
+} from '../apps/runtime-orchestrator/src/index.js';
+import { validateDockerfile } from '../scripts/check-docker-build.mjs';
+
+const repositoryRoot = path.resolve(import.meta.dirname, '..');
+const imageNames = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'] as const;
+const dynamicInstallPattern = /\b(?:npm|pnpm|yarn|pip3?|npx)\s+(?:install|add|ci)|\bcurl\b|\bwget\b|git\s+clone/i;
+const forbiddenProductionPattern = /(?:xvfb|x11vnc|novnc|chromium|electron|:latest|\bdebug\b)/i;
+
+const runtimeStage = (dockerfile: string): string => {
+  const match = dockerfile.match(/\nFROM\s+[^\n]+\s+AS\s+(?:production|runtime)\s*\n([\s\S]*)$/i);
+  return match?.[1] ?? '';
+};
+
+describe('P03 production image policy', () => {
+  test.each(imageNames)('%s has a real multi-stage, non-root, health-checked image', (imageName) => {
+    const dockerfilePath = path.join(repositoryRoot, 'docker', imageName, 'Dockerfile');
+    expect(existsSync(dockerfilePath), `${imageName} Dockerfile is missing`).toBe(true);
+    const dockerfile = readFileSync(dockerfilePath, 'utf8');
+
+    expect(dockerfile.match(/^FROM\s+/gm)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(dockerfile).toMatch(/^USER\s+[1-9][0-9]*:[1-9][0-9]*\s*$/m);
+    expect(dockerfile).toMatch(/^HEALTHCHECK\s+/m);
+    expect(dockerfile).toMatch(/^(?:ENTRYPOINT|CMD)\s+\[.+\]\s*$/m);
+    expect(runtimeStage(dockerfile)).not.toMatch(dynamicInstallPattern);
+    expect(runtimeStage(dockerfile)).not.toMatch(forbiddenProductionPattern);
+  });
+
+  test('production and debug build entrypoints are physically separated', () => {
+    expect(existsSync(path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile.debug'))).toBe(true);
+    const productionDockerfile = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile'),
+      'utf8',
+    );
+    expect(productionDockerfile).not.toMatch(/(?:xvfb|x11vnc|novnc|chromium|electron|\bdebug\b)/i);
+  });
+
+  test('static policy rejects root, dynamic runtime installs, GUI payloads and unpinned bases', () => {
+    const baseline = readFileSync(path.join(repositoryRoot, 'docker', 'api', 'Dockerfile'), 'utf8');
+    expect(validateDockerfile('api', baseline)).toEqual([]);
+
+    expect(validateDockerfile('api', baseline.replace('USER 10001:10001', 'USER 0:0')).join('\n'))
+      .toContain('numeric non-root');
+    expect(validateDockerfile('api', baseline.replace(
+      'ENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+      'RUN npm install unsafe-package\nENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+    )).join('\n')).toContain('dynamic install');
+    expect(validateDockerfile('api', baseline.replace(
+      'ENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+      'RUN apk add xvfb\nENTRYPOINT ["node", "/opt/lobster/index.mjs"]',
+    )).join('\n')).toContain('GUI/latest');
+    expect(validateDockerfile('api', baseline.replace(/@sha256:[a-f0-9]{64}/g, '')).join('\n'))
+      .toContain('digest-pinned');
+  });
+
+  test('OpenClaw health probes the live gateway and full smoke uses the production entrypoint', () => {
+    const health = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),
+      'utf8',
+    );
+    expect(health).toMatch(/(?:connect|fetch|WebSocket)/);
+    expect(health).toContain('OPENCLAW_GATEWAY_PORT');
+    expect(health).not.toContain("readFileSync('/opt/openclaw/package.json'");
+
+    const dockerfile = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'Dockerfile'),
+      'utf8',
+    );
+    expect(dockerfile).toMatch(/^FROM node:24\.18\.0-trixie-slim@sha256:[a-f0-9]{64} AS build$/m);
+    expect(dockerfile).toMatch(/^FROM ubuntu:26\.04@sha256:[a-f0-9]{64} AS production$/m);
+    expect(dockerfile).toMatch(/^RUN corepack enable$/m);
+    expect(dockerfile).toContain('node scripts/apply-openclaw-patches.cjs "$OPENCLAW_SRC"');
+    expect(dockerfile).toContain('node scripts/harden-openclaw-runtime-dependencies.mjs');
+    const entrypoint = readFileSync(
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'entrypoint.sh'),
+      'utf8',
+    );
+    expect(entrypoint).toContain('${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN is required}');
+    expect(entrypoint).toContain('gateway --allow-unconfigured --bind lan');
+
+    const checker = readFileSync(path.join(repositoryRoot, 'scripts', 'check-docker-build.mjs'), 'utf8');
+    expect(checker).toContain('OPENCLAW_GATEWAY_TOKEN');
+    expect(checker).toContain('/state:rw,noexec,nosuid');
+    expect(checker).toContain('/workspace:rw,noexec,nosuid');
+    expect(checker).toContain('waitForHealthy(containerId');
+    expect(checker).toContain("readOnlyRootFilesystem: true");
+    expect(checker).toContain("networkMode: 'none'");
+    expect(checker).toContain("capDrop: ['ALL']");
+    expect(checker).toContain('imageHistoryScan');
+    expect(checker).toContain('![0, 143].includes(state.ExitCode)');
+    expect(checker).toContain('completedWithinTimeout');
+
+    const negative = spawnSync(process.execPath, [
+      path.join(repositoryRoot, 'docker', 'openclaw-runtime', 'healthcheck.mjs'),
+    ], {
+      encoding: 'utf8',
+      env: { ...process.env, OPENCLAW_GATEWAY_PORT: '9' },
+    });
+    expect(negative.status).not.toBe(0);
+  });
+
+  test('runtime orchestrator closes its real server on SIGTERM', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+
+    await closed;
+    expect(server.listening).toBe(false);
+  });
+
+  test('runtime orchestrator handles repeated termination signals idempotently', async () => {
+    const server = await startRuntimeOrchestratorShell({ host: '127.0.0.1', port: 0 });
+    const signals = new EventEmitter();
+    installRuntimeOrchestratorSignalHandlers(server, signals);
+    const closed = once(server, 'close');
+
+    signals.emit('SIGTERM');
+    signals.emit('SIGINT');
+
+    await closed;
+    expect(server.listening).toBe(false);
+    expect(signals.listenerCount('SIGTERM')).toBe(0);
+    expect(signals.listenerCount('SIGINT')).toBe(0);
+  });
+});

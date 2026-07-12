@@ -207,7 +207,7 @@ class AuthService {
   ): Promise<AuthStateRefreshResult> {
     try {
       const result = await window.electron.auth.getUser();
-      if (result.success && result.user) {
+      if (result.success && result.user && result.quota) {
         store.dispatch(setLoggedIn({ user: result.user, quota: result.quota }));
         await this.loadServerModels();
         void this.fetchProfileSummary();

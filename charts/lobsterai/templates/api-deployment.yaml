@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-api
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.components.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "api") | nindent 8 }}
+        app.kubernetes.io/part-of: lobsterai
+    spec:
+      serviceAccountName: {{ include "lobsterai.fullname" . }}-service
+      automountServiceAccountToken: false
+      securityContext:
+        {{- include "lobsterai.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: api
+          image: "{{ .Values.images.api.repository }}@{{ .Values.images.api.digest }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "lobsterai.containerSecurityContext" . | nindent 12 }}
+          envFrom:
+            - configMapRef: { name: {{ include "lobsterai.fullname" . }}-config }
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.config.secretRef.name }}, key: {{ .Values.config.secretRef.databaseUrlKey }} }
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.config.secretRef.name }}, key: {{ .Values.config.secretRef.redisUrlKey }} }
+          ports:
+            - name: http
+              containerPort: {{ .Values.components.api.port }}
+          readinessProbe: &apiProbe
+            httpGet: { path: /readyz, port: http }
+            {{- toYaml .Values.components.api.probe | nindent 12 }}
+          livenessProbe: *apiProbe
+          resources:
+            {{- toYaml .Values.components.api.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }

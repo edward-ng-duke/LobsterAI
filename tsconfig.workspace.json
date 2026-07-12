@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./libs/shared/types" },
+    { "path": "./libs/shared/contracts" },
+    { "path": "./libs/client/bridge" },
+    { "path": "./libs/server/db" },
+    { "path": "./libs/server/auth" },
+    { "path": "./apps/web" },
+    { "path": "./apps/api" },
+    { "path": "./apps/worker" },
+    { "path": "./apps/runtime-orchestrator" }
+  ]
+}

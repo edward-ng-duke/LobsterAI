@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lobsterai.fullname" . }}-web
+  labels:
+    {{- include "lobsterai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.components.web.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lobsterai.selectorLabels" (dict "Chart" .Chart "Release" .Release "Values" .Values "component" "web") | nindent 8 }}
+        app.kubernetes.io/part-of: lobsterai
+    spec:
+      serviceAccountName: {{ include "lobsterai.fullname" . }}-service
+      automountServiceAccountToken: false
+      securityContext:
+        {{- include "lobsterai.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: web
+          image: "{{ .Values.images.web.repository }}@{{ .Values.images.web.digest }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- include "lobsterai.containerSecurityContext" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.components.web.port }}
+          readinessProbe: &webProbe
+            httpGet: { path: /healthz, port: http }
+            {{- toYaml .Values.components.web.probe | nindent 12 }}
+          livenessProbe: *webProbe
+          resources:
+            {{- toYaml .Values.components.web.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 32Mi }

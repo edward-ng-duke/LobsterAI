@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "P02_DATABASE_INTEGRATION",
+  "runId": "17184ecf-d751-4ec8-8569-8d7cf7be4b4f",
+  "generatedAt": "2026-07-11T20:18:53.805Z",
+  "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
+  "nodeVersion": "v24.15.0",
+  "platform": "darwin/arm64",
+  "status": "PASS",
+  "skipped": 0,
+  "checks": {
+    "provider": {
+      "dockerPlatform": "linux/arm64",
+      "image": "postgres:17.10-bookworm",
+      "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "containerId": "335c69d7b72bfb0bdd6c7f81d4b648d7f84665746b68298957f09687904c0941",
+      "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)"
+    },
+    "migrations": [
+      {
+        "migration_name": "20260711000000_init_prisma_rls_scaffold",
+        "finished": true
+      }
+    ],
+    "rls": [
+      {
+        "relrowsecurity": true,
+        "relforcerowsecurity": true,
+        "table_owner": "p02_admin",
+        "policyname": "agents_tenant_isolation",
+        "qual": "(tenant_id = (current_setting('app.tenant_id'::text))::uuid)",
+        "with_check": "(tenant_id = (current_setting('app.tenant_id'::text))::uuid)"
+      }
+    ],
+    "roles": [
+      {
+        "rolname": "p02_admin",
+        "rolsuper": true,
+        "rolbypassrls": true
+      },
+      {
+        "rolname": "p02_app",
+        "rolsuper": false,
+        "rolbypassrls": false
+      }
+    ],
+    "seed": [
+      {
+        "tenant_id": "10000000-0000-4000-8000-000000000001",
+        "logical_id": "main",
+        "id": "a0000000-0000-4000-8000-000000000001"
+      },
+      {
+        "tenant_id": "20000000-0000-4000-8000-000000000002",
+        "logical_id": "main",
+        "id": "b0000000-0000-4000-8000-000000000002"
+      }
+    ],
+    "testOutputSha256": "9fe09624d2c4618c7093a00ce29643bdd2fa7ca555e20f9ecf81006f97d6a724"
+  },
+  "cleanup": {
+    "containerId": "335c69d7b72bfb0bdd6c7f81d4b648d7f84665746b68298957f09687904c0941",
+    "removed": true
+  }
+}

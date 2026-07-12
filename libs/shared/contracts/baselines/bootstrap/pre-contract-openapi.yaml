@@ -1,0 +1,7 @@
+openapi: 3.1.0
+info:
+  title: LobsterAI pre-contract bootstrap baseline
+  version: 0.0.0
+paths: {}
+components:
+  schemas: {}

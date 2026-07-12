@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "currentStage": "P03",
+  "runnerSha256": "af982ca6ed4f5e0c0573abf976e08ab1d2c33d4e46615ff575a2fa892a1c03e6",
+  "statuses": {
+    "PASS": 0,
+    "NOT_APPLICABLE": 78,
+    "BLOCKED": 2
+  },
+  "gates": {
+    "test:e2e": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P04-PR4PoC脚手架",
+      "reason": "Playwright scaffold and browser journeys are not installed in P00.",
+      "fixtures": ["apps/web/index.html", "tests/scaffold-web-build.test.ts"]
+    },
+    "contracts:check": {
+      "status": "PASS",
+      "activationTask": "P01-PR1契约",
+      "reason": "P01 executes deterministic generation, schema validators, inventory coverage, and consumer checks.",
+      "command": ["npm", "run", "--silent", "contracts:validate"],
+      "fixtures": [
+        "libs/shared/contracts/codegen-policy.json",
+        "libs/shared/contracts/openapi.yaml",
+        "libs/shared/contracts/asyncapi.yaml",
+        "libs/shared/contracts/generated/contract-manifest.ts",
+        "scripts/contracts/check.mjs"
+      ]
+    },
+    "prisma:validate": {
+      "status": "PASS",
+      "activationTask": "P02-PR2数据库脚手架",
+      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
+      "command": ["npm", "run", "--silent", "prisma:validate:active"],
+      "trustedFiles": {
+        "scripts/db/evidence-bootstrap.mjs": "3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23",
+        "scripts/db/evidence-trust-launcher.mjs": "3c1346227841f91f872991f7e69d45c679c6d645afb48bf922c1a5bde1f63509"
+      },
+      "fixtures": [
+        "prisma/schema.prisma",
+        "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
+        "prisma/rls/tenant-scoped-models.json",
+        "prisma/seed/index.ts",
+        "libs/server/db/src/tenant-context.ts",
+        "libs/server/db/src/tenant-scope.ts",
+        "scripts/db/validate.mjs",
+        "scripts/db/validate-evidence.mjs",
+        "scripts/db/evidence-bootstrap.mjs",
+        "scripts/db/evidence-trust-launcher.mjs",
+        "scripts/db/evidence-provenance.mjs",
+        "scripts/db/evidence-bundle.schema.json",
+        "scripts/db/snapshot-evidence.mjs",
+        "scripts/db/validate-static.mjs",
+        "scripts/db/preflight.mjs",
+        "scripts/db/run-integration.mjs",
+        "tests/integration/db/postgres-image.json",
+        "tests/integration/db/rls.test.ts",
+        "tests/integration/db/tenant-context.test.ts",
+        "tests/integration/db/tenant-extension.test.ts"
+      ]
+    },
+    "supply-chain:check": {
+      "status": "PASS",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P03 executes deterministic asset discovery, inventory reconciliation, finding, waiver, digest, SBOM, and signature policy checks.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "supply-chain:validate"
+      ],
+      "fixtures": [
+        "docs/supply-chain/skills-and-plugins.manifest.json",
+        "docs/supply-chain/scanner-policy.json",
+        "libs/shared/contracts/assets/supply-chain-inventory.schema.json",
+        "scripts/check-supply-chain.mjs",
+        "src/main/computerUse/computerUseKit.ts",
+        "src/main/computerUse/computerUseRuntime.ts",
+        "src/shared/computerUse/constants.ts",
+        "tests/fixtures/supply_chain/critical-finding.json"
+      ]
+    },
+    "docker:build:check": {
+      "status": "PASS",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P03 builds all five production images, verifies non-root offline smoke behavior, scans image history, and generates digest-bound SPDX SBOM evidence.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "docker:build:validate"
+      ],
+      "fixtures": [
+        ".dockerignore",
+        "docker/web/Dockerfile",
+        "docker/api/Dockerfile",
+        "docker/worker/Dockerfile",
+        "docker/runtime-orchestrator/Dockerfile",
+        "docker/openclaw-runtime/Dockerfile",
+        "docker/openclaw-runtime/Dockerfile.debug",
+        "scripts/check-docker-build.mjs",
+        "scripts/harden-openclaw-runtime-dependencies.mjs"
+      ]
+    },
+    "helm:lint": {
+      "status": "PASS",
+      "activationTask": "P03-PR3部署供应链",
+      "reason": "P03 executes strict values schema validation, Helm lint/template, rendered security scans, and negative mutation checks.",
+      "command": [
+        "npm",
+        "run",
+        "--silent",
+        "helm:validate"
+      ],
+      "fixtures": [
+        "charts/lobsterai/Chart.yaml",
+        "charts/lobsterai/values.yaml",
+        "charts/lobsterai/values.schema.json",
+        "charts/lobsterai/templates/sandbox-pod.yaml",
+        "charts/lobsterai/templates/networkpolicies.yaml",
+        "charts/lobsterai/templates/resourcequota.yaml",
+        "scripts/check-helm.mjs"
+      ]
+    },
+    "poc:v1:check": {
+      "status": "NOT_APPLICABLE",
+      "activationTask": "P04-PR4PoC脚手架",
+      "reason": "P00 freezes the harness and evidence locations; PR-4 activates real V1 probes.",
+      "fixtures": [
+        "apps/runtime-orchestrator/poc/poc-manifest.json",
+        "charts/lobsterai/templates/sandbox-pod.yaml",
+        "docs/poc/20260711_V1_OpenClaw沙箱PoC证据包/README.md"
+      ]
+    }
+  }
+}

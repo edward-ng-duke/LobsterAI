@@ -1,0 +1,146 @@
+name: SaaS Scaffold
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/**'
+      - 'charts/**'
+      - 'docker/**'
+      - 'docs/poc/**'
+      - 'docs/supply-chain/**'
+      - 'libs/**'
+      - 'scripts/check-saas-build-artifacts.mjs'
+      - 'scripts/db/**'
+      - 'scripts/clean-saas-build.mjs'
+      - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/check-docker-build.mjs'
+      - 'scripts/check-helm.mjs'
+      - 'scripts/check-supply-chain.mjs'
+      - 'scripts/harden-openclaw-runtime-dependencies.mjs'
+      - 'scripts/expect-saas-stage-gate.mjs'
+      - 'scripts/json-without-duplicate-keys.mjs'
+      - 'scripts/run-saas-stage-gate.mjs'
+      - 'scripts/saas-stage-gates.json'
+      - 'scripts/saas-workspace-registry.json'
+      - 'scripts/saas-workspace-policy.mjs'
+      - 'tests/scaffold.test.ts'
+      - 'tests/scaffold-*.test.ts'
+      - 'tests/deploy-*.test.ts'
+      - 'tests/db/**'
+      - 'tests/integration/db/**'
+      - 'vitest.db.config.ts'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/saas-scaffold.yml'
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'charts/**'
+      - 'docker/**'
+      - 'docs/poc/**'
+      - 'docs/supply-chain/**'
+      - 'libs/**'
+      - 'scripts/check-saas-build-artifacts.mjs'
+      - 'scripts/db/**'
+      - 'scripts/clean-saas-build.mjs'
+      - 'scripts/check-saas-scaffold.mjs'
+      - 'scripts/check-docker-build.mjs'
+      - 'scripts/check-helm.mjs'
+      - 'scripts/check-supply-chain.mjs'
+      - 'scripts/harden-openclaw-runtime-dependencies.mjs'
+      - 'scripts/expect-saas-stage-gate.mjs'
+      - 'scripts/json-without-duplicate-keys.mjs'
+      - 'scripts/run-saas-stage-gate.mjs'
+      - 'scripts/saas-stage-gates.json'
+      - 'scripts/saas-workspace-registry.json'
+      - 'scripts/saas-workspace-policy.mjs'
+      - 'tests/scaffold.test.ts'
+      - 'tests/scaffold-*.test.ts'
+      - 'tests/deploy-*.test.ts'
+      - 'tests/db/**'
+      - 'tests/integration/db/**'
+      - 'vitest.db.config.ts'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/saas-scaffold.yml'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SAAS_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - name: Install pinned Helm
+        uses: Azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.21.0
+      - name: Install pinned Syft
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          syft-version: v1.44.0
+      - name: Install pinned Grype
+        id: grype
+        uses: anchore/scan-action/download-grype@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          grype-version: v0.112.0
+      - name: Add Grype to PATH
+        run: echo "$(dirname "${{ steps.grype.outputs.cmd }}")" >> "$GITHUB_PATH"
+      - run: npm ci
+      - run: npm run scaffold:check
+      - run: npm run contracts:generate
+      - run: npm run contracts:check
+      - run: npm run docker:build:check
+      - run: npm run supply-chain:check
+      - run: npm run helm:lint
+      - name: Verify active and deferred stage gate entry points are explicit
+        run: |
+          node scripts/expect-saas-stage-gate.mjs test:e2e
+          node scripts/expect-saas-stage-gate.mjs poc:v1:check
+      - run: npm run lint:saas
+      - run: npm run typecheck
+      - run: npm run test:scaffold
+      - run: npm test
+      - run: npm run build:saas
+      - name: Verify Web production bundle
+        run: |
+          test -f apps/web/dist/index.html
+          find apps/web/dist/assets -type f -name '*.js' -print -quit | grep -q .
+      - name: Verify legacy renderer and Electron compatibility
+        run: |
+          npm run build
+          npm run compile:electron
+      - name: Verify tracked sources remain reproducible
+        run: git diff --exit-code
+
+  db-integration:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run contracts:check
+      - run: npm run test:db:integration
+      - run: npm run prisma:validate
+      - run: git diff --exit-code

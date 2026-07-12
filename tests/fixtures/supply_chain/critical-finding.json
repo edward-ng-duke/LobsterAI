@@ -1,0 +1,6 @@
+{
+  "subject": "skill:malicious",
+  "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "findings": [{ "severity": "critical", "ruleId": "data-exfiltration" }],
+  "waivers": []
+}

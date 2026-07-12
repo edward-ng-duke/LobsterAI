@@ -1,0 +1,19 @@
+{
+  "name": "@lobsterai/shared-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "@asteasolutions/zod-to-openapi": "^8.2.0",
+    "@asyncapi/parser": "^3.4.0",
+    "openapi-typescript": "^7.10.1",
+    "yaml": "^2.8.1"
+  }
+}

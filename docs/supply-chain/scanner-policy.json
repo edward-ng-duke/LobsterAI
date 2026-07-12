@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "scanner": "grype",
+  "version": "0.112.0",
+  "releaseBaseUrl": "https://github.com/anchore/grype/releases/download/v0.112.0",
+  "checksumsFile": "grype_0.112.0_checksums.txt",
+  "checksumsFileSha256": "sha256:6294bee2e41b4af0c6f603b049b836b8dab25e39dac12343c7b69dfa9e7f1399",
+  "databasePolicy": "update-in-approved-build-environment-then-scan-offline",
+  "criticalPolicy": "fail-closed-unless-exact-unexpired-waiver"
+}

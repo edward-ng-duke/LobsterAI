@@ -53,6 +53,17 @@ import type {
   ShellGetBrowserAppsInput,
   ShellOpenFailureReason,
 } from '../../shared/shell/constants';
+import type { UserProfile } from '../store/slices/authSlice';
+
+interface AuthQuota {
+  planName: string;
+  subscriptionStatus: string;
+  creditsLimit: number;
+  creditsUsed: number;
+  creditsRemaining: number;
+  hasPaidCredits?: boolean;
+}
+
 interface ApiResponse {
   ok: boolean;
   status: number;
@@ -454,7 +465,7 @@ interface HtmlShareResult {
   warnings?: string[];
 }
 
-interface IElectronAPI {
+export interface IElectronAPI {
   platform: string;
   arch: string;
   store: {
@@ -889,6 +900,16 @@ interface IElectronAPI {
     }) => Promise<{ success: boolean; error?: string }>;
     getConfig: () => Promise<{ success: boolean; config?: CoworkConfig; error?: string }>;
     setConfig: (config: CoworkConfigUpdate) => Promise<{ success: boolean; error?: string }>;
+    getDreamingStatus: () => Promise<{
+      success: boolean;
+      data?: Record<string, unknown> | null;
+      error?: string;
+    }>;
+    getDreamDiary: () => Promise<{
+      success: boolean;
+      data?: Record<string, unknown>;
+      error?: string;
+    }>;
     notifyOpenSessionFromNotificationReady: () => Promise<{ success: boolean; error?: string }>;
     onOpenSessionFromNotification: (
       callback: (data: { sessionId: string }) => void,
@@ -1513,9 +1534,18 @@ interface IElectronAPI {
     login: (loginUrl?: string) => Promise<{ success: boolean; error?: string }>;
     exchange: (
       code: string,
-    ) => Promise<{ success: boolean; user?: any; quota?: any; error?: string }>;
-    getUser: () => Promise<{ success: boolean; user?: any; quota?: any }>;
-    getQuota: () => Promise<{ success: boolean; quota?: any }>;
+    ) => Promise<
+      | { success: true; user: UserProfile; quota: AuthQuota }
+      | { success: false; error?: string }
+    >;
+    getUser: () => Promise<
+      | { success: true; user: UserProfile; quota: AuthQuota | null }
+      | { success: false }
+    >;
+    getQuota: () => Promise<
+      | { success: true; quota: AuthQuota }
+      | { success: false }
+    >;
     logout: () => Promise<{ success: boolean }>;
     refreshToken: () => Promise<{ success: boolean; accessToken?: string }>;
     getAccessToken: () => Promise<string | null>;
@@ -1573,48 +1603,7 @@ interface IElectronAPI {
   networkStatus: {
     send: (status: 'online' | 'offline') => void;
   };
-  auth: {
-    login: (loginUrl?: string) => Promise<{ success: boolean; error?: string }>;
-    exchange: (code: string) => Promise<{
-      success: boolean;
-      user?: import('../store/slices/authSlice').UserProfile;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-      error?: string;
-    }>;
-    getUser: () => Promise<{
-      success: boolean;
-      user?: import('../store/slices/authSlice').UserProfile;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-    }>;
-    getQuota: () => Promise<{
-      success: boolean;
-      quota?: {
-        planName: string;
-        subscriptionStatus: string;
-        creditsLimit: number;
-        creditsUsed: number;
-        creditsRemaining: number;
-      };
-    }>;
-    logout: () => Promise<{ success: boolean }>;
-    refreshToken: () => Promise<{ success: boolean; accessToken?: string }>;
-    getAccessToken: () => Promise<string | null>;
-    getPendingCallback: () => Promise<string | null>;
-    onCallback: (callback: (data: { code: string }) => void) => () => void;
-  };
-  qwen: Record<string, never>;
+  qwen?: Record<string, never>;
   feishu: {
     install: {
       qrcode: (isLark: boolean) => Promise<{

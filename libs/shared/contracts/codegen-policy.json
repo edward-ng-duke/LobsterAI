@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "activationTask": "P01-PR1契约",
+  "requiredHeader": "Generated file. Do not edit.",
+  "sourceDirectories": [
+    "src"
+  ],
+  "fixtureDirectory": "fixtures",
+  "generatedDirectories": [
+    "generated",
+    "../../client/bridge/src/generated",
+    "../../../apps/api/src/generated",
+    "../../../apps/web/src/generated"
+  ]
+}

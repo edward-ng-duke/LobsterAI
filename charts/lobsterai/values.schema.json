@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["global", "images", "components", "config", "security", "networkPolicy", "quota", "sandbox"],
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "productionNetwork", "imagePullPolicy"],
+      "properties": {
+        "profile": { "const": "production" },
+        "productionNetwork": { "const": "offline" },
+        "imagePullPolicy": { "enum": ["IfNotPresent", "Never"] }
+      }
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["web", "api", "worker", "runtimeOrchestrator"],
+      "properties": {
+        "web": { "$ref": "#/$defs/image" },
+        "api": { "$ref": "#/$defs/image" },
+        "worker": { "$ref": "#/$defs/image" },
+        "runtimeOrchestrator": { "$ref": "#/$defs/image" }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["web", "api", "worker", "runtimeOrchestrator"],
+      "properties": {
+        "web": { "$ref": "#/$defs/httpComponent" },
+        "api": { "$ref": "#/$defs/httpComponent" },
+        "worker": { "$ref": "#/$defs/workerComponent" },
+        "runtimeOrchestrator": { "$ref": "#/$defs/httpComponent" }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logLevel", "modelProxyUrl", "objectStoreEndpoint", "secretRef"],
+      "properties": {
+        "logLevel": { "enum": ["error", "warn", "info"] },
+        "modelProxyUrl": { "$ref": "#/$defs/internalUrl" },
+        "objectStoreEndpoint": { "$ref": "#/$defs/internalUrl" },
+        "secretRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "databaseUrlKey", "redisUrlKey"],
+          "properties": {
+            "name": { "$ref": "#/$defs/dnsLabel" },
+            "databaseUrlKey": { "$ref": "#/$defs/dnsLabel" },
+            "redisUrlKey": { "$ref": "#/$defs/dnsLabel" }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runAsUser", "runAsGroup", "fsGroup"],
+      "properties": {
+        "runAsUser": { "type": "integer", "minimum": 1 },
+        "runAsGroup": { "type": "integer", "minimum": 1 },
+        "fsGroup": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "serviceNamespace", "ingressNamespace", "dnsNamespace"],
+      "properties": {
+        "enabled": { "const": true },
+        "serviceNamespace": { "$ref": "#/$defs/dnsLabel" },
+        "ingressNamespace": { "$ref": "#/$defs/dnsLabel" },
+        "dnsNamespace": { "$ref": "#/$defs/dnsLabel" }
+      }
+    },
+    "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestsCpu", "requestsMemory", "limitsCpu", "limitsMemory", "pods"],
+      "properties": {
+        "requestsCpu": { "$ref": "#/$defs/quantity" },
+        "requestsMemory": { "$ref": "#/$defs/quantity" },
+        "limitsCpu": { "$ref": "#/$defs/quantity" },
+        "limitsMemory": { "$ref": "#/$defs/quantity" },
+        "pods": { "$ref": "#/$defs/quantity" }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "image", "runtimeClassName", "serviceAccountName", "gatewayPort", "resources"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "$ref": "#/$defs/image" },
+        "runtimeClassName": { "type": "string" },
+        "serviceAccountName": { "type": "string" },
+        "gatewayPort": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+        "resources": { "$ref": "#/$defs/resources" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "enabled": { "const": true } } },
+          "then": {
+            "properties": {
+              "runtimeClassName": { "$ref": "#/$defs/dnsLabel" },
+              "serviceAccountName": { "$ref": "#/$defs/dnsLabel" }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "dnsLabel": { "type": "string", "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$", "maxLength": 63 },
+    "quantity": { "type": "string", "pattern": "^[1-9][0-9]*(?:m|Ki|Mi|Gi|Ti)?$" },
+    "internalUrl": { "type": "string", "pattern": "^https?://[a-z0-9.-]+\\.svc\\.cluster\\.local(?::[0-9]+)?$" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "digest"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[a-z0-9.-]+(?::[0-9]+)?/[a-z0-9._/-]+$",
+          "not": { "pattern": "(?:debug|xvfb|novnc|:latest)" }
+        },
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests", "limits"],
+      "properties": {
+        "requests": { "$ref": "#/$defs/resourcePair" },
+        "limits": { "$ref": "#/$defs/resourcePair" }
+      }
+    },
+    "resourcePair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpu", "memory"],
+      "properties": {
+        "cpu": { "$ref": "#/$defs/quantity" },
+        "memory": { "$ref": "#/$defs/quantity" }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initialDelaySeconds", "periodSeconds", "timeoutSeconds", "failureThreshold"],
+      "properties": {
+        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
+        "periodSeconds": { "type": "integer", "minimum": 1 },
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "failureThreshold": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "httpComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replicas", "port", "resources", "probe"],
+      "properties": {
+        "replicas": { "type": "integer", "minimum": 1 },
+        "port": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+        "resources": { "$ref": "#/$defs/resources" },
+        "probe": { "$ref": "#/$defs/probe" }
+      }
+    },
+    "workerComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replicas", "resources", "probe"],
+      "properties": {
+        "replicas": { "type": "integer", "minimum": 1 },
+        "resources": { "$ref": "#/$defs/resources" },
+        "probe": { "$ref": "#/$defs/probe" }
+      }
+    }
+  }
+}

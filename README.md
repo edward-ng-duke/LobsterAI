@@ -135,6 +135,10 @@ The renderer dev server runs at `http://localhost:5175`.
 
 ## Developing
 
+The desktop-to-SaaS engineering plan and staged entry gates are indexed in
+[`改造计划/README.md`](改造计划/README.md). New SaaS code must pass the
+workspace and compatibility gates before business implementation begins.
+
 ```bash
 # Production renderer bundle
 npm run build

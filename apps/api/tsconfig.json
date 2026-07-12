@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../libs/shared/types" },
+    { "path": "../../libs/server/auth" },
+    { "path": "../../libs/server/db" }
+  ]
+}

@@ -1,0 +1,47 @@
+{{- if .Values.sandbox.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-sandbox-fixture
+  labels:
+    app.kubernetes.io/name: lobsterai-sandbox
+spec:
+  runtimeClassName: {{ required "sandbox.runtimeClassName is a Day-0 decision" .Values.sandbox.runtimeClassName }}
+  serviceAccountName: {{ required "sandbox.serviceAccountName is a Day-0 decision" .Values.sandbox.serviceAccountName }}
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: {{ .Values.security.runAsUser }}
+    runAsGroup: {{ .Values.security.runAsGroup }}
+    fsGroup: {{ .Values.security.fsGroup }}
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: openclaw-runtime
+      image: '{{ required "sandbox.image.repository is required" .Values.sandbox.image.repository }}@{{ required "sandbox.image.digest is required" .Values.sandbox.image.digest }}'
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
+      ports:
+        - { name: gateway, containerPort: {{ .Values.sandbox.gatewayPort }} }
+      resources:
+        {{- toYaml .Values.sandbox.resources | nindent 8 }}
+      volumeMounts:
+        - { name: state, mountPath: /state }
+        - { name: workspace, mountPath: /workspace }
+        - { name: tmp, mountPath: /tmp }
+  volumes:
+    - name: state
+      emptyDir: { sizeLimit: 256Mi }
+    - name: workspace
+      emptyDir: { sizeLimit: 1Gi }
+    - name: tmp
+      emptyDir: { sizeLimit: 128Mi }
+{{- end }}
