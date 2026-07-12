@@ -91,6 +91,39 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
+  test('accepts a report checkout followed only by a frozen test commit', () => {
+    const root = createFixtureRoot();
+    mkdirSync(path.join(root, 'tests'), { recursive: true });
+    writeFileSync(path.join(root, 'tests/frozen-evidence-trigger.test.ts'), 'export {};\n');
+    const added = spawnSync('git', ['add', 'tests/frozen-evidence-trigger.test.ts'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    expect(added.status, added.stderr).toBe(0);
+    const committed = spawnSync(
+      'git',
+      ['commit', '--quiet', '--no-gpg-sign', '-m', 'test: frozen evidence trigger'],
+      { cwd: root, encoding: 'utf8' },
+    );
+    expect(committed.status, committed.stderr).toBe(0);
+
+    const result = runChecker(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test.each(['checkoutSha', 'productSourceSha', 'sourceSha'])(
+    'rejects a report with a drifted %s',
+    (field) => {
+      const root = createFixtureRoot();
+      const report = fixtureForRoot(root).readReport();
+      report[field] = 'f'.repeat(40);
+      fixtureForRoot(root).writeReport(report);
+
+      const result = runChecker(root);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    },
+  );
+
   const mutations: Array<{
     name: string;
     mutate: (root: string) => void;
