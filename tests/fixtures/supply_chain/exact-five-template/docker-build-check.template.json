@@ -17,5 +17,9 @@
   "signature": {
     "status": "BLOCKED",
     "reason": "Synthetic fixture has no publication trust identity."
+  },
+  "publish": {
+    "status": "BLOCKED",
+    "reason": "Synthetic fixture has no internal registry target."
   }
 }

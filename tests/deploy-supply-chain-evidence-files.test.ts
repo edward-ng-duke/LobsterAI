@@ -73,6 +73,8 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(report.checkoutSha).toBe(fixture.sourceSha);
     expect(report.productSourceSha).toBe(fixture.sourceSha);
     expect(report.sourceSha).toBe(report.productSourceSha);
+    expect(report.signature.status).toBe('BLOCKED');
+    expect(report.publish.status).toBe('BLOCKED');
 
     for (const image of report.images) {
       expect(image.localImageId).toMatch(/^sha256:[a-f0-9]{64}$/);
