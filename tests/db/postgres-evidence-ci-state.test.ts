@@ -101,8 +101,8 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
       stderr: JSON.stringify({
         status: 'FAILED',
         errors: [
-          'codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)',
-          'stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)',
+          `codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (${'a'.repeat(40)})`,
+          `stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (${'a'.repeat(40)})`,
         ],
       }),
     })).toBe(false);
@@ -118,6 +118,8 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
     ['stderr diagnostic with noise', 1, '', 'noise\n{"status":"FAILED","errors":[]}'],
     ['multiple stderr diagnostics', 1, '', '{"status":"FAILED","errors":[]}\n{"status":"FAILED","errors":[]}'],
     ['conflicting output streams', 1, '{"status":"PASS"}', '{"status":"FAILED","errors":[]}'],
+    ['successful stdout with noise', 0, 'noise\n{"status":"PASS"}', ''],
+    ['successful validation with stderr', 0, '{"status":"PASS"}', '{"status":"FAILED"}'],
   ])('does not mask %s as a pre-freeze source', async (_label, status, stdout, stderr) => {
     const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
     const { classifyTrustedEvidenceValidation } = await import(resolverPath);

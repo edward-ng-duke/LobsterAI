@@ -28,31 +28,53 @@ export const resolveEvidencePhase = ({ eventName, evidenceReady, trustedEvidence
 };
 
 export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) => {
-  if (status === 0) return true;
-  const bootstrapMismatch = stderr.trim().match(
-    /^P02 evidence bootstrap: trusted file mismatch ([^\r\n]+)$/,
-  );
-  if (status === 86 && bootstrapMismatch) return false;
-
-  try {
-    const result = JSON.parse(stdout);
-    if (
-      status === 1 &&
-      result?.status === 'FAILED' &&
-      Array.isArray(result.errors) &&
-      result.errors.length > 0 &&
-      result.errors.every((error) =>
-        /^(codeEvidenceSha|stageEvidenceSha): non-evidence change after source SHA:/.test(error),
-      )
-    ) {
-      return false;
+  const parseUniqueJson = (stream, label) => {
+    if (typeof stream !== 'string' || stream.trim().length === 0) {
+      throw new Error(`trusted evidence ${label} must contain exactly one JSON diagnostic`);
     }
-  } catch {
-    // Non-JSON validator output is handled as an illegal evidence failure below.
+    try {
+      return JSON.parse(stream.trim());
+    } catch (error) {
+      throw new Error(`trusted evidence ${label} is not one isolated JSON diagnostic: ${error.message}`);
+    }
+  };
+
+  if (status === 0) {
+    if (stderr.trim() !== '') {
+      throw new Error('successful trusted evidence validation wrote an unexpected stderr diagnostic');
+    }
+    const result = parseUniqueJson(stdout, 'stdout');
+    if (result?.status !== 'PASS') {
+      throw new Error('successful trusted evidence validation did not emit PASS');
+    }
+    return true;
+  }
+
+  if (status === 1 && stdout.trim() === '') {
+    const result = parseUniqueJson(stderr, 'stderr');
+    const fields = Object.keys(result ?? {}).sort();
+    if (
+      JSON.stringify(fields) === JSON.stringify(['errors', 'status']) &&
+      result.status === 'FAILED' &&
+      Array.isArray(result.errors) &&
+      result.errors.length === 2
+    ) {
+      const pattern = /^(codeEvidenceSha|stageEvidenceSha): non-evidence change after source SHA: ((?:A|M|D|R\d+|C\d+) [^\r\n]+ \([a-f0-9]{40}\))$/;
+      const matches = result.errors.map((error) =>
+        typeof error === 'string' ? error.match(pattern) : null,
+      );
+      if (
+        matches.every(Boolean) &&
+        new Set(matches.map((match) => match[1])).size === 2 &&
+        matches[0][2] === matches[1][2]
+      ) {
+        return false;
+      }
+    }
   }
   throw new Error(
     `trusted evidence validation failed outside the auditable source-drift states: ` +
-    `exit=${status ?? 'unknown'} ${stderr.trim() || stdout.trim()}`,
+    `exit=${status ?? 'unknown'}`,
   );
 };
 
