@@ -98,9 +98,30 @@ try {
 
   requireEqual(integration.skipped, 0, 'integration skipped');
   const migrations = integration.checks?.migrations;
-  for (const field of ['first', 'repeat', 'rollback', 'concurrent']) {
+  for (const field of ['first', 'repeat', 'existingSchema']) {
     requireEqual(migrations?.[field], true, `integration migrations.${field}`);
   }
+  requireEqual(migrations?.rollback?.failed, true, 'integration migrations.rollback.failed');
+  requireEqual(
+    migrations?.rollback?.partialTableAbsent,
+    true,
+    'integration migrations.rollback.partialTableAbsent',
+  );
+  requireEqual(
+    migrations?.rollback?.rolledBackRows,
+    1,
+    'integration migrations.rollback.rolledBackRows',
+  );
+  requireEqual(migrations?.rollback?.repaired, true, 'integration migrations.rollback.repaired');
+  requireEqual(migrations?.concurrent?.safe, true, 'integration migrations.concurrent.safe');
+  if (JSON.stringify(migrations?.concurrent?.exitCodes) !== JSON.stringify([0, 0])) {
+    fail('integration migrations.concurrent.exitCodes differs from [0,0]');
+  }
+  requireEqual(
+    migrations?.concurrent?.completedRows,
+    1,
+    'integration migrations.concurrent.completedRows',
+  );
   const checksPassed = integration.checks?.checksPassed;
   const checksTotal = integration.checks?.checksTotal;
   if (!Number.isInteger(checksPassed) || checksPassed <= 0 || checksPassed !== checksTotal) {
