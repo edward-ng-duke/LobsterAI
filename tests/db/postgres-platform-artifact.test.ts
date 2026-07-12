@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
   mkdirSync,
@@ -17,6 +18,32 @@ const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const sourceSha = '1234567890abcdef1234567890abcdef12345678';
 const digest = 'sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a';
 const temporaryRoots: string[] = [];
+const baselineMigrationName = '20260710000000_existing_catalog_baseline';
+const currentMigrationName = '20260711000000_init_prisma_rls_scaffold';
+const baselineMigrationSql = [
+  'CREATE TABLE p02_preexisting_catalog (id INTEGER PRIMARY KEY, marker TEXT NOT NULL);',
+  "INSERT INTO p02_preexisting_catalog (id, marker) VALUES (1, 'preserve-me');",
+  '',
+].join('\n');
+const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
+const currentMigrationChecksum = sha256(readFileSync(
+  path.join(repositoryRoot, 'prisma/migrations', currentMigrationName, 'migration.sql'),
+  'utf8',
+));
+const beforeCatalogPayload = { tables: ['_prisma_migrations', 'p02_preexisting_catalog'] };
+const afterCatalogPayload = {
+  tables: ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'],
+};
+interface ExistingSchemaFixture {
+  beforeCatalog: { sha256: string };
+  afterCatalog: { sha256: string };
+  migrationHistory: Array<{
+    migrationName: string;
+    checksum: string;
+    finished: boolean;
+    rolledBack: boolean;
+  }>;
+}
 
 const provider = () => ({
   dockerPlatform: 'linux/arm64',
@@ -86,10 +113,28 @@ const writeArtifact = (): string => {
           prepared: true,
           preserved: true,
           completedMigrations: 2,
-          beforeTables: ['_prisma_migrations', 'p02_preexisting_catalog'],
-          afterTables: ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'],
-          beforeCatalogSha256: '1'.repeat(64),
-          afterCatalogSha256: '2'.repeat(64),
+          beforeCatalog: {
+            payload: beforeCatalogPayload,
+            sha256: sha256(JSON.stringify(beforeCatalogPayload)),
+          },
+          afterCatalog: {
+            payload: afterCatalogPayload,
+            sha256: sha256(JSON.stringify(afterCatalogPayload)),
+          },
+          migrationHistory: [
+            {
+              migrationName: baselineMigrationName,
+              checksum: sha256(baselineMigrationSql),
+              finished: true,
+              rolledBack: false,
+            },
+            {
+              migrationName: currentMigrationName,
+              checksum: currentMigrationChecksum,
+              finished: true,
+              rolledBack: false,
+            },
+          ],
         },
         rollback: {
           failed: true,
@@ -308,6 +353,63 @@ describe('PostgreSQL native platform artifact boundary', () => {
         migrations: { existingSchema: { prepared: boolean } };
       };
       checks.migrations.existingSchema.prepared = false;
+    });
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test.each([
+    ['fake before hash', (existing: ExistingSchemaFixture) => {
+      existing.beforeCatalog.sha256 = '1'.repeat(64);
+    }],
+    ['fake after hash', (existing: ExistingSchemaFixture) => {
+      existing.afterCatalog.sha256 = '2'.repeat(64);
+    }],
+    ['different migration name', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory[1].migrationName = '20260711000000_unapproved';
+    }],
+    ['different migration checksum', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory[1].checksum = '3'.repeat(64);
+    }],
+    ['same count but duplicated history', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory[1] = { ...existing.migrationHistory[0] };
+    }],
+    ['missing history row', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory.pop();
+    }],
+    ['extra history row', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory.push({ ...existing.migrationHistory[1] });
+    }],
+    ['unfinished history row', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory[1].finished = false;
+    }],
+    ['rolled-back history row', (existing: ExistingSchemaFixture) => {
+      existing.migrationHistory[1].rolledBack = true;
+    }],
+  ])('rejects existing-schema %s', (_label, mutation) => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      const checks = value.checks as { migrations: { existingSchema: unknown } };
+      mutation(checks.migrations.existingSchema);
+    });
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects the legacy arbitrary-hex catalog claim without migration history', () => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      const checks = value.checks as {
+        migrations: { existingSchema: Record<string, unknown> };
+      };
+      const existing = checks.migrations.existingSchema;
+      delete existing.beforeCatalog;
+      delete existing.afterCatalog;
+      delete existing.migrationHistory;
+      existing.beforeTables = ['_prisma_migrations', 'p02_preexisting_catalog'];
+      existing.afterTables = ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'];
+      existing.beforeCatalogSha256 = '1'.repeat(64);
+      existing.afterCatalogSha256 = '2'.repeat(64);
     });
 
     expect(run(root).status).toBe(1);
