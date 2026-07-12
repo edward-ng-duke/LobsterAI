@@ -4,56 +4,55 @@ import path from 'node:path';
 import { load } from 'js-yaml';
 import { describe, expect, test } from 'vitest';
 
+import {
+  validateMainCiWorkflow,
+  type Workflow,
+  type WorkflowStep,
+} from './helpers/ci-workflow-evidence';
+
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
-
-interface WorkflowStep {
-  'continue-on-error'?: boolean;
-  run?: string;
-  uses?: string;
-  with?: Record<string, unknown>;
-}
-
-interface WorkflowJob {
-  if?: string;
-  needs?: string | string[];
-  steps?: WorkflowStep[];
-}
-
-interface Workflow {
-  on?: { pull_request?: unknown };
-  jobs?: Record<string, WorkflowJob>;
-}
 
 const parseWorkflow = (): Workflow =>
   load(readFileSync(path.join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8')) as Workflow;
 
+const findCommandStep = (workflow: Workflow, command: string): WorkflowStep => {
+  const matches = (workflow.jobs?.test?.steps ?? []).filter((step) => step.run?.trim() === command);
+  expect(matches).toHaveLength(1);
+  return matches[0];
+};
+
 describe('main CI test evidence', () => {
   test('runs official tests independently with full Git history and a frozen install', () => {
     const workflow = parseWorkflow();
-    const job = workflow.jobs?.test;
-    const lintJob = workflow.jobs?.lint;
-    const steps = job?.steps ?? [];
+    expect(validateMainCiWorkflow(workflow)).toEqual([]);
+  });
 
-    expect(job).toBeDefined();
-    expect(lintJob).toBeDefined();
-    expect(lintJob).not.toHaveProperty('if');
-    expect(job?.needs).toEqual(['lint']);
-    expect(job).not.toHaveProperty('if');
-    const pullRequest = workflow.on?.pull_request;
-    expect(pullRequest).toBeDefined();
-    if (pullRequest && typeof pullRequest === 'object') {
-      expect(pullRequest).not.toHaveProperty('paths');
-    }
+  test.each(['npm ci', 'npm test'])('rejects a step-level if on %s', (command) => {
+    const workflow = structuredClone(parseWorkflow());
+    findCommandStep(workflow, command).if = '${{ false }}';
 
-    const checkout = steps.find((step) => step.uses === 'actions/checkout@v4');
-    expect(checkout?.with?.['fetch-depth']).toBe(0);
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
+  });
 
-    const commands = steps.flatMap((step) => (typeof step.run === 'string' ? [step.run.trim()] : []));
-    expect(commands).toContain('npm ci');
-    expect(commands).toContain('npm test');
-    expect(commands.indexOf('npm ci')).toBeLessThan(commands.indexOf('npm test'));
-    expect(commands.some((command) => /(^|\s)npm install(?:\s|$)/.test(command))).toBe(false);
-    expect(commands.some((command) => command.includes('|| true'))).toBe(false);
-    expect(steps.some((step) => step['continue-on-error'] === true)).toBe(false);
+  test.each(['npm ci', 'npm test'])('rejects continue-on-error on %s even when false', (command) => {
+    const workflow = structuredClone(parseWorkflow());
+    findCommandStep(workflow, command)['continue-on-error'] = false;
+
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
+  });
+
+  test('rejects reordering setup-node before checkout', () => {
+    const workflow = structuredClone(parseWorkflow());
+    const steps = workflow.jobs?.test?.steps ?? [];
+    [steps[0], steps[1]] = [steps[1], steps[0]];
+
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
+  });
+
+  test('rejects duplicate npm test steps', () => {
+    const workflow = structuredClone(parseWorkflow());
+    workflow.jobs?.test?.steps?.push({ run: 'npm test' });
+
+    expect(validateMainCiWorkflow(workflow)).not.toEqual([]);
   });
 });
