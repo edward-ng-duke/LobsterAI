@@ -1,5 +1,6 @@
 import {
   cpSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -20,9 +21,15 @@ interface TypeScriptProjectConfig {
 }
 
 interface TypeScriptProject {
-  absoluteDirectory: string;
+  canonicalDirectory: string;
   manifest: { name?: string };
-  relativeDirectory: string;
+  relativeDirectories: string[];
+}
+
+interface MutableTypeScriptProject {
+  canonicalDirectory: string;
+  manifest: { name?: string };
+  relativeDirectories: Set<string>;
 }
 
 export interface WebWorkspaceBuildFixture {
@@ -43,10 +50,26 @@ const assertContainedPath = (root: string, candidate: string, label: string): st
   return resolvedCandidate;
 };
 
-const assertRepositorySource = (candidate: string, label: string): string => {
-  const resolvedCandidate = assertContainedPath(repositoryRoot, candidate, label);
-  assertContainedPath(canonicalRepositoryRoot, realpathSync(resolvedCandidate), `${label} canonical path`);
+const assertStrictSubpath = (root: string, candidate: string, label: string): string => {
+  const resolvedCandidate = assertContainedPath(root, candidate, label);
+  if (path.relative(path.resolve(root), resolvedCandidate) === '') {
+    throw new Error(`${label} must be a non-empty strict subpath of ${path.resolve(root)}`);
+  }
   return resolvedCandidate;
+};
+
+const resolveCanonicalRepositorySource = (candidate: string, label: string): string => {
+  const lexicalCandidate = assertContainedPath(repositoryRoot, candidate, label);
+  return assertContainedPath(
+    canonicalRepositoryRoot,
+    realpathSync(lexicalCandidate),
+    `${label} canonical path`,
+  );
+};
+
+const projectRelativeDirectory = (candidate: string, label: string): string => {
+  const strictDirectory = assertStrictSubpath(repositoryRoot, candidate, label);
+  return normalizeRelativePath(path.relative(repositoryRoot, strictDirectory));
 };
 
 const resolveProjectConfig = (configPath: string, referencePath: string): string => {
@@ -55,49 +78,92 @@ const resolveProjectConfig = (configPath: string, referencePath: string): string
 };
 
 const collectProjectReferenceClosure = (entryConfig: string): TypeScriptProject[] => {
-  const projectConfigs = new Set<string>();
+  const projects = new Map<string, MutableTypeScriptProject>();
   const visit = (candidateConfig: string): void => {
-    const absoluteConfig = assertRepositorySource(candidateConfig, 'TypeScript project config');
-    if (projectConfigs.has(absoluteConfig)) return;
-    projectConfigs.add(absoluteConfig);
+    const lexicalConfig = assertContainedPath(repositoryRoot, candidateConfig, 'TypeScript project config');
+    const relativeDirectory = projectRelativeDirectory(
+      path.dirname(lexicalConfig),
+      'TypeScript project destination',
+    );
+    const canonicalConfig = resolveCanonicalRepositorySource(
+      lexicalConfig,
+      'TypeScript project config',
+    );
+    const existingProject = projects.get(canonicalConfig);
+    if (existingProject) {
+      existingProject.relativeDirectories.add(relativeDirectory);
+      return;
+    }
+
+    const canonicalDirectory = assertStrictSubpath(
+      canonicalRepositoryRoot,
+      realpathSync(path.dirname(canonicalConfig)),
+      'Canonical TypeScript project directory',
+    );
+    const manifestPath = resolveCanonicalRepositorySource(
+      path.join(canonicalDirectory, 'package.json'),
+      'TypeScript project manifest',
+    );
+    const project: MutableTypeScriptProject = {
+      canonicalDirectory,
+      manifest: JSON.parse(readFileSync(manifestPath, 'utf8')) as { name?: string },
+      relativeDirectories: new Set([relativeDirectory]),
+    };
+    projects.set(canonicalConfig, project);
 
     const config = JSON.parse(
-      readFileSync(absoluteConfig, 'utf8'),
+      readFileSync(canonicalConfig, 'utf8'),
     ) as TypeScriptProjectConfig;
     for (const reference of config.references ?? []) {
       if (!reference || typeof reference.path !== 'string' || reference.path.length === 0) {
-        throw new Error(`Invalid TypeScript project reference in ${absoluteConfig}`);
+        throw new Error(`Invalid TypeScript project reference in ${canonicalConfig}`);
       }
-      visit(resolveProjectConfig(absoluteConfig, reference.path));
+      visit(resolveProjectConfig(canonicalConfig, reference.path));
     }
   };
 
   visit(path.resolve(repositoryRoot, entryConfig));
-  return [...projectConfigs]
-    .sort()
-    .map((absoluteConfig) => {
-      const absoluteDirectory = assertRepositorySource(
-        path.dirname(absoluteConfig),
-        'TypeScript project directory',
-      );
-      const manifestPath = assertRepositorySource(
-        path.join(absoluteDirectory, 'package.json'),
-        'TypeScript project manifest',
-      );
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { name?: string };
-      return {
-        absoluteDirectory,
-        manifest,
-        relativeDirectory: normalizeRelativePath(path.relative(repositoryRoot, absoluteDirectory)),
-      };
-    });
+  return [...projects.values()]
+    .map((project) => ({
+      canonicalDirectory: project.canonicalDirectory,
+      manifest: project.manifest,
+      relativeDirectories: [...project.relativeDirectories].sort(),
+    }))
+    .sort((left, right) => left.canonicalDirectory.localeCompare(right.canonicalDirectory));
 };
 
-const copyProject = (targetRoot: string, project: TypeScriptProject): void => {
-  const source = assertRepositorySource(project.absoluteDirectory, 'TypeScript project directory');
-  const destination = assertContainedPath(
+const isExcludedProjectPath = (relativePath: string): boolean =>
+  /(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(relativePath) ||
+  relativePath.endsWith('.tsbuildinfo');
+
+const assertProjectTreeHasNoSymlinks = (source: string): void => {
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const candidate = path.join(directory, entry.name);
+      const relativeCandidate = normalizeRelativePath(path.relative(source, candidate));
+      if (isExcludedProjectPath(relativeCandidate)) continue;
+      if (entry.isSymbolicLink() || lstatSync(candidate).isSymbolicLink()) {
+        throw new Error(`TypeScript project source must not contain symlinks: ${candidate}`);
+      }
+      if (entry.isDirectory()) visit(candidate);
+    }
+  };
+  visit(source);
+};
+
+const copyProject = (
+  targetRoot: string,
+  project: TypeScriptProject,
+  relativeDirectory: string,
+): void => {
+  const source = assertStrictSubpath(
+    canonicalRepositoryRoot,
+    project.canonicalDirectory,
+    'Canonical TypeScript project directory',
+  );
+  const destination = assertStrictSubpath(
     targetRoot,
-    path.resolve(targetRoot, project.relativeDirectory),
+    path.resolve(targetRoot, relativeDirectory),
     'Fixture project destination',
   );
   mkdirSync(path.dirname(destination), { recursive: true });
@@ -105,8 +171,11 @@ const copyProject = (targetRoot: string, project: TypeScriptProject): void => {
     recursive: true,
     filter: (candidate) => {
       const relativeCandidate = normalizeRelativePath(path.relative(source, candidate));
-      return !/(?:^|\/)(?:dist|dist-types|node_modules)(?:\/|$)/.test(relativeCandidate) &&
-        !relativeCandidate.endsWith('.tsbuildinfo');
+      if (isExcludedProjectPath(relativeCandidate)) return false;
+      if (lstatSync(candidate).isSymbolicLink()) {
+        throw new Error(`TypeScript project source must not contain symlinks: ${candidate}`);
+      }
+      return true;
     },
   });
 };
@@ -132,10 +201,12 @@ const linkExternalNodeModules = (targetRoot: string, projects: TypeScriptProject
     if (packageName.includes('/') || packageName.includes('\\')) {
       throw new Error(`Invalid @lobsterai package name: ${project.manifest.name}`);
     }
+    const packageDirectory = project.relativeDirectories[0];
+    if (!packageDirectory) throw new Error(`Missing fixture destination for ${project.manifest.name}`);
     symlinkSync(
-      assertContainedPath(
+      assertStrictSubpath(
         targetRoot,
-        path.resolve(targetRoot, project.relativeDirectory),
+        path.resolve(targetRoot, packageDirectory),
         'Fixture package source',
       ),
       assertContainedPath(
@@ -150,13 +221,18 @@ const linkExternalNodeModules = (targetRoot: string, projects: TypeScriptProject
 
 export const createWebWorkspaceBuildFixture = (): WebWorkspaceBuildFixture => {
   const projects = collectProjectReferenceClosure(webProjectConfig);
+  projects.forEach((project) => assertProjectTreeHasNoSymlinks(project.canonicalDirectory));
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-web-build-'));
   try {
     for (const rootFile of ['package.json', 'tsconfig.base.json']) {
       cpSync(path.join(repositoryRoot, rootFile), path.join(root, rootFile));
     }
 
-    projects.forEach((project) => copyProject(root, project));
+    projects.forEach((project) =>
+      project.relativeDirectories.forEach((relativeDirectory) =>
+        copyProject(root, project, relativeDirectory),
+      ),
+    );
     linkExternalNodeModules(root, projects);
 
     return {
