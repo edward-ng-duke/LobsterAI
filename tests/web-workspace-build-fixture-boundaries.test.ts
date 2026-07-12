@@ -1,9 +1,11 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -144,6 +146,95 @@ describe('Web workspace build fixture boundaries', () => {
       fixture.cleanup();
       fixture.cleanup();
     }
+    expectNoNewFixtureRoots(temporaryDirectory, before);
+  });
+
+  test('copies an in-repository project alias without linking writes back to its source', async () => {
+    const root = createRepository();
+    const temporaryDirectory = fixtureTemporaryDirectory(root);
+    writeProject(root, 'apps/web', '@lobsterai/web', ['../../libs/alias']);
+    writeProject(root, 'libs/real', '@lobsterai/real');
+    symlinkSync('real', path.join(root, 'libs/alias'), 'dir');
+    const sourceSentinel = path.join(root, 'libs/real/fixture-write.txt');
+    const fixtureModule = await loadFixtureModule(root);
+
+    const fixture = withTemporaryDirectory(temporaryDirectory, fixtureModule.createWebWorkspaceBuildFixture);
+    try {
+      const fixtureAlias = path.join(fixture.root, 'libs/alias');
+      writeFileSync(path.join(fixtureAlias, 'fixture-write.txt'), 'fixture-only\n');
+      expect(existsSync(sourceSentinel)).toBe(false);
+      expect(lstatSync(fixtureAlias).isSymbolicLink()).toBe(false);
+      expect(realpathSync(fixtureAlias)).not.toBe(realpathSync(path.join(root, 'libs/real')));
+    } finally {
+      fixture.cleanup();
+    }
+    expectNoNewFixtureRoots(temporaryDirectory, new Set());
+  });
+
+  test('keeps a canonical alias cycle bounded without source links', async () => {
+    const root = createRepository();
+    const temporaryDirectory = fixtureTemporaryDirectory(root);
+    writeProject(root, 'apps/web', '@lobsterai/web', ['../../libs/one-alias']);
+    writeProject(root, 'libs/one', '@lobsterai/one', ['../two-alias']);
+    writeProject(root, 'libs/two', '@lobsterai/two', ['../one-alias']);
+    symlinkSync('one', path.join(root, 'libs/one-alias'), 'dir');
+    symlinkSync('two', path.join(root, 'libs/two-alias'), 'dir');
+    const sourceSentinel = path.join(root, 'libs/two/cycle-write.txt');
+    const fixtureModule = await loadFixtureModule(root);
+
+    const fixture = withTemporaryDirectory(temporaryDirectory, fixtureModule.createWebWorkspaceBuildFixture);
+    try {
+      const fixtureAlias = path.join(fixture.root, 'libs/two-alias');
+      writeFileSync(path.join(fixtureAlias, 'cycle-write.txt'), 'fixture-only\n');
+      expect(existsSync(sourceSentinel)).toBe(false);
+      expect(lstatSync(path.join(fixture.root, 'libs/one-alias')).isSymbolicLink()).toBe(false);
+      expect(lstatSync(fixtureAlias).isSymbolicLink()).toBe(false);
+    } finally {
+      fixture.cleanup();
+    }
+    expectNoNewFixtureRoots(temporaryDirectory, new Set());
+  });
+
+  test('rejects a repository-root project destination without fixture residue', async () => {
+    const root = createRepository();
+    const temporaryDirectory = fixtureTemporaryDirectory(root);
+    writeProject(root, 'apps/web', '@lobsterai/web', ['../..']);
+    writeJson(path.join(root, 'tsconfig.json'), { references: [] });
+    const before = listFixtureRoots(temporaryDirectory);
+    const fixtureModule = await loadFixtureModule(root);
+    let fixture: WebWorkspaceBuildFixture | undefined;
+    let failure: unknown;
+
+    try {
+      fixture = withTemporaryDirectory(temporaryDirectory, fixtureModule.createWebWorkspaceBuildFixture);
+    } catch (error) {
+      failure = error;
+    } finally {
+      fixture?.cleanup();
+    }
+    expect(String(failure)).toMatch(/root|destination|subpath|directory/i);
+    expectNoNewFixtureRoots(temporaryDirectory, before);
+  });
+
+  test('rejects nested source symlinks before constructing a fixture', async () => {
+    const root = createRepository();
+    const temporaryDirectory = fixtureTemporaryDirectory(root);
+    writeProject(root, 'apps/web', '@lobsterai/web', ['../../libs/linked-source']);
+    writeProject(root, 'libs/linked-source', '@lobsterai/linked-source');
+    symlinkSync('index.ts', path.join(root, 'libs/linked-source/linked.ts'));
+    const before = listFixtureRoots(temporaryDirectory);
+    const fixtureModule = await loadFixtureModule(root);
+    let fixture: WebWorkspaceBuildFixture | undefined;
+    let failure: unknown;
+
+    try {
+      fixture = withTemporaryDirectory(temporaryDirectory, fixtureModule.createWebWorkspaceBuildFixture);
+    } catch (error) {
+      failure = error;
+    } finally {
+      fixture?.cleanup();
+    }
+    expect(String(failure)).toMatch(/symlink|symbolic/i);
     expectNoNewFixtureRoots(temporaryDirectory, before);
   });
 });
