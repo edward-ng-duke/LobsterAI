@@ -175,4 +175,5 @@ jobs:
           P02_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: npm test
         env:
+          SAAS_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           P02_EVIDENCE_PHASE: ${{ steps.p02-evidence-phase.outputs.phase }}
