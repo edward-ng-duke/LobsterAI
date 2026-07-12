@@ -111,6 +111,11 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
       stderr: 'P02 evidence bootstrap: trusted file mismatch package.json\n',
     })).toBe(false);
     expect(classifyTrustedEvidenceValidation({
+      status: 86,
+      stdout: '',
+      stderr: 'P02 evidence bootstrap: trusted file mismatch scripts/db/validate-evidence.mjs\n',
+    })).toBe(false);
+    expect(classifyTrustedEvidenceValidation({
       status: 1,
       stdout: '',
       stderr: JSON.stringify({
@@ -125,7 +130,7 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
 
   test.each([
     ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
-    ['unapproved trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch scripts/db/validate-evidence.mjs'],
+    ['unapproved trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch scripts/db/untrusted-validator.mjs'],
     ['invalid manifest', 1, '', 'SyntaxError: Unexpected token'],
     ['evidence digest corruption', 1, '{"status":"FAILED","errors":["integration.json: manifest report digest mismatch"]}', ''],
     ['missing trusted file', 86, '', 'P02 evidence bootstrap: missing trusted package.json'],

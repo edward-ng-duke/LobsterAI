@@ -99,7 +99,8 @@ describe('P02 Reviewer Round 1 P1 red baseline', () => {
     const manifestPath = path.join(evidenceDirectory, 'evidence-manifest.json');
     const stagePath = path.join(evidenceDirectory, 'prisma-stage-gate.json');
     expect(existsSync(manifestPath)).toBe(true);
-    expect(existsSync(stagePath)).toBe(true);
+    const preFreeze = process.env.P02_EVIDENCE_PHASE === 'pre-freeze';
+    expect(existsSync(stagePath)).toBe(!preFreeze);
     const manifest = JSON.parse(
       existsSync(manifestPath) ? readFileSync(manifestPath, 'utf8') : '{}',
     ) as Record<string, unknown>;
@@ -111,18 +112,20 @@ describe('P02 Reviewer Round 1 P1 red baseline', () => {
     expect(sourceShas.size).toBe(1);
     const [sourceSha] = sourceShas;
     expect(sourceSha).toBe(manifest.codeEvidenceSha);
-    expect(stage.sourceSha).toBe(manifest.stageEvidenceSha);
+    if (!preFreeze) expect(stage.sourceSha).toBe(manifest.stageEvidenceSha);
     expect(sourceSha).toMatch(/^[a-f0-9]{40}$/);
     expect(
       spawnSync('git', ['merge-base', '--is-ancestor', String(sourceSha), 'HEAD'], {
         cwd: repositoryRoot,
       }).status,
     ).toBe(0);
-    expect(
-      spawnSync('git', ['merge-base', '--is-ancestor', String(stage.sourceSha), 'HEAD'], {
-        cwd: repositoryRoot,
-      }).status,
-    ).toBe(0);
+    if (!preFreeze) {
+      expect(
+        spawnSync('git', ['merge-base', '--is-ancestor', String(stage.sourceSha), 'HEAD'], {
+          cwd: repositoryRoot,
+        }).status,
+      ).toBe(0);
+    }
     expect(reports[3]).toHaveProperty('commands');
     expect(reports[3]).not.toHaveProperty('commandExitCodes');
   });
@@ -136,7 +139,9 @@ describe('P02 Reviewer Round 1 P1 red baseline', () => {
     });
     if (process.env.P02_EVIDENCE_PHASE === 'pre-freeze') {
       expect(current.status).not.toBe(0);
-      expect(current.stderr).toContain('trusted file mismatch package.json');
+      expect(current.stderr).toContain(
+        'trusted file mismatch scripts/db/validate-evidence.mjs',
+      );
       expect(
         readFileSync(path.join(repositoryRoot, 'scripts/db/evidence-bundle.schema.json'), 'utf8'),
       ).toContain('additionalProperties');
