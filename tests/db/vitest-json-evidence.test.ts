@@ -65,6 +65,47 @@ describe('Vitest structured integration evidence', () => {
     }))).toThrow();
   });
 
+  test('rejects an all-green assertion count when a test suite failed to load', () => {
+    const failureMessage = [
+      'Error: SECRET_TOKEN=must-not-leak',
+      'postgresql://p02:private@database.internal:5432/p02',
+      '    at unsafe-stack-frame.ts:42:1',
+    ].join('\n').repeat(100);
+    const failedSuiteName = `${'/untrusted/'.repeat(40)}migration-lifecycle.test.ts`;
+    const target = writeReport({
+      ...report(),
+      numPassedTestSuites: 5,
+      numFailedTestSuites: 1,
+      numTotalTests: 11,
+      numPassedTests: 11,
+      testResults: [{
+        name: failedSuiteName,
+        status: 'failed',
+        message: failureMessage,
+      }],
+    });
+
+    let diagnostic = '';
+    try {
+      loadVitestJsonEvidence(target);
+    } catch (error) {
+      diagnostic = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(diagnostic).toContain('migration-lifecycle.test.ts');
+    expect(diagnostic).not.toContain('SECRET_TOKEN');
+    expect(diagnostic).not.toContain('postgresql://');
+    expect(diagnostic).not.toContain('unsafe-stack-frame');
+    expect(diagnostic.length).toBeLessThanOrEqual(256);
+  });
+
+  test('rejects inconsistent test suite totals', () => {
+    expect(() => loadVitestJsonEvidence(writeReport({
+      ...report(),
+      numFailedTestSuites: 1,
+    }))).toThrow(/suite counts/i);
+  });
+
   test('rejects malformed or missing machine fields', () => {
     expect(() => loadVitestJsonEvidence(writeReport({ numTotalTests: 27 }))).toThrow();
     expect(() => loadVitestJsonEvidence(writeReport('{not-json'))).toThrow();

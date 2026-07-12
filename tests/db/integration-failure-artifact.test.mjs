@@ -97,6 +97,27 @@ test('the integration runner preserves a real Vitest failure in its final artifa
   assert.deepEqual(temporaryReports, []);
 });
 
+test('the integration runner identifies a suite collection failure without leaking raw diagnostics', () => {
+  const { result, report, temporaryReports } = runIsolatedIntegration((worktree) => {
+    writeFileSync(
+      path.join(worktree, 'tests/integration/db/migration-lifecycle.test.ts'),
+      [
+        "import './p02-intentionally-missing-SECRET_TOKEN.js';",
+        "throw new Error('postgresql://p02:private@database.internal/p02');",
+        '',
+      ].join('\n'),
+    );
+  });
+  assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+  assert.equal(report.status, 'FAILED');
+  assert.equal(report.checks.provider.serverMajor, 17);
+  assert.equal(report.cleanup.attempted, true);
+  assert.equal(report.cleanup.removed, true);
+  assert.match(report.error, /migration-lifecycle\.test\.ts/);
+  assert.doesNotMatch(report.error, /SECRET_TOKEN|postgresql:\/\//);
+  assert.deepEqual(temporaryReports, []);
+});
+
 test('the integration runner preserves base evidence and cleanup after JSON parse failure', () => {
   const { result, report, temporaryReports } = runIsolatedIntegration((worktree) => {
     const parser = path.join(worktree, 'scripts/db/vitest-json-evidence.mjs');
