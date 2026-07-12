@@ -11,6 +11,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -68,20 +69,29 @@ const createRepository = () => {
 };
 
 const createFailingGitPath = (root: string, mode: GitFailureMode) => {
+  const gitExecutableNames = ['git', 'git.exe', 'git.cmd', 'git.bat'];
   const realGit = process.env.PATH?.split(path.delimiter)
-    .map(directory => path.join(directory, 'git'))
-    .find(candidate => existsSync(candidate));
+    .flatMap(directory => gitExecutableNames.map(name => path.join(directory, name)))
+    .find(candidate => {
+      if (!existsSync(candidate)) return false;
+      const result = spawnSync(candidate, ['--version'], {
+        shell: /\.(?:cmd|bat)$/i.test(candidate),
+        stdio: 'ignore',
+      });
+      return result.status === 0;
+    });
   expect(realGit, 'the test environment must expose a real Git executable').toBeTruthy();
 
   const binDirectory = path.join(root, `.fake-git-${mode}`);
-  const fakeGitPath = path.join(binDirectory, 'git');
+  const fakeGitProgramPath = path.join(binDirectory, 'fake-git.cjs');
+  const fakeGitPath = path.join(binDirectory, process.platform === 'win32' ? 'git.cmd' : 'git');
   mkdirSync(binDirectory, { recursive: true });
-  writeFileSync(fakeGitPath, [
-    `#!${process.execPath}`,
+  writeFileSync(fakeGitProgramPath, [
     "const { spawnSync } = require('node:child_process');",
     "const { unlinkSync } = require('node:fs');",
     `const mode = ${JSON.stringify(mode)};`,
     `const realGit = ${JSON.stringify(realGit)};`,
+    `const fakeGitPath = ${JSON.stringify(fakeGitPath)};`,
     'const main = () => {',
     '  const args = process.argv.slice(2);',
     "  const isNameStatus = ['diff', 'diff-tree'].includes(args[0]) && args.includes('--name-status');",
@@ -101,18 +111,41 @@ const createFailingGitPath = (root: string, mode: GitFailureMode) => {
     '      return;',
     '    }',
     '  }',
-    "  const result = spawnSync(realGit, args, { stdio: 'inherit' });",
+    "  const result = spawnSync(realGit, args, {",
+    "    shell: /\\.(?:cmd|bat)$/i.test(realGit),",
+    "    stdio: 'inherit',",
+    "  });",
     "  if (mode === 'enoent' && args[0] === 'rev-list' && args.includes('--parents')) {",
-    '    unlinkSync(process.argv[1]);',
+    "    if (process.platform === 'win32') process.exitCode = 86;",
+    '    else unlinkSync(fakeGitPath);',
     '  }',
     '  if (result.error) throw result.error;',
     "  if (result.signal) process.kill(process.pid, result.signal);",
-    '  process.exitCode = result.status ?? 1;',
+    '  if (process.exitCode !== 86) process.exitCode = result.status ?? 1;',
     '};',
     'main();',
     '',
   ].join('\n'));
-  chmodSync(fakeGitPath, 0o755);
+  if (process.platform === 'win32') {
+    writeFileSync(fakeGitPath, [
+      '@echo off',
+      `"${process.execPath}" "${fakeGitProgramPath}" %*`,
+      'set "FAKE_GIT_STATUS=%ERRORLEVEL%"',
+      'if "%FAKE_GIT_STATUS%"=="86" (',
+      '  del /f /q "%~f0"',
+      '  exit /b 0',
+      ')',
+      'exit /b %FAKE_GIT_STATUS%',
+      '',
+    ].join('\r\n'));
+  } else {
+    writeFileSync(fakeGitPath, [
+      `#!${process.execPath}`,
+      `require(${JSON.stringify(fakeGitProgramPath)});`,
+      '',
+    ].join('\n'));
+    chmodSync(fakeGitPath, 0o755);
+  }
   return binDirectory;
 };
 
@@ -154,6 +187,50 @@ describe('parseGitNameStatusZ', () => {
     ))).toEqual(expectedPaths);
   });
 
+  test('preserves a leading UTF-8 BOM as a path character without Unicode normalization', () => {
+    const pathBytes = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from('docs/cafe\u0301.md'),
+    ]);
+    const output = Buffer.concat([Buffer.from('A\0'), pathBytes, Buffer.from([0])]);
+
+    expect(parseGitNameStatusZ(output)).toEqual(['\uFEFFdocs/cafe\u0301.md']);
+    expect(parseGitNameStatusZ(output)?.[0]).not.toBe('\uFEFFdocs/caf\u00e9.md');
+  });
+
+  test('parses 100,000 records within a constrained child-process heap', () => {
+    const moduleUrl = new URL('../scripts/check-supply-chain.mjs', import.meta.url).href;
+    const childScript = `
+      import { parseGitNameStatusZ } from ${JSON.stringify(moduleUrl)};
+      const recordCount = 100_000;
+      const input = Buffer.allocUnsafe(888_890);
+      let offset = 0;
+      for (let index = 0; index < recordCount; index += 1) {
+        offset += input.write('A', offset, 'ascii');
+        input[offset++] = 0;
+        offset += input.write(\`p\${index}\`, offset, 'utf8');
+        input[offset++] = 0;
+      }
+      if (offset !== input.length) throw new Error(\`fixture size mismatch: \${offset}\`);
+      const paths = parseGitNameStatusZ(input);
+      if (paths?.length !== recordCount || paths[0] !== 'p0' || paths.at(-1) !== 'p99999') {
+        throw new Error('parser did not preserve all paths');
+      }
+    `;
+    const result = spawnSync(process.execPath, [
+      '--max-old-space-size=24',
+      '--input-type=module',
+      '--eval',
+      childScript,
+    ], {
+      cwd: path.dirname(fileURLToPath(import.meta.url)),
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
   test.each([
     ['missing trailing NUL', Buffer.from('M\0docs/file.md')],
     ['truncated rename', Buffer.from('R100\0docs/old.md\0')],
@@ -186,7 +263,8 @@ describe('P03 product-source evidence boundaries', () => {
     try {
       expect(resolveProductSourceSha(root)).toBe(analyzedCommit);
     } finally {
-      process.env.PATH = originalPath;
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
     }
   });
 
