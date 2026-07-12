@@ -3,7 +3,14 @@ import { describe, expect, test } from 'vitest';
 interface MigrationLifecycleEvidence {
   first?: boolean;
   repeat?: boolean;
-  existingSchema?: boolean;
+  existingSchema?: {
+    independentDatabase?: boolean;
+    prepared?: boolean;
+    preserved?: boolean;
+    completedMigrations?: number;
+    beforeTables?: string[];
+    afterTables?: string[];
+  };
   rollback?: {
     failed?: boolean;
     partialTableAbsent?: boolean;
@@ -26,7 +33,14 @@ describe('P02 migration lifecycle evidence', () => {
     expect(evidence).toMatchObject({
       first: true,
       repeat: true,
-      existingSchema: true,
+      existingSchema: {
+        independentDatabase: true,
+        prepared: true,
+        preserved: true,
+        completedMigrations: 1,
+        beforeTables: ['p02_preexisting_catalog'],
+        afterTables: ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'],
+      },
     });
   });
 
