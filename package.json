@@ -111,7 +111,7 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "test": "vitest run",
-    "pretest": "npm rebuild better-sqlite3",
+    "pretest": "npm rebuild better-sqlite3 && tsc -b tsconfig.workspace.json --clean && tsc -b tsconfig.workspace.json --pretty false && node scripts/contracts/generate.mjs --check",
     "test:sqlite-backup:seed": "node tests/sqlite-backup/generate-large-db.cjs",
     "preview": "vite preview",
     "compile:electron": "tsc --project electron-tsconfig.json",
