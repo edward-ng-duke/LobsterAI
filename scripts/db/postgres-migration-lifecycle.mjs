@@ -1,5 +1,4 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -7,6 +6,12 @@ import path from 'node:path';
 import pg from 'pg';
 
 import { repositoryRoot } from './common.mjs';
+import {
+  createCatalogEvidence,
+  ExistingSchemaMigration,
+  existingSchemaBaselineSql,
+  validateExistingSchemaEvidence,
+} from './existing-schema-evidence.mjs';
 
 const { Client } = pg;
 
@@ -82,12 +87,12 @@ export const runPostgresMigrationLifecycle = async ({ adminUrl, runId }) => {
     const existingUrl = databaseUrl(adminUrl, existingDatabase);
     const existingRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-existing-'));
     temporaryRoots.push(existingRoot);
-    const existingBaselineMigration = '20260710000000_existing_catalog_baseline';
-    const existingSchema = createMigrationFixture(existingRoot, existingBaselineMigration, [
-      'CREATE TABLE p02_preexisting_catalog (id INTEGER PRIMARY KEY, marker TEXT NOT NULL);',
-      "INSERT INTO p02_preexisting_catalog (id, marker) VALUES (1, 'preserve-me');",
-      '',
-    ].join('\n'));
+    const existingBaselineMigration = ExistingSchemaMigration.Baseline;
+    const existingSchema = createMigrationFixture(
+      existingRoot,
+      existingBaselineMigration,
+      existingSchemaBaselineSql,
+    );
     const baselineDeploy = runPrisma(
       ['migrate', 'deploy', '--schema', existingSchema],
       existingUrl,
@@ -99,7 +104,7 @@ export const runPostgresMigrationLifecycle = async ({ adminUrl, runId }) => {
       "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename",
     );
     await existingClient.end();
-    const currentMigration = '20260711000000_init_prisma_rls_scaffold';
+    const currentMigration = ExistingSchemaMigration.Current;
     const currentMigrationDirectory = path.join(existingRoot, 'migrations', currentMigration);
     mkdirSync(currentMigrationDirectory, { recursive: true });
     writeFileSync(
@@ -123,9 +128,14 @@ export const runPostgresMigrationLifecycle = async ({ adminUrl, runId }) => {
     const existingMarker = await existingAfterClient.query(
       "SELECT count(*)::int AS count FROM p02_preexisting_catalog WHERE marker = 'preserve-me'",
     );
-    const existingMigrations = await existingAfterClient.query(
-      'SELECT count(*)::int AS count FROM _prisma_migrations WHERE finished_at IS NOT NULL',
-    );
+    const existingMigrations = await existingAfterClient.query(`
+      SELECT migration_name AS "migrationName",
+             checksum,
+             finished_at IS NOT NULL AS finished,
+             rolled_back_at IS NOT NULL AS "rolledBack"
+        FROM _prisma_migrations
+       ORDER BY started_at, id
+    `);
     await existingAfterClient.end();
     const beforeTables = beforeCatalog.rows.map((row) => row.tablename);
     const afterTables = afterCatalog.rows.map((row) => row.tablename);
@@ -140,11 +150,10 @@ export const runPostgresMigrationLifecycle = async ({ adminUrl, runId }) => {
         ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'].every(
           (table) => afterTables.includes(table),
         ),
-      completedMigrations: existingMigrations.rows[0]?.count,
-      beforeTables,
-      afterTables,
-      beforeCatalogSha256: createHash('sha256').update(JSON.stringify(beforeTables)).digest('hex'),
-      afterCatalogSha256: createHash('sha256').update(JSON.stringify(afterTables)).digest('hex'),
+      completedMigrations: existingMigrations.rowCount,
+      beforeCatalog: createCatalogEvidence(beforeTables),
+      afterCatalog: createCatalogEvidence(afterTables),
+      migrationHistory: existingMigrations.rows,
     };
     if (
       !existingSchemaEvidence.independentDatabase ||
@@ -154,6 +163,7 @@ export const runPostgresMigrationLifecycle = async ({ adminUrl, runId }) => {
     ) {
       throw new Error('existing-schema migration evidence is incomplete');
     }
+    validateExistingSchemaEvidence(existingSchemaEvidence);
 
     const rollbackRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-rollback-'));
     temporaryRoots.push(rollbackRoot);

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { parseJsonRejectingDuplicateKeys } from '../json-without-duplicate-keys.mjs';
 import { repositoryRoot } from './common.mjs';
+import { validateExistingSchemaEvidence } from './existing-schema-evidence.mjs';
 import {
   createPostgresImagePolicyError,
   loadPostgresImageManifest,
@@ -143,8 +144,30 @@ const validateStrictReportSchema = (report, name, kind) => {
     ], `${name} checks.migrations`);
     exactFields(report.checks.migrations.existingSchema, [
       'independentDatabase', 'prepared', 'preserved', 'completedMigrations',
-      'beforeTables', 'afterTables', 'beforeCatalogSha256', 'afterCatalogSha256',
+      'beforeCatalog', 'afterCatalog', 'migrationHistory',
     ], `${name} existingSchema`);
+    for (const catalogName of ['beforeCatalog', 'afterCatalog']) {
+      const catalog = report.checks.migrations.existingSchema[catalogName];
+      exactFields(catalog, ['payload', 'sha256'], `${name} existingSchema.${catalogName}`);
+      exactFields(
+        catalog.payload,
+        ['tables'],
+        `${name} existingSchema.${catalogName}.payload`,
+      );
+      if (!Array.isArray(catalog.payload.tables)) {
+        fail(`${name} existingSchema.${catalogName}.payload.tables must be an array`);
+      }
+    }
+    if (!Array.isArray(report.checks.migrations.existingSchema.migrationHistory)) {
+      fail(`${name} existingSchema.migrationHistory must be an array`);
+    }
+    report.checks.migrations.existingSchema.migrationHistory.forEach((entry, index) =>
+      exactFields(
+        entry,
+        ['migrationName', 'checksum', 'finished', 'rolledBack'],
+        `${name} existingSchema.migrationHistory[${index}]`,
+      ),
+    );
     exactFields(report.checks.migrations.rollback, [
       'failed', 'partialTableAbsent', 'rolledBackRows', 'repaired',
     ], `${name} rollback`);
@@ -280,25 +303,7 @@ try {
     2,
     'integration migrations.existingSchema.completedMigrations',
   );
-  if (JSON.stringify(existingSchema?.beforeTables) !== JSON.stringify([
-    '_prisma_migrations',
-    'p02_preexisting_catalog',
-  ])) {
-    fail('integration migrations.existingSchema.beforeTables is invalid');
-  }
-  if (JSON.stringify(existingSchema?.afterTables) !== JSON.stringify([
-    '_prisma_migrations',
-    'agents',
-    'p02_preexisting_catalog',
-    'tenants',
-  ])) {
-    fail('integration migrations.existingSchema.afterTables is invalid');
-  }
-  for (const field of ['beforeCatalogSha256', 'afterCatalogSha256']) {
-    if (!/^[a-f0-9]{64}$/.test(existingSchema?.[field] ?? '')) {
-      fail(`integration migrations.existingSchema.${field} is invalid`);
-    }
-  }
+  validateExistingSchemaEvidence(existingSchema);
   requireEqual(migrations?.rollback?.failed, true, 'integration migrations.rollback.failed');
   requireEqual(
     migrations?.rollback?.partialTableAbsent,
