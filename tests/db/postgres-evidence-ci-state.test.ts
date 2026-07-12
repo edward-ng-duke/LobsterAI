@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
@@ -88,30 +96,104 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
       status: 0, stdout: '{"status":"PASS"}', stderr: '',
     })).toBe(true);
     expect(classifyTrustedEvidenceValidation({
-      status: 86,
-      stdout: '',
-      stderr: 'P02 evidence bootstrap: trusted file mismatch package.json\n',
-    })).toBe(false);
-    expect(classifyTrustedEvidenceValidation({
       status: 1,
-      stdout: JSON.stringify({
+      stdout: '',
+      stderr: JSON.stringify({
         status: 'FAILED',
-        errors: ['codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)'],
+        errors: [
+          'codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)',
+          'stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)',
+        ],
       }),
-      stderr: '',
     })).toBe(false);
   });
 
   test.each([
     ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
+    ['trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch package.json'],
     ['invalid manifest', 1, '', 'SyntaxError: Unexpected token'],
     ['evidence digest corruption', 1, '{"status":"FAILED","errors":["integration.json: manifest report digest mismatch"]}', ''],
     ['missing trusted file', 86, '', 'P02 evidence bootstrap: missing trusted package.json'],
+    ['provenance JSON on stdout', 1, '{"status":"FAILED","errors":["codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)","stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)"]}', ''],
+    ['stderr diagnostic with noise', 1, '', 'noise\n{"status":"FAILED","errors":[]}'],
+    ['multiple stderr diagnostics', 1, '', '{"status":"FAILED","errors":[]}\n{"status":"FAILED","errors":[]}'],
+    ['conflicting output streams', 1, '{"status":"PASS"}', '{"status":"FAILED","errors":[]}'],
   ])('does not mask %s as a pre-freeze source', async (_label, status, stdout, stderr) => {
     const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
     const { classifyTrustedEvidenceValidation } = await import(resolverPath);
 
     expect(() => classifyTrustedEvidenceValidation({ status, stdout, stderr })).toThrow();
+  });
+
+  test('classifies the real trusted launcher stderr after a linear source drift commit', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-phase-drift-'));
+    const worktree = path.join(root, 'worktree');
+    try {
+      const added = spawnSync('git', ['worktree', 'add', '--detach', worktree, '6c7bf0b9'], {
+        cwd: repositoryRoot,
+        encoding: 'utf8',
+      });
+      expect(added.status, added.stderr).toBe(0);
+      const gates = JSON.parse(
+        readFileSync(path.join(worktree, 'scripts/saas-stage-gates.json'), 'utf8'),
+      ) as {
+        gates: Record<string, { trustedFiles: Record<string, string> }>;
+      };
+      const digest = gates.gates['prisma:validate']
+        .trustedFiles['scripts/db/evidence-bootstrap.mjs'];
+      const launch = () => spawnSync(
+        process.execPath,
+        [
+          'scripts/db/evidence-trust-launcher.mjs',
+          '--expected-bootstrap-sha256',
+          digest,
+        ],
+        { cwd: worktree, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } },
+      );
+      const valid = launch();
+      expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+
+      mkdirSync(path.join(worktree, 'src'), { recursive: true });
+      writeFileSync(
+        path.join(worktree, 'src/p02-phase-drift-probe.ts'),
+        'export const p02PhaseDriftProbe = true;\n',
+      );
+      expect(spawnSync('git', ['add', 'src/p02-phase-drift-probe.ts'], {
+        cwd: worktree, encoding: 'utf8',
+      }).status).toBe(0);
+      const committed = spawnSync(
+        'git',
+        [
+          '-c', 'core.hooksPath=/dev/null',
+          '-c', 'user.name=P02 Phase Test',
+          '-c', 'user.email=p02-phase@example.invalid',
+          'commit', '-m', 'test: add linear phase drift probe',
+        ],
+        { cwd: worktree, encoding: 'utf8' },
+      );
+      expect(committed.status, committed.stderr).toBe(0);
+      const drift = launch();
+      expect(drift.status).toBe(1);
+      expect(drift.stdout).toBe('');
+      expect(JSON.parse(drift.stderr)).toMatchObject({
+        status: 'FAILED',
+        errors: [
+          expect.stringContaining('codeEvidenceSha: non-evidence change after source SHA'),
+          expect.stringContaining('stageEvidenceSha: non-evidence change after source SHA'),
+        ],
+      });
+
+      const { classifyTrustedEvidenceValidation } = await import(
+        path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs')
+      );
+      expect(classifyTrustedEvidenceValidation(drift)).toBe(false);
+    } finally {
+      spawnSync('git', ['worktree', 'remove', '--force', worktree], {
+        cwd: repositoryRoot,
+      });
+      spawnSync('git', ['worktree', 'prune'], { cwd: repositoryRoot });
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test('treats stale trusted evidence as the expected pre-freeze state', () => {
