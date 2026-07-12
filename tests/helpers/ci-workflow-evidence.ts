@@ -1,6 +1,7 @@
 export interface WorkflowStep {
   'continue-on-error'?: unknown;
   if?: string;
+  name?: string;
   run?: string;
   uses?: string;
   with?: Record<string, unknown>;
@@ -13,10 +14,114 @@ export interface WorkflowJob {
   steps?: WorkflowStep[];
 }
 
+export interface WorkflowTrigger {
+  paths?: unknown;
+}
+
 export interface Workflow {
-  on?: { pull_request?: unknown };
+  on?: {
+    pull_request?: unknown;
+    push?: unknown;
+  };
   jobs?: Record<string, WorkflowJob>;
 }
+
+export interface SaasEvidenceWorkflowRequirements {
+  evidenceDirectory: string;
+  fixturePath: string;
+  fixtureTemplateGlob: string;
+}
+
+const asTrigger = (trigger: unknown): WorkflowTrigger | undefined =>
+  trigger && typeof trigger === 'object' ? trigger as WorkflowTrigger : undefined;
+
+const exactRunSteps = (steps: WorkflowStep[], command: string) =>
+  steps.filter(step => step.run?.trim() === command);
+
+export const validateSaasEvidenceWorkflow = (
+  workflow: Workflow,
+  requirements: SaasEvidenceWorkflowRequirements,
+): string[] => {
+  const errors: string[] = [];
+  const requiredTriggerPaths = [requirements.fixturePath, requirements.fixtureTemplateGlob];
+
+  for (const triggerName of ['push', 'pull_request'] as const) {
+    const trigger = asTrigger(workflow.on?.[triggerName]);
+    const paths = trigger?.paths;
+    if (!Array.isArray(paths) || !paths.every(path => typeof path === 'string')) {
+      errors.push(`${triggerName} trigger must declare string paths`);
+      continue;
+    }
+    for (const requiredPath of requiredTriggerPaths) {
+      if (!paths.includes(requiredPath)) {
+        errors.push(`${triggerName} paths must include ${requiredPath}`);
+      }
+    }
+  }
+
+  const scaffold = workflow.jobs?.scaffold;
+  if (!scaffold) errors.push('scaffold job must exist');
+  const steps = scaffold?.steps ?? [];
+  const checkoutSteps = steps.filter(step => step.uses === 'actions/checkout@v4');
+  if (checkoutSteps.length !== 1) errors.push('scaffold must contain exactly one checkout step');
+  if (checkoutSteps[0]?.with?.['fetch-depth'] !== 0) {
+    errors.push('scaffold checkout must fetch full history');
+  }
+
+  const dockerCommand = 'npm run docker:build:check';
+  const supplyChainCommand = 'npm run supply-chain:check';
+  const helmCommand = 'npm run helm:lint';
+  const modeCommand = `test "$(stat -c '%a' '${requirements.evidenceDirectory}/docker-build-check.json')" = 600`;
+  const requiredCommands = [dockerCommand, supplyChainCommand, helmCommand, modeCommand];
+  const commandSteps = requiredCommands.map(command => exactRunSteps(steps, command));
+  commandSteps.forEach((matches, index) => {
+    if (matches.length !== 1) {
+      errors.push(`scaffold must contain exactly one ${requiredCommands[index]} step`);
+    }
+  });
+
+  const uploadSteps = steps.filter(step => step.uses === 'actions/upload-artifact@v4' &&
+    step.with?.name === 'p03-supply-chain-${{ github.sha }}');
+  if (uploadSteps.length !== 1) {
+    errors.push('scaffold must contain exactly one SHA-bound P03 evidence upload');
+  }
+  const upload = uploadSteps[0];
+  const expectedUploadPath = `${requirements.evidenceDirectory}/`;
+  if (upload?.with?.path !== expectedUploadPath) {
+    errors.push(`P03 upload path must be exactly ${expectedUploadPath}`);
+  }
+  if (upload?.with?.['include-hidden-files'] !== true) {
+    errors.push('P03 upload must include hidden files');
+  }
+  if (upload?.with?.['if-no-files-found'] !== 'error') {
+    errors.push('P03 upload must fail when evidence is missing');
+  }
+  if (upload?.with?.['retention-days'] !== 14) {
+    errors.push('P03 upload retention must be 14 days');
+  }
+
+  const orderedSteps = [...commandSteps.map(matches => matches[0]), upload];
+  const orderedIndexes = orderedSteps.map(step => steps.indexOf(step));
+  if (orderedIndexes.some(index => index < 0) ||
+      orderedIndexes.some((index, position) => position > 0 && index <= orderedIndexes[position - 1])) {
+    errors.push('P03 evidence steps must run docker, supply-chain, Helm, mode check, upload in order');
+  }
+
+  for (const [index, step] of orderedSteps.entries()) {
+    if (!step) continue;
+    if (Object.hasOwn(step, 'if')) {
+      errors.push(`P03 evidence step ${index + 1} must be unconditional`);
+    }
+    if (Object.hasOwn(step, 'continue-on-error')) {
+      errors.push(`P03 evidence step ${index + 1} must fail closed`);
+    }
+    if (typeof step.run === 'string' && step.run.includes('|| true')) {
+      errors.push(`P03 evidence step ${index + 1} must not bypass failures`);
+    }
+  }
+
+  return errors;
+};
 
 export const validateMainCiWorkflow = (workflow: Workflow): string[] => {
   const errors: string[] = [];
