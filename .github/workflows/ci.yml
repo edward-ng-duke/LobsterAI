@@ -166,6 +166,11 @@ jobs:
           key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
           restore-keys: npm-${{ runner.os }}-
       - run: npm ci
+      - id: p02-evidence-phase
+        run: node scripts/db/resolve-evidence-phase.mjs
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
       - run: npm test
         env:
-          P02_EVIDENCE_PHASE: pre-freeze
+          P02_EVIDENCE_PHASE: ${{ steps.p02-evidence-phase.outputs.phase }}
