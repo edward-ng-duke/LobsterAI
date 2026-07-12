@@ -552,6 +552,65 @@ describe('P02 external evidence bootstrap boundary', () => {
     );
   });
 
+  test('rejects an external same-byte symlink for the trusted bootstrap itself', () => {
+    const root = createFixture();
+    const externalRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-bootstrap-target-'));
+    temporaryRoots.push(externalRoot);
+    const relativePath = 'scripts/db/evidence-bootstrap.mjs';
+    const bootstrapPath = path.join(root, relativePath);
+    const externalPath = path.join(externalRoot, path.basename(relativePath));
+    writeFileSync(externalPath, readFileSync(bootstrapPath));
+    rmSync(bootstrapPath);
+    symlinkSync(externalPath, bootstrapPath);
+
+    const result = run(root, true);
+    expect(result.signal, `${result.stdout}\n${result.stderr}`).not.toBe('SIGTERM');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      `P02 evidence trust launcher: bootstrap must be a regular file ${relativePath}`,
+    );
+  });
+
+  test('rejects a protected FIFO without trying to read it', () => {
+    const root = createFixture();
+    const relativePath = 'tests/integration/db/postgres-image.json';
+    const protectedPath = path.join(root, relativePath);
+    rmSync(protectedPath);
+    const mkfifo = spawnSync('mkfifo', [protectedPath], { encoding: 'utf8' });
+    expect(mkfifo.status, `${mkfifo.stdout}\n${mkfifo.stderr}`).toBe(0);
+
+    const result = run(root, true);
+    expect(result.signal, `${result.stdout}\n${result.stderr}`).not.toBe('SIGTERM');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
+    );
+  });
+
+  test('rejects a broken symlink where an optional protected file could be absent', () => {
+    const root = createFixture();
+    const relativePath = 'package.json';
+    symlinkSync(path.join(root, 'missing-package.json'), path.join(root, relativePath));
+
+    const result = run(root, true);
+    expect(result.signal, `${result.stdout}\n${result.stderr}`).not.toBe('SIGTERM');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
+    );
+  });
+
+  test('accepts a legal symlink path to the trusted worktree root', () => {
+    const root = createFixture();
+    const aliasRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-root-alias-'));
+    temporaryRoots.push(aliasRoot);
+    const alias = path.join(aliasRoot, 'worktree');
+    symlinkSync(root, alias, 'dir');
+
+    const result = run(alias, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
   test('rejects a coordinated approved digest and report replacement after the source commit', () => {
     const unapprovedDigest = `sha256:${'b'.repeat(64)}`;
     const root = createFixture((reports) => {
