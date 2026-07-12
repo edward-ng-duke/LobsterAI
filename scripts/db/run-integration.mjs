@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 import pg from 'pg';
 
@@ -19,6 +22,7 @@ import {
 } from './postgres-image-policy.mjs';
 import { stopPostgresContainer } from './postgres-container-cleanup.mjs';
 import { runPostgresMigrationLifecycle } from './postgres-migration-lifecycle.mjs';
+import { loadVitestJsonEvidence } from './vitest-json-evidence.mjs';
 
 const { Client } = pg;
 const report = {
@@ -44,6 +48,7 @@ const requireSuccessful = (result, label) => {
 
 let container;
 let exitCode = 0;
+let vitestReportRoot;
 try {
   requireSuccessful(run(process.execPath, ['scripts/db/preflight.mjs', '--contracts']), 'contract preflight');
   const manifest = loadPostgresImageManifest(repositoryRoot);
@@ -193,21 +198,25 @@ try {
     P02_DATABASE_RUN_ID: report.runId,
     P02_MIGRATION_LIFECYCLE_EVIDENCE: JSON.stringify(migrationLifecycle),
   };
+  vitestReportRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-vitest-report-'));
+  const vitestReportPath = path.join(vitestReportRoot, 'integration.json');
   const tests = run(
     'npx',
-    ['vitest', 'run', '--config', 'vitest.db.config.ts', '--reporter=verbose'],
+    [
+      'vitest',
+      'run',
+      '--config',
+      'vitest.db.config.ts',
+      '--reporter=json',
+      `--outputFile=${vitestReportPath}`,
+    ],
     testEnv,
   );
   process.stdout.write(tests.stdout);
   process.stderr.write(tests.stderr);
   if (tests.status !== 0) throw new Error(`database integration tests failed with exit ${tests.status}`);
-  const checksTotal = Number.parseInt(
-    tests.stdout.match(/Tests\s+(\d+) passed/)?.[1] ?? '',
-    10,
-  );
-  if (!Number.isInteger(checksTotal) || checksTotal <= 0) {
-    throw new Error('database integration test count is unavailable');
-  }
+  const testResults = loadVitestJsonEvidence(vitestReportPath);
+  console.log(JSON.stringify({ status: 'PASS', testResults }));
 
   report.status = 'PASS';
   report.checks = {
@@ -226,8 +235,9 @@ try {
     rls: rls.rows,
     roles: roles.rows,
     seed: seedRows.rows,
-    checksPassed: checksTotal,
-    checksTotal,
+    checksPassed: testResults.passed,
+    checksTotal: testResults.total,
+    testResults,
     testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
   };
 } catch (error) {
@@ -241,6 +251,7 @@ try {
     report.status = 'FAILED';
     exitCode = 1;
   }
+  if (vitestReportRoot) rmSync(vitestReportRoot, { recursive: true, force: true });
   writeAtomicJson('.reports/db/integration.json', report);
   (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
   process.exitCode = exitCode;

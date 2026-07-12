@@ -127,6 +127,13 @@ try {
   if (!Number.isInteger(checksPassed) || checksPassed <= 0 || checksPassed !== checksTotal) {
     fail('integration checksPassed/checksTotal are incomplete');
   }
+  const testResults = integration.checks?.testResults;
+  for (const field of ['failed', 'skipped', 'todo']) {
+    requireEqual(testResults?.[field], 0, `integration testResults.${field}`);
+  }
+  requireEqual(testResults?.passed, checksPassed, 'integration testResults.passed');
+  requireEqual(testResults?.total, checksTotal, 'integration testResults.total');
+  requireEqual(integration.skipped, testResults?.skipped, 'integration skipped/testResults.skipped');
 
   console.log(JSON.stringify({
     status: 'PASS',
