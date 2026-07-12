@@ -15,6 +15,10 @@ const manifest = JSON.parse(manifestSource) as {
 const packageJson = JSON.parse(
   readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'),
 ) as { scripts?: Record<string, string> };
+const sharedContractsPackage = JSON.parse(
+  readFileSync(path.join(repositoryRoot, 'libs/shared/contracts/package.json'), 'utf8'),
+) as { main?: string };
+const gitignore = readFileSync(path.join(repositoryRoot, '.gitignore'), 'utf8');
 const scaffoldChecker = readFileSync(
   path.join(repositoryRoot, 'scripts/check-saas-scaffold.mjs'),
   'utf8',
@@ -75,5 +79,13 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
     const digest = createHash('sha256').update(source).digest('hex');
 
     expect(manifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]).toBe(digest);
+  });
+
+  test('builds the gitignored shared contract runtime before standalone Prisma validation', () => {
+    expect(sharedContractsPackage.main).toBe('dist/index.js');
+    expect(gitignore.split(/\r?\n/)).toContain('dist');
+    expect(packageJson.scripts?.['prisma:validate:active']).toMatch(
+      /^npm run build --workspace @lobsterai\/shared-contracts && node scripts\/db\/validate\.mjs && /,
+    );
   });
 });
