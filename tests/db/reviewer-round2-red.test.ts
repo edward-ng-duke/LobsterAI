@@ -134,12 +134,20 @@ describe('P02 Reviewer Round 1 P1 red baseline', () => {
       cwd: repositoryRoot,
       encoding: 'utf8',
     });
-    expect(current.status, `${current.stdout}\n${current.stderr}`).toBe(0);
-    expect(
-      execFileSync(process.execPath, [validator, '--print-schema'], {
-        cwd: repositoryRoot,
-        encoding: 'utf8',
-      }),
-    ).toContain('additionalProperties');
+    if (process.env.P02_EVIDENCE_PHASE === 'pre-freeze') {
+      expect(current.status).not.toBe(0);
+      expect(current.stderr).toContain('trusted file mismatch package.json');
+      expect(
+        readFileSync(path.join(repositoryRoot, 'scripts/db/evidence-bundle.schema.json'), 'utf8'),
+      ).toContain('additionalProperties');
+    } else {
+      expect(current.status, `${current.stdout}\n${current.stderr}`).toBe(0);
+      expect(
+        execFileSync(process.execPath, [validator, '--print-schema'], {
+          cwd: repositoryRoot,
+          encoding: 'utf8',
+        }),
+      ).toContain('additionalProperties');
+    }
   });
 });

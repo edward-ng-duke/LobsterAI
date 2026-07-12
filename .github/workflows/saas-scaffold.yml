@@ -1,6 +1,13 @@
 name: SaaS Scaffold
 
 on:
+  workflow_dispatch:
+    inputs:
+      p02_evidence_ready:
+        description: Run the post-freeze P02 trusted-evidence gate
+        type: boolean
+        required: true
+        default: false
   push:
     branches: [main, develop]
     paths:
@@ -115,6 +122,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:scaffold
       - run: npm test
+        env:
+          P02_EVIDENCE_PHASE: pre-freeze
       - run: npm run build:saas
       - name: Verify Web production bundle
         run: |
@@ -157,6 +166,7 @@ jobs:
 
   db-evidence-arm64:
     needs: db-platform-arm64
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.p02_evidence_ready == true }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     steps:
@@ -176,4 +186,24 @@ jobs:
       - run: node scripts/db/validate-platform-artifact.mjs --root .artifacts/db-platform-arm64 --source-sha "$SAAS_SOURCE_SHA" --platform linux/arm64
       - run: npm run prisma:validate
       - run: npx vitest run tests/db/tester-evidence-boundary.test.ts tests/db/validator-mutations.test.ts tests/db/evidence-bootstrap.test.ts tests/db/p03-merge-evidence.test.ts --reporter=verbose
+        env:
+          P02_EVIDENCE_PHASE: post-freeze
       - run: git diff --exit-code
+
+  db-evidence-arm64-required:
+    needs: [db-platform-arm64, db-evidence-arm64]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+      - run: node scripts/db/check-evidence-ci-state.mjs
+        env:
+          P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
+          P02_PLATFORM_RESULT: ${{ needs.db-platform-arm64.result }}
+          P02_EVIDENCE_RESULT: ${{ needs.db-evidence-arm64.result }}

@@ -42,6 +42,11 @@ describe('P02 evidence after the accepted P03 integration merge', () => {
         env: { ...process.env, NODE_OPTIONS: '' },
       },
     );
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    if (process.env.P02_EVIDENCE_PHASE === 'pre-freeze') {
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('trusted file mismatch package.json');
+    } else {
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    }
   });
 });

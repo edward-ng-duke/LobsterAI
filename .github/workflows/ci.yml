@@ -167,3 +167,5 @@ jobs:
           restore-keys: npm-${{ runner.os }}-
       - run: npm ci
       - run: npm test
+        env:
+          P02_EVIDENCE_PHASE: pre-freeze
