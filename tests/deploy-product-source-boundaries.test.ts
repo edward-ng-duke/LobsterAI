@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import {
+  chmodSync,
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   renameSync,
@@ -17,6 +19,7 @@ import * as supplyChain from '../scripts/check-supply-chain.mjs';
 const { resolveProductSourceSha } = supplyChain;
 
 type ParseGitNameStatusZ = (output: Buffer) => string[] | undefined;
+type GitFailureMode = 'nonzero' | 'enoent' | 'signal' | 'overflow' | 'malformed';
 
 const temporaryRoots: string[] = [];
 
@@ -64,32 +67,91 @@ const createRepository = () => {
   return { root, baseline };
 };
 
+const createFailingGitPath = (root: string, mode: GitFailureMode) => {
+  const realGit = process.env.PATH?.split(path.delimiter)
+    .map(directory => path.join(directory, 'git'))
+    .find(candidate => existsSync(candidate));
+  expect(realGit, 'the test environment must expose a real Git executable').toBeTruthy();
+
+  const binDirectory = path.join(root, `.fake-git-${mode}`);
+  const fakeGitPath = path.join(binDirectory, 'git');
+  mkdirSync(binDirectory, { recursive: true });
+  writeFileSync(fakeGitPath, [
+    `#!${process.execPath}`,
+    "const { spawnSync } = require('node:child_process');",
+    "const { unlinkSync } = require('node:fs');",
+    `const mode = ${JSON.stringify(mode)};`,
+    `const realGit = ${JSON.stringify(realGit)};`,
+    'const main = () => {',
+    '  const args = process.argv.slice(2);',
+    "  const isNameStatus = ['diff', 'diff-tree'].includes(args[0]) && args.includes('--name-status');",
+    '  if (isNameStatus) {',
+    "    if (mode === 'nonzero') { process.exitCode = 42; return; }",
+    "    if (mode === 'signal') {",
+    "      process.kill(process.pid, 'SIGTERM');",
+    '      setInterval(() => {}, 1000);',
+    '      return;',
+    '    }',
+    "    if (mode === 'overflow') {",
+    '      process.stdout.write(Buffer.alloc(17 * 1024 * 1024, 0x61));',
+    '      return;',
+    '    }',
+    "    if (mode === 'malformed') {",
+    "      process.stdout.write(Buffer.from('M\\0docs/frozen.md'));",
+    '      return;',
+    '    }',
+    '  }',
+    "  const result = spawnSync(realGit, args, { stdio: 'inherit' });",
+    "  if (mode === 'enoent' && args[0] === 'rev-list' && args.includes('--parents')) {",
+    '    unlinkSync(process.argv[1]);',
+    '  }',
+    '  if (result.error) throw result.error;',
+    "  if (result.signal) process.kill(process.pid, result.signal);",
+    '  process.exitCode = result.status ?? 1;',
+    '};',
+    'main();',
+    '',
+  ].join('\n'));
+  chmodSync(fakeGitPath, 0o755);
+  return binDirectory;
+};
+
 afterEach(() => {
   temporaryRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
 });
 
 describe('parseGitNameStatusZ', () => {
   test('parses empty and legal single-path records without normalizing Unicode', () => {
-    const nfcPath = 'docs/caf\u00e9.md';
-    const nfdPath = 'docs/cafe\u0301.md';
+    const records = [
+      ['A', 'docs/caf\u00e9.md'],
+      ['D', 'docs/deleted.md'],
+      ['M', 'docs/cafe\u0301.md'],
+      ['T', 'docs/type-changed.md'],
+      ['U', 'docs/unmerged.md'],
+      ['X', 'docs/unknown.md'],
+      ['B', 'docs/broken-pairing.md'],
+    ];
+    const expectedPaths = records.map(([, relativePath]) => relativePath);
 
     expect(parseGitNameStatusZ(Buffer.alloc(0))).toEqual([]);
-    expect(parseGitNameStatusZ(Buffer.from(`A\0${nfcPath}\0M\0${nfdPath}\0`))).toEqual([
-      nfcPath,
-      nfdPath,
-    ]);
+    expect(parseGitNameStatusZ(Buffer.from(
+      records.map(([status, relativePath]) => `${status}\0${relativePath}\0`).join(''),
+    ))).toEqual(expectedPaths);
   });
 
-  test('parses both paths from rename and copy records', () => {
+  test('parses R0/R100 and C0/C100 similarity boundaries with both paths', () => {
+    const records = [
+      ['R0', 'docs/r0-old.txt', 'scripts/r0-new.txt'],
+      ['R100', 'docs/r100 old.txt', 'scripts/r100\tnew.txt'],
+      ['C0', 'apps/c0-source.ts', 'tests/c0-copy.ts'],
+      ['C100', 'apps/c100-source.ts', 'tests/c100-copy\nsource.ts'],
+      ['C087', 'apps/c087-source.ts', 'tests/c087-copy.ts'],
+    ];
+    const expectedPaths = records.flatMap(([, oldPath, newPath]) => [oldPath, newPath]);
+
     expect(parseGitNameStatusZ(Buffer.from(
-      'R100\0docs/old name.txt\0scripts/new\tname.txt\0'
-      + 'C087\0apps/source.ts\0tests/copy\nsource.ts\0',
-    ))).toEqual([
-      'docs/old name.txt',
-      'scripts/new\tname.txt',
-      'apps/source.ts',
-      'tests/copy\nsource.ts',
-    ]);
+      records.map(([status, oldPath, newPath]) => `${status}\0${oldPath}\0${newPath}\0`).join(''),
+    ))).toEqual(expectedPaths);
   });
 
   test.each([
@@ -107,6 +169,27 @@ describe('parseGitNameStatusZ', () => {
 });
 
 describe('P03 product-source evidence boundaries', () => {
+  test.each([
+    ['name-status Git nonzero exit', 'nonzero'],
+    ['name-status spawnSync.error / ENOENT', 'enoent'],
+    ['name-status child signal', 'signal'],
+    ['name-status stdout overflow above 16 MiB', 'overflow'],
+    ['name-status malformed output producing parser undefined', 'malformed'],
+  ] as const)('fails closed to the analyzed commit for %s', (_label, mode) => {
+    const { root, baseline } = createRepository();
+    write(root, 'docs/frozen.md', `frozen failure boundary: ${mode}\n`);
+    const analyzedCommit = commit(root, `docs: add ${mode} failure boundary`);
+    expect(resolveProductSourceSha(root)).toBe(baseline);
+
+    const originalPath = process.env.PATH;
+    process.env.PATH = createFailingGitPath(root, mode);
+    try {
+      expect(resolveProductSourceSha(root)).toBe(analyzedCommit);
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  });
+
   test.each(['true', 'false'])(
     'keeps pathological UTF-8 frozen paths frozen with core.quotepath=%s',
     (quotePath) => {
