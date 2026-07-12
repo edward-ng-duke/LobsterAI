@@ -201,6 +201,13 @@ try {
   process.stdout.write(tests.stdout);
   process.stderr.write(tests.stderr);
   if (tests.status !== 0) throw new Error(`database integration tests failed with exit ${tests.status}`);
+  const checksTotal = Number.parseInt(
+    tests.stdout.match(/Tests\s+(\d+) passed/)?.[1] ?? '',
+    10,
+  );
+  if (!Number.isInteger(checksTotal) || checksTotal <= 0) {
+    throw new Error('database integration test count is unavailable');
+  }
 
   report.status = 'PASS';
   report.checks = {
@@ -219,8 +226,8 @@ try {
     rls: rls.rows,
     roles: roles.rows,
     seed: seedRows.rows,
-    checksPassed: 27,
-    checksTotal: 27,
+    checksPassed: checksTotal,
+    checksTotal,
     testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
   };
 } catch (error) {
