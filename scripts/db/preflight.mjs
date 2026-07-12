@@ -19,6 +19,7 @@ import {
   validateApprovedPostgresImageInspection,
   validatePostgresServerSettings,
 } from './postgres-image-policy.mjs';
+import { stopPostgresContainer } from './postgres-container-cleanup.mjs';
 
 const { Client } = pg;
 const contractsOnly = process.argv.includes('--contracts');
@@ -207,20 +208,10 @@ try {
   report.error = error instanceof Error ? error.message : String(error);
   exitCode = blocked ? 2 : 1;
 } finally {
-  if (container) {
-    try {
-      const containerId = container.getId();
-      await container.stop();
-      report.cleanup = { containerId, removed: true };
-    } catch (error) {
-      report.status = 'FAILED';
-      report.cleanup = {
-        containerId: container.getId(),
-        removed: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-      exitCode = 1;
-    }
+  report.cleanup = await stopPostgresContainer(container);
+  if (container && !report.cleanup.removed) {
+    report.status = 'FAILED';
+    exitCode = 1;
   }
   writeAtomicJson(reportPath, report);
   (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
