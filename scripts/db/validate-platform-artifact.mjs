@@ -98,8 +98,36 @@ try {
 
   requireEqual(integration.skipped, 0, 'integration skipped');
   const migrations = integration.checks?.migrations;
-  for (const field of ['first', 'repeat', 'existingSchema']) {
+  for (const field of ['first', 'repeat']) {
     requireEqual(migrations?.[field], true, `integration migrations.${field}`);
+  }
+  const existingSchema = migrations?.existingSchema;
+  for (const field of ['independentDatabase', 'prepared', 'preserved']) {
+    requireEqual(existingSchema?.[field], true, `integration migrations.existingSchema.${field}`);
+  }
+  requireEqual(
+    existingSchema?.completedMigrations,
+    2,
+    'integration migrations.existingSchema.completedMigrations',
+  );
+  if (JSON.stringify(existingSchema?.beforeTables) !== JSON.stringify([
+    '_prisma_migrations',
+    'p02_preexisting_catalog',
+  ])) {
+    fail('integration migrations.existingSchema.beforeTables is invalid');
+  }
+  if (JSON.stringify(existingSchema?.afterTables) !== JSON.stringify([
+    '_prisma_migrations',
+    'agents',
+    'p02_preexisting_catalog',
+    'tenants',
+  ])) {
+    fail('integration migrations.existingSchema.afterTables is invalid');
+  }
+  for (const field of ['beforeCatalogSha256', 'afterCatalogSha256']) {
+    if (!/^[a-f0-9]{64}$/.test(existingSchema?.[field] ?? '')) {
+      fail(`integration migrations.existingSchema.${field} is invalid`);
+    }
   }
   requireEqual(migrations?.rollback?.failed, true, 'integration migrations.rollback.failed');
   requireEqual(

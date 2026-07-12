@@ -111,11 +111,9 @@ try {
   const migrationEnv = { DATABASE_URL: adminUrl };
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'empty database migration');
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'repeat migration');
-  requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'existing schema migration');
   const migrationLifecycle = {
     first: true,
     repeat: true,
-    existingSchema: true,
     ...await runPostgresMigrationLifecycle({ adminUrl, runId: report.runId }),
   };
 

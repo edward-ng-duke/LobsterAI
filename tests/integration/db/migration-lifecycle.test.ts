@@ -37,8 +37,8 @@ describe('P02 migration lifecycle evidence', () => {
         independentDatabase: true,
         prepared: true,
         preserved: true,
-        completedMigrations: 1,
-        beforeTables: ['p02_preexisting_catalog'],
+        completedMigrations: 2,
+        beforeTables: ['_prisma_migrations', 'p02_preexisting_catalog'],
         afterTables: ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'],
       },
     });
