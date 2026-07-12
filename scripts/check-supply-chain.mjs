@@ -63,7 +63,7 @@ const frozenNonImageDirectories = [
   '改造计划/',
 ];
 const allowedImageEvidenceFields = new Set([
-  'image', 'imageName', 'digest', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
+  'image', 'imageName', 'digest', 'localImageId', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
   'imageHistoryScan', 'sbom', 'vulnerabilityScan', 'criticalFindings', 'pluginInstallations',
 ]);
 
@@ -518,10 +518,14 @@ const findingsFromGrype = (document, evidence, spdxManifestDigest, errors) => {
   const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
   const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
   const target = document?.source?.target;
+  const repoDigestsMatch = Array.isArray(target?.repoDigests)
+    && (target.repoDigests.length === 0
+      || (target.repoDigests.length === 1 && target.repoDigests[0] === expectedRepoDigest));
   if (document?.source?.type !== 'image' || !target || target.userInput !== expectedTag
     || !Array.isArray(target.tags) || target.tags.length !== 1 || target.tags[0] !== expectedTag
-    || !Array.isArray(target.repoDigests) || target.repoDigests.length !== 1
-    || target.repoDigests[0] !== expectedRepoDigest
+    || target.imageID !== evidence.localImageId
+    || !repoDigestsMatch
+    || target.manifestDigest !== evidence.digest
     || target.manifestDigest !== spdxManifestDigest
     || document?.descriptor?.name !== 'grype'
     || document?.descriptor?.version !== evidence.vulnerabilityScan.scannerVersion
@@ -566,9 +570,15 @@ const validateLocalImage = (root, evidence, errors) => {
   }
   try {
     const metadata = JSON.parse(inspect.stdout);
+    const repositoryPrefix = `lobsterai-p03-${evidence.imageName}@`;
     const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
-    if (metadata.Id !== evidence.digest || !metadata.RepoDigests?.includes(expectedRepoDigest)) {
-      errors.push(`${evidence.image}: local Docker image digest does not match evidence`);
+    if (metadata.Id !== evidence.localImageId) {
+      errors.push(`${evidence.image}: local Docker image ID does not match evidence`);
+    }
+    if (!Array.isArray(metadata.RepoDigests)
+      || metadata.RepoDigests.some(candidate => candidate.startsWith(repositoryPrefix)
+        && candidate !== expectedRepoDigest)) {
+      errors.push(`${evidence.image}: local Docker repository digest contradicts manifest evidence`);
     }
   } catch {
     errors.push(`${evidence.image}: local Docker image metadata is invalid`);
@@ -672,6 +682,7 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha, 
       }
     }
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
+    if (!digestPattern.test(evidence.localImageId ?? '')) errors.push(`${evidence.image}: invalid local image ID`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
     const buildEvidence = evidence.buildEvidence ?? {};
     if (buildEvidence.noCache !== true || buildEvidence.pull !== false) {
@@ -829,22 +840,36 @@ const run = () => {
   if (report && validators?.report && !validators.report(report)) {
     errors.push(...formatSchemaErrors('Docker build report schema', validators.report));
   }
-  const expectedSourceSha = resolveProductSourceSha(repositoryRoot);
-  if (!expectedSourceSha) errors.push('unable to resolve latest product source commit');
-  if (report?.sourceSha && expectedSourceSha && report.sourceSha !== expectedSourceSha) {
-    errors.push(`Docker build report source SHA mismatch: expected ${expectedSourceSha}, received ${report.sourceSha}`);
+  const expectedProductSourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!expectedProductSourceSha) errors.push('unable to resolve latest product source commit');
+  if (report?.productSourceSha && expectedProductSourceSha
+    && report.productSourceSha !== expectedProductSourceSha) {
+    errors.push(`Docker build report product source SHA mismatch: expected ${expectedProductSourceSha}, received ${report.productSourceSha}`);
   }
-  if (report?.sourceSha) {
-    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', report.sourceSha, 'HEAD'], {
+  if (report?.sourceSha && report?.productSourceSha && report.sourceSha !== report.productSourceSha) {
+    errors.push('Docker build report legacy source SHA must equal product source SHA');
+  }
+  if (report?.checkoutSha) {
+    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', report.checkoutSha, 'HEAD'], {
       cwd: repositoryRoot,
       encoding: 'utf8',
     });
-    if (ancestor.status !== 0) errors.push('Docker build report source is not an ancestor of HEAD');
+    if (ancestor.status !== 0) errors.push('Docker build report checkout is not an ancestor of HEAD');
+  }
+  if (report?.checkoutSha && report?.productSourceSha) {
+    const firstParent = spawnSync('git', ['rev-list', '--first-parent', report.checkoutSha], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    });
+    const commits = firstParent.status === 0 ? firstParent.stdout.trim().split(/\r?\n/) : [];
+    if (!commits.includes(report.productSourceSha)) {
+      errors.push('Docker build report checkout is not a first-parent descendant of product source');
+    }
   }
   if (manifest && report) {
     errors.push(...validateInventory(repositoryRoot, { ...manifest, imageEvidence: report.images ?? [] }, {
       requireEvidence: true,
-      expectedSourceSha,
+      expectedSourceSha: expectedProductSourceSha,
       schemaValidator: validators?.manifest,
     }));
   }

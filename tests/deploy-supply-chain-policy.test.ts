@@ -175,6 +175,7 @@ describe('P03 supply-chain inventory and evidence policy', () => {
       image: `registry.internal/lobster-${imageName}@sha256:${'a'.repeat(64)}`,
       imageName,
       digest: `sha256:${'a'.repeat(64)}`,
+      localImageId: `sha256:${'f'.repeat(64)}`,
       sourceSha,
       buildEvidence: {
         dockerfile: `docker/${imageName}/Dockerfile`,

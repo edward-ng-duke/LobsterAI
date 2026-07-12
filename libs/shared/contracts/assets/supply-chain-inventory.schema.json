@@ -91,6 +91,7 @@
         "image",
         "imageName",
         "digest",
+        "localImageId",
         "sourceSha",
         "buildEvidence",
         "runtimeEvidence",
@@ -105,6 +106,7 @@
           "enum": ["api", "openclaw-runtime", "runtime-orchestrator", "web", "worker"]
         },
         "digest": { "$ref": "#/$defs/digest" },
+        "localImageId": { "$ref": "#/$defs/digest" },
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
         "buildEvidence": { "$ref": "#/$defs/buildEvidence" },
         "runtimeEvidence": { "$ref": "#/$defs/runtimeEvidence" },
@@ -266,19 +268,24 @@
         "status",
         "invocationId",
         "generatedAt",
+        "checkoutSha",
+        "productSourceSha",
         "sourceSha",
         "dockerVersion",
         "syftVersion",
         "grypeVersion",
         "productionNetwork",
         "images",
-        "signature"
+        "signature",
+        "publish"
       ],
       "properties": {
         "schemaVersion": { "const": 1 },
         "status": { "const": "PASSED" },
         "invocationId": { "type": "string", "format": "uuid" },
         "generatedAt": { "type": "string", "format": "date-time" },
+        "checkoutSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "productSourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
         "sourceSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
         "dockerVersion": { "type": "string", "minLength": 1 },
         "syftVersion": { "type": "string", "minLength": 1 },
@@ -290,7 +297,8 @@
           "maxItems": 5,
           "items": { "$ref": "#/$defs/imageEvidence" }
         },
-        "signature": { "$ref": "#/$defs/dockerBuildSignature" }
+        "signature": { "$ref": "#/$defs/dockerBuildSignature" },
+        "publish": { "$ref": "#/$defs/dockerBuildSignature" }
       }
     },
     "signaturePolicy": {
