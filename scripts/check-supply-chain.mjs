@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TextDecoder } from 'node:util';
 
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
@@ -16,12 +17,27 @@ import addFormats from 'ajv-formats';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestRelativePath = 'docs/supply-chain/skills-and-plugins.manifest.json';
 const schemaRelativePath = 'libs/shared/contracts/assets/supply-chain-inventory.schema.json';
-const evidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
+export const p03EvidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
 const digestPattern = /^sha256:[a-f0-9]{64}$/;
 const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
 export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
+export const p03HardenedPluginInspectionScript = [
+  "const fs = require('node:fs');",
+  "const root = '/opt/openclaw/third-party-extensions';",
+  'const ids = JSON.parse(process.argv[1]);',
+  'const rootReal = fs.realpathSync(root);',
+  'const installed = ids.filter(id => {',
+  '  try {',
+  '    const candidate = `${root}/${id}/package.json`;',
+  '    const stat = fs.lstatSync(candidate);',
+  '    const real = fs.realpathSync(candidate);',
+  "    return stat.isFile() && !stat.isSymbolicLink() && real.startsWith(`${rootReal}/`);",
+  '  } catch { return false; }',
+  '});',
+  'process.stdout.write(JSON.stringify(installed));',
+].join(' ');
 const imageBuildInputFiles = new Set([
   '.dockerignore',
   'package.json',
@@ -47,7 +63,7 @@ const frozenNonImageDirectories = [
   '改造计划/',
 ];
 const allowedImageEvidenceFields = new Set([
-  'image', 'imageName', 'digest', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
+  'image', 'imageName', 'digest', 'localImageId', 'sourceSha', 'buildEvidence', 'runtimeEvidence',
   'imageHistoryScan', 'sbom', 'vulnerabilityScan', 'criticalFindings', 'pluginInstallations',
 ]);
 
@@ -67,9 +83,46 @@ const loadSchemaValidators = (root) => {
   };
 };
 
-const gitOutput = (root, args) => {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : undefined;
+const defaultGitRunner = (args, options) => spawnSync('git', args, options);
+
+const nameStatusPathDecoder = new TextDecoder('utf-8', {
+  fatal: true,
+  ignoreBOM: true,
+});
+
+export const parseGitNameStatusZ = (output) => {
+  if (!Buffer.isBuffer(output)) return undefined;
+  if (output.length === 0) return [];
+  if (output.at(-1) !== 0) return undefined;
+
+  const paths = [];
+  let cursor = 0;
+  while (cursor < output.length) {
+    const statusEnd = output.indexOf(0, cursor);
+    if (statusEnd <= cursor) return undefined;
+    for (let index = cursor; index < statusEnd; index += 1) {
+      if (output[index] > 0x7f) return undefined;
+    }
+    const status = output.toString('ascii', cursor, statusEnd);
+    cursor = statusEnd + 1;
+    const similarityStatus = /^([RC])(\d{1,3})$/.exec(status);
+    const pathCount = /^[ADMTUXB]$/.test(status)
+      ? 1
+      : similarityStatus && Number(similarityStatus[2]) <= 100 ? 2 : undefined;
+    if (!pathCount) return undefined;
+
+    for (let pathIndex = 0; pathIndex < pathCount; pathIndex += 1) {
+      const pathEnd = output.indexOf(0, cursor);
+      if (pathEnd <= cursor) return undefined;
+      try {
+        paths.push(nameStatusPathDecoder.decode(output.subarray(cursor, pathEnd)));
+      } catch {
+        return undefined;
+      }
+      cursor = pathEnd + 1;
+    }
+  }
+  return paths;
 };
 
 const isImageBuildInput = relativePath => imageBuildInputFiles.has(relativePath)
@@ -78,35 +131,55 @@ const isImageBuildInput = relativePath => imageBuildInputFiles.has(relativePath)
 const isFrozenNonImagePath = relativePath => frozenNonImageDirectories
   .some(directory => relativePath.startsWith(directory));
 
-const changedPathsAgainstFirstParent = (root, commit) => {
-  const commitLine = gitOutput(root, ['rev-list', '--parents', '--max-count=1', commit]);
-  if (!commitLine) return undefined;
-  const [, firstParent] = commitLine.split(/\s+/);
-  const args = firstParent
-    ? ['diff', '--name-status', '--find-renames', firstParent, commit]
-    : ['diff-tree', '--root', '--no-commit-id', '--name-status', '-r', '--find-renames', commit];
-  const output = gitOutput(root, args);
-  if (output === undefined) return undefined;
-  return output.split(/\r?\n/).filter(Boolean).flatMap((line) => {
-    const [status, ...paths] = line.split('\t');
-    if (!status || paths.length === 0) return [];
-    return /^[RC]/.test(status) ? paths.slice(0, 2) : paths.slice(0, 1);
-  });
+export const createProductSourceShaResolver = (runGit = defaultGitRunner) => {
+  const gitOutput = (root, args) => {
+    const result = runGit(args, { cwd: root, encoding: 'utf8' });
+    if (result.status !== 0 || result.error || result.signal || typeof result.stdout !== 'string') {
+      return undefined;
+    }
+    return result.stdout.trim();
+  };
+
+  const gitNameStatusOutput = (root, args) => {
+    const result = runGit(args, {
+      cwd: root,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    if (result.status !== 0 || result.error || result.signal || !Buffer.isBuffer(result.stdout)) {
+      return undefined;
+    }
+    return result.stdout;
+  };
+
+  const changedPathsAgainstFirstParent = (root, commit) => {
+    const commitLine = gitOutput(root, ['rev-list', '--parents', '--max-count=1', commit]);
+    if (!commitLine) return undefined;
+    const [, firstParent] = commitLine.split(/\s+/);
+    const args = firstParent
+      ? ['diff', '--name-status', '-z', '-M', '-C', firstParent, commit]
+      : ['diff-tree', '--root', '--no-commit-id', '-r', '--name-status', '-z', '-M', '-C', commit];
+    const output = gitNameStatusOutput(root, args);
+    if (output === undefined) return undefined;
+    return parseGitNameStatusZ(output);
+  };
+
+  return (root = repositoryRoot) => {
+    const commits = gitOutput(root, ['rev-list', '--first-parent', 'HEAD'])
+      ?.split(/\r?\n/).filter(Boolean);
+    if (!commits?.length) return undefined;
+    for (const commit of commits) {
+      const changedPaths = changedPathsAgainstFirstParent(root, commit);
+      if (changedPaths === undefined) return commit;
+      if (changedPaths.some(relativePath => isImageBuildInput(relativePath)
+        || !isFrozenNonImagePath(relativePath))) {
+        return commit;
+      }
+    }
+    return commits.at(-1);
+  };
 };
 
-export const resolveProductSourceSha = (root = repositoryRoot) => {
-  const commits = gitOutput(root, ['rev-list', '--first-parent', 'HEAD'])?.split(/\r?\n/).filter(Boolean);
-  if (!commits?.length) return undefined;
-  for (const commit of commits) {
-    const changedPaths = changedPathsAgainstFirstParent(root, commit);
-    if (changedPaths === undefined) return commit;
-    if (changedPaths.some(relativePath => isImageBuildInput(relativePath)
-      || !isFrozenNonImagePath(relativePath))) {
-      return commit;
-    }
-  }
-  return commits.at(-1);
-};
+export const resolveProductSourceSha = createProductSourceShaResolver();
 
 const readJson = (root, relativePath) =>
   JSON.parse(readFileSync(path.join(root, relativePath), 'utf8'));
@@ -445,10 +518,14 @@ const findingsFromGrype = (document, evidence, spdxManifestDigest, errors) => {
   const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
   const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
   const target = document?.source?.target;
+  const repoDigestsMatch = Array.isArray(target?.repoDigests)
+    && (target.repoDigests.length === 0
+      || (target.repoDigests.length === 1 && target.repoDigests[0] === expectedRepoDigest));
   if (document?.source?.type !== 'image' || !target || target.userInput !== expectedTag
     || !Array.isArray(target.tags) || target.tags.length !== 1 || target.tags[0] !== expectedTag
-    || !Array.isArray(target.repoDigests) || target.repoDigests.length !== 1
-    || target.repoDigests[0] !== expectedRepoDigest
+    || target.imageID !== evidence.localImageId
+    || !repoDigestsMatch
+    || target.manifestDigest !== evidence.digest
     || target.manifestDigest !== spdxManifestDigest
     || document?.descriptor?.name !== 'grype'
     || document?.descriptor?.version !== evidence.vulnerabilityScan.scannerVersion
@@ -493,9 +570,15 @@ const validateLocalImage = (root, evidence, errors) => {
   }
   try {
     const metadata = JSON.parse(inspect.stdout);
+    const repositoryPrefix = `lobsterai-p03-${evidence.imageName}@`;
     const expectedRepoDigest = `lobsterai-p03-${evidence.imageName}@${evidence.digest}`;
-    if (metadata.Id !== evidence.digest || !metadata.RepoDigests?.includes(expectedRepoDigest)) {
-      errors.push(`${evidence.image}: local Docker image digest does not match evidence`);
+    if (metadata.Id !== evidence.localImageId) {
+      errors.push(`${evidence.image}: local Docker image ID does not match evidence`);
+    }
+    if (!Array.isArray(metadata.RepoDigests)
+      || metadata.RepoDigests.some(candidate => candidate.startsWith(repositoryPrefix)
+        && candidate !== expectedRepoDigest)) {
+      errors.push(`${evidence.image}: local Docker repository digest contradicts manifest evidence`);
     }
   } catch {
     errors.push(`${evidence.image}: local Docker image metadata is invalid`);
@@ -511,26 +594,11 @@ const validatePluginInstallations = (root, evidence, errors) => {
     return;
   }
   const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
-  const inspectionScript = [
-    "const fs = require('node:fs');",
-    "const root = '/opt/openclaw/third-party-extensions';",
-    'const ids = JSON.parse(process.argv[1]);',
-    'const rootReal = fs.realpathSync(root);',
-    'const installed = ids.filter(id => {',
-    '  try {',
-    '    const candidate = `${root}/${id}/package.json`;',
-    '    const stat = fs.lstatSync(candidate);',
-    '    const real = fs.realpathSync(candidate);',
-    "    return stat.isFile() && !stat.isSymbolicLink() && real.startsWith(`${rootReal}/`);",
-    '  } catch { return false; }',
-    '});',
-    'process.stdout.write(JSON.stringify(installed));',
-  ].join(' ');
   const inspection = spawnSync('docker', [
     'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
     '--security-opt=no-new-privileges', '--user=10001:10001',
     '--entrypoint=/usr/local/bin/node', expectedTag,
-    '-e', inspectionScript, JSON.stringify(declared.map(plugin => plugin.id)),
+    '-e', p03HardenedPluginInspectionScript, JSON.stringify(declared.map(plugin => plugin.id)),
   ], { cwd: root, encoding: 'utf8' });
   let installedIds;
   try {
@@ -559,7 +627,7 @@ const validatePluginInstallations = (root, evidence, errors) => {
 };
 
 const validateDiskEvidence = (root, manifest, evidence, errors, now) => {
-  const evidenceDirectory = path.join(root, evidenceRelativeDirectory);
+  const evidenceDirectory = path.join(root, p03EvidenceRelativeDirectory);
   const spdx = readEvidenceDocument(evidenceDirectory, evidence.sbom, `${evidence.image}: SBOM`, errors);
   const grype = readEvidenceDocument(
     evidenceDirectory,
@@ -614,6 +682,7 @@ export const validateEvidence = (manifest, now = new Date(), expectedSourceSha, 
       }
     }
     if (!digestPattern.test(evidence.digest ?? '')) errors.push(`${evidence.image}: invalid image digest`);
+    if (!digestPattern.test(evidence.localImageId ?? '')) errors.push(`${evidence.image}: invalid local image ID`);
     if (!sourceShaPattern.test(evidence.sourceSha ?? '')) errors.push(`${evidence.image}: invalid source SHA`);
     const buildEvidence = evidence.buildEvidence ?? {};
     if (buildEvidence.noCache !== true || buildEvidence.pull !== false) {
@@ -762,7 +831,7 @@ const run = () => {
   } catch (error) {
     errors.push(`unable to load inventory/schema: ${error.message}`);
   }
-  const evidencePath = path.join(repositoryRoot, evidenceRelativeDirectory, 'docker-build-check.json');
+  const evidencePath = path.join(repositoryRoot, p03EvidenceRelativeDirectory, 'docker-build-check.json');
   try {
     report = JSON.parse(readFileSync(evidencePath, 'utf8'));
   } catch (error) {
@@ -771,22 +840,36 @@ const run = () => {
   if (report && validators?.report && !validators.report(report)) {
     errors.push(...formatSchemaErrors('Docker build report schema', validators.report));
   }
-  const expectedSourceSha = resolveProductSourceSha(repositoryRoot);
-  if (!expectedSourceSha) errors.push('unable to resolve latest product source commit');
-  if (report?.sourceSha && expectedSourceSha && report.sourceSha !== expectedSourceSha) {
-    errors.push(`Docker build report source SHA mismatch: expected ${expectedSourceSha}, received ${report.sourceSha}`);
+  const expectedProductSourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!expectedProductSourceSha) errors.push('unable to resolve latest product source commit');
+  if (report?.productSourceSha && expectedProductSourceSha
+    && report.productSourceSha !== expectedProductSourceSha) {
+    errors.push(`Docker build report product source SHA mismatch: expected ${expectedProductSourceSha}, received ${report.productSourceSha}`);
   }
-  if (report?.sourceSha) {
-    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', report.sourceSha, 'HEAD'], {
+  if (report?.sourceSha && report?.productSourceSha && report.sourceSha !== report.productSourceSha) {
+    errors.push('Docker build report legacy source SHA must equal product source SHA');
+  }
+  if (report?.checkoutSha) {
+    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', report.checkoutSha, 'HEAD'], {
       cwd: repositoryRoot,
       encoding: 'utf8',
     });
-    if (ancestor.status !== 0) errors.push('Docker build report source is not an ancestor of HEAD');
+    if (ancestor.status !== 0) errors.push('Docker build report checkout is not an ancestor of HEAD');
+  }
+  if (report?.checkoutSha && report?.productSourceSha) {
+    const firstParent = spawnSync('git', ['rev-list', '--first-parent', report.checkoutSha], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    });
+    const commits = firstParent.status === 0 ? firstParent.stdout.trim().split(/\r?\n/) : [];
+    if (!commits.includes(report.productSourceSha)) {
+      errors.push('Docker build report checkout is not a first-parent descendant of product source');
+    }
   }
   if (manifest && report) {
     errors.push(...validateInventory(repositoryRoot, { ...manifest, imageEvidence: report.images ?? [] }, {
       requireEvidence: true,
-      expectedSourceSha,
+      expectedSourceSha: expectedProductSourceSha,
       schemaValidator: validators?.manifest,
     }));
   }

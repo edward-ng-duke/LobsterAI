@@ -8,7 +8,7 @@
     "contractsPreflight": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "checks"],
+      "required": ["schemaVersion", "kind", "runId", "generatedAt", "sourceSha", "nodeVersion", "platform", "status", "checks", "cleanup"],
       "properties": {
         "schemaVersion": { "const": 1 },
         "kind": { "const": "P02_CONTRACT_PREFLIGHT" },
@@ -18,7 +18,8 @@
         "nodeVersion": { "type": "string" },
         "platform": { "type": "string" },
         "status": { "const": "PASS" },
-        "checks": { "$ref": "#/$defs/contractsChecks" }
+        "checks": { "$ref": "#/$defs/contractsChecks" },
+        "cleanup": { "$ref": "#/$defs/contractsCleanup" }
       }
     },
     "preflight": {
@@ -63,22 +64,10 @@
         "checks": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["provider", "migrations", "rls", "roles", "seed", "testOutputSha256"],
+          "required": ["provider", "migrations", "rls", "roles", "seed", "checksPassed", "checksTotal", "testResults", "testOutputSha256"],
           "properties": {
             "provider": { "$ref": "#/$defs/integrationProvider" },
-            "migrations": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["migration_name", "finished"],
-                "properties": {
-                  "migration_name": { "type": "string" },
-                  "finished": { "const": true }
-                }
-              }
-            },
+            "migrations": { "$ref": "#/$defs/migrationLifecycle" },
             "rls": {
               "type": "array",
               "minItems": 1,
@@ -124,6 +113,9 @@
                 }
               }
             },
+            "checksPassed": { "type": "integer" },
+            "checksTotal": { "type": "integer" },
+            "testResults": { "$ref": "#/$defs/testResults" },
             "testOutputSha256": { "$ref": "#/$defs/sha256" }
           }
         },
@@ -226,19 +218,42 @@
         "sourceHash": { "$ref": "#/$defs/sha256" }
       }
     },
+    "contractsCleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempted", "removed"],
+      "properties": {
+        "attempted": { "const": false },
+        "removed": { "const": false }
+      }
+    },
     "preflightProvider": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dockerPlatform", "image", "immutableReference", "digest", "containerId", "serverVersion", "citextAvailableVersion", "generatedUuid", "migrationRole"],
+      "required": ["dockerPlatform", "runnerOs", "runnerArch", "image", "immutableReference", "digest", "inspectedOs", "inspectedArch", "repoDigests", "containerId", "serverVersion", "serverMajor", "lcCollate", "lcCtype", "timezone", "ssl", "citextAvailableVersion", "generatedUuid", "migrationRole"],
       "properties": {
-        "dockerPlatform": { "type": "string" },
-        "image": { "type": "string" },
-        "immutableReference": { "type": "string" },
+        "dockerPlatform": { "type": "string", "pattern": "^linux/(amd64|arm64)$" },
+        "runnerOs": { "const": "linux" },
+        "runnerArch": { "type": "string", "pattern": "^(x64|arm64)$" },
+        "image": { "const": "postgres:17.10-bookworm" },
+        "immutableReference": { "type": "string", "pattern": "^postgres:17\\.10-bookworm@sha256:[a-f0-9]{64}$" },
         "digest": { "$ref": "#/$defs/imageDigest" },
+        "inspectedOs": { "const": "linux" },
+        "inspectedArch": { "type": "string", "pattern": "^(amd64|arm64)$" },
+        "repoDigests": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^postgres@sha256:[a-f0-9]{64}$" }
+        },
         "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-        "serverVersion": { "type": "string" },
-        "citextAvailableVersion": { "type": "string" },
-        "generatedUuid": { "type": "string" },
+        "serverVersion": { "type": "string", "pattern": "^17\\.10(?:[ .]|$)" },
+        "serverMajor": { "const": 17 },
+        "lcCollate": { "const": "en_US.utf8" },
+        "lcCtype": { "const": "en_US.utf8" },
+        "timezone": { "const": "Etc/UTC" },
+        "ssl": { "const": "off" },
+        "citextAvailableVersion": { "type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)*$" },
+        "generatedUuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
         "migrationRole": {
           "type": "object",
           "additionalProperties": false,
@@ -253,21 +268,123 @@
     "integrationProvider": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dockerPlatform", "image", "immutableReference", "digest", "containerId", "serverVersion"],
+      "required": ["dockerPlatform", "runnerOs", "runnerArch", "image", "immutableReference", "digest", "inspectedOs", "inspectedArch", "repoDigests", "containerId", "serverVersion", "serverMajor", "lcCollate", "lcCtype", "timezone", "ssl"],
       "properties": {
-        "dockerPlatform": { "type": "string" },
-        "image": { "type": "string" },
-        "immutableReference": { "type": "string" },
+        "dockerPlatform": { "type": "string", "pattern": "^linux/(amd64|arm64)$" },
+        "runnerOs": { "const": "linux" },
+        "runnerArch": { "type": "string", "pattern": "^(x64|arm64)$" },
+        "image": { "const": "postgres:17.10-bookworm" },
+        "immutableReference": { "type": "string", "pattern": "^postgres:17\\.10-bookworm@sha256:[a-f0-9]{64}$" },
         "digest": { "$ref": "#/$defs/imageDigest" },
+        "inspectedOs": { "const": "linux" },
+        "inspectedArch": { "type": "string", "pattern": "^(amd64|arm64)$" },
+        "repoDigests": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^postgres@sha256:[a-f0-9]{64}$" }
+        },
         "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-        "serverVersion": { "type": "string" }
+        "serverVersion": { "type": "string", "pattern": "^17\\.10(?:[ .]|$)" },
+        "serverMajor": { "const": 17 },
+        "lcCollate": { "const": "en_US.utf8" },
+        "lcCtype": { "const": "en_US.utf8" },
+        "timezone": { "const": "Etc/UTC" },
+        "ssl": { "const": "off" }
+      }
+    },
+    "migrationLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first", "repeat", "existingSchema", "rollback", "concurrent"],
+      "properties": {
+        "first": { "const": true },
+        "repeat": { "const": true },
+        "existingSchema": { "$ref": "#/$defs/existingSchema" },
+        "rollback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["failed", "partialTableAbsent", "rolledBackRows", "repaired"],
+          "properties": {
+            "failed": { "const": true },
+            "partialTableAbsent": { "const": true },
+            "rolledBackRows": { "const": 1 },
+            "repaired": { "const": true }
+          }
+        },
+        "concurrent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["safe", "exitCodes", "completedRows"],
+          "properties": {
+            "safe": { "const": true },
+            "exitCodes": { "type": "array", "minItems": 2, "items": { "const": 0 } },
+            "completedRows": { "const": 1 }
+          }
+        }
+      }
+    },
+    "existingSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["independentDatabase", "prepared", "preserved", "completedMigrations", "beforeCatalog", "afterCatalog", "migrationHistory"],
+      "properties": {
+        "independentDatabase": { "const": true },
+        "prepared": { "const": true },
+        "preserved": { "const": true },
+        "completedMigrations": { "const": 2 },
+        "beforeCatalog": { "$ref": "#/$defs/catalogEvidence" },
+        "afterCatalog": { "$ref": "#/$defs/catalogEvidence" },
+        "migrationHistory": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["migrationName", "checksum", "finished", "rolledBack"],
+            "properties": {
+              "migrationName": { "type": "string" },
+              "checksum": { "$ref": "#/$defs/sha256" },
+              "finished": { "const": true },
+              "rolledBack": { "const": false }
+            }
+          }
+        }
+      }
+    },
+    "catalogEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload", "sha256"],
+      "properties": {
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tables"],
+          "properties": {
+            "tables": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+          }
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "testResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed", "skipped", "todo", "total"],
+      "properties": {
+        "passed": { "type": "integer" },
+        "failed": { "const": 0 },
+        "skipped": { "const": 0 },
+        "todo": { "const": 0 },
+        "total": { "type": "integer" }
       }
     },
     "cleanup": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["containerId", "removed"],
+      "required": ["attempted", "containerId", "removed"],
       "properties": {
+        "attempted": { "const": true },
         "containerId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "removed": { "const": true }
       }

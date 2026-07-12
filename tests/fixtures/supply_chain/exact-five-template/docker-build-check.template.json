@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "PASSED",
+  "invocationId": "00000000-0000-4000-8000-000000000003",
+  "generatedAt": "2026-07-12T00:00:00.000Z",
+  "dockerVersion": "synthetic-28.3.3",
+  "syftVersion": "syft 1.44.0 synthetic",
+  "grypeVersion": "grype 0.112.0 synthetic",
+  "productionNetwork": "offline",
+  "images": [
+    { "imageName": "web" },
+    { "imageName": "api" },
+    { "imageName": "worker" },
+    { "imageName": "runtime-orchestrator" },
+    { "imageName": "openclaw-runtime" }
+  ],
+  "signature": {
+    "status": "BLOCKED",
+    "reason": "Synthetic fixture has no publication trust identity."
+  },
+  "publish": {
+    "status": "BLOCKED",
+    "reason": "Synthetic fixture has no internal registry target."
+  }
+}

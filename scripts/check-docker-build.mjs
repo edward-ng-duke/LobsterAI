@@ -11,7 +11,11 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { resolveProductSourceSha, validateVulnerabilityReport } from './check-supply-chain.mjs';
+import {
+  p03EvidenceRelativeDirectory,
+  resolveProductSourceSha,
+  validateVulnerabilityReport,
+} from './check-supply-chain.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const productionImages = ['web', 'api', 'worker', 'runtime-orchestrator', 'openclaw-runtime'];
@@ -275,7 +279,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   const runtimeEvidence = smokeImage(imageName, tag, metadata);
   const pluginInstallations = inspectPluginInstallations(imageName, tag, declaredPlugins);
 
-  const imageDigest = metadata.Id;
+  const localImageId = metadata.Id;
   const sbomPath = path.join(reportDirectory, `${imageName}.spdx.json`);
   const dockerContext = run('docker', ['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']);
   if (dockerContext.status !== 0 || !dockerContext.stdout.trim()) {
@@ -293,6 +297,11 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
   if (scan.status !== 0) throw new Error(`${imageName}: Grype scan failed: ${scan.stderr}`);
   writeFileSync(scanPath, scan.stdout, { mode: 0o600 });
   const scanDocument = JSON.parse(scan.stdout);
+  const imageDigest = scanDocument?.source?.target?.manifestDigest;
+  if (!/^sha256:[a-f0-9]{64}$/.test(imageDigest ?? '')
+    || scanDocument?.source?.target?.imageID !== localImageId) {
+    throw new Error(`${imageName}: scanner did not bind the local image ID to an OCI manifest digest`);
+  }
   const findings = (scanDocument.matches ?? []).map(match => ({
     id: match.vulnerability?.id ?? '<unknown>',
     severity: match.vulnerability?.severity ?? 'Unknown',
@@ -307,6 +316,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
     imageName,
     image: `${tag}@${imageDigest}`,
     digest: imageDigest,
+    localImageId,
     sourceSha,
     buildEvidence: {
       dockerfile,
@@ -342,7 +352,7 @@ const buildAndSmoke = (imageName, sourceSha, reportDirectory, scannerPolicy, wai
 };
 
 const writeReport = (report) => {
-  const reportDirectory = path.join(repositoryRoot, '.reports/supply-chain/20260712_PR3部署供应链证据');
+  const reportDirectory = path.join(repositoryRoot, p03EvidenceRelativeDirectory);
   mkdirSync(reportDirectory, { recursive: true });
   const reportPath = path.join(reportDirectory, 'docker-build-check.json');
   const temporaryPath = `${reportPath}.${report.invocationId}.tmp`;
@@ -373,8 +383,11 @@ const main = () => {
     path.join(repositoryRoot, 'docs/supply-chain/skills-and-plugins.manifest.json'),
     'utf8',
   ));
-  const sourceSha = resolveProductSourceSha(repositoryRoot);
-  if (!/^[a-f0-9]{40}$/.test(sourceSha ?? '')) throw new Error('unable to bind build to product source SHA');
+  const checkoutResult = run('git', ['rev-parse', 'HEAD']);
+  const checkoutSha = checkoutResult.status === 0 ? checkoutResult.stdout.trim() : undefined;
+  if (!/^[a-f0-9]{40}$/.test(checkoutSha ?? '')) throw new Error('unable to bind build to checkout SHA');
+  const productSourceSha = resolveProductSourceSha(repositoryRoot);
+  if (!/^[a-f0-9]{40}$/.test(productSourceSha ?? '')) throw new Error('unable to bind build to product source SHA');
   const worktree = run('git', ['status', '--porcelain', '--untracked-files=all']);
   if (worktree.status !== 0 || worktree.stdout.trim()) {
     throw new Error('Docker evidence requires a clean checkout with no tracked or untracked changes');
@@ -385,7 +398,9 @@ const main = () => {
     status: 'RUNNING',
     invocationId,
     generatedAt: new Date().toISOString(),
-    sourceSha,
+    checkoutSha,
+    productSourceSha,
+    sourceSha: productSourceSha,
     dockerVersion,
     syftVersion,
     grypeVersion,
@@ -396,7 +411,7 @@ const main = () => {
     for (const imageName of productionImages) {
       images.push(buildAndSmoke(
         imageName,
-        sourceSha,
+        productSourceSha,
         reportDirectory,
         scannerPolicy,
         inventoryManifest.waivers ?? [],
@@ -410,13 +425,16 @@ const main = () => {
       status: 'PASSED',
       invocationId,
       generatedAt: new Date().toISOString(),
-      sourceSha,
+      checkoutSha,
+      productSourceSha,
+      sourceSha: productSourceSha,
       dockerVersion,
       syftVersion,
       grypeVersion,
       productionNetwork: 'offline',
       images,
       signature: { status: 'BLOCKED', reason: 'Internal trust identity is not frozen; publish is forbidden.' },
+      publish: { status: 'BLOCKED', reason: 'Internal registry target is not frozen; publish is forbidden.' },
     };
     const { reportPath } = writeReport(report);
     console.log(JSON.stringify({ ...report, reportPath }));

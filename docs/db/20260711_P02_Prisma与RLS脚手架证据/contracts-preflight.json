@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "kind": "P02_CONTRACT_PREFLIGHT",
-  "runId": "e6c7b8ea-272a-42b8-ae50-e96642f34313",
-  "generatedAt": "2026-07-11T20:18:53.866Z",
-  "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-  "nodeVersion": "v24.15.0",
-  "platform": "darwin/arm64",
+  "runId": "c0ac0961-a065-42f2-aad2-c2247763583e",
+  "generatedAt": "2026-07-12T21:41:53.943Z",
+  "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+  "nodeVersion": "v24.18.0",
+  "platform": "linux/x64",
   "status": "PASS",
   "checks": {
     "contracts": {
@@ -14,5 +14,9 @@
       "contractVersion": "1.0.0",
       "sourceHash": "897bd39077d409e52a88e9efe89383380564812f494efb88fe09e2af6a1ed2c8"
     }
+  },
+  "cleanup": {
+    "attempted": false,
+    "removed": false
   }
 }

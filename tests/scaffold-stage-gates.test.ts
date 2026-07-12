@@ -40,6 +40,7 @@ const createRepositoryCopy = (): string => {
   temporaryRoots.push(target);
   for (const relativePath of [
     '.dockerignore',
+    '.github/workflows/ci.yml',
     '.github/workflows/saas-scaffold.yml',
     'apps',
     'charts',
@@ -75,6 +76,7 @@ const createRepositoryCopy = (): string => {
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
+    'vitest.db.config.ts',
     '改造计划/附录A-IPC通道与接口映射.md',
   ]) {
     const source = path.join(repositoryRoot, relativePath);

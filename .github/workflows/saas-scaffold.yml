@@ -1,6 +1,13 @@
 name: SaaS Scaffold
 
 on:
+  workflow_dispatch:
+    inputs:
+      p02_evidence_ready:
+        description: Run the post-freeze P02 trusted-evidence gate
+        type: boolean
+        required: true
+        default: false
   push:
     branches: [main, develop]
     paths:
@@ -27,6 +34,8 @@ on:
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
       - 'tests/deploy-*.test.ts'
+      - 'tests/helpers/supply-chain-evidence-fixture.ts'
+      - 'tests/fixtures/supply_chain/**'
       - 'tests/db/**'
       - 'tests/integration/db/**'
       - 'vitest.db.config.ts'
@@ -60,6 +69,8 @@ on:
       - 'tests/scaffold.test.ts'
       - 'tests/scaffold-*.test.ts'
       - 'tests/deploy-*.test.ts'
+      - 'tests/helpers/supply-chain-evidence-fixture.ts'
+      - 'tests/fixtures/supply_chain/**'
       - 'tests/db/**'
       - 'tests/integration/db/**'
       - 'vitest.db.config.ts'
@@ -107,6 +118,16 @@ jobs:
       - run: npm run docker:build:check
       - run: npm run supply-chain:check
       - run: npm run helm:lint
+      - name: Verify P03 evidence report permissions
+        run: test "$(stat -c '%a' '.reports/supply-chain/20260712_PR3部署供应链证据/docker-build-check.json')" = 600
+      - name: Upload validated P03 supply-chain evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: p03-supply-chain-${{ github.sha }}
+          path: .reports/supply-chain/20260712_PR3部署供应链证据/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify active and deferred stage gate entry points are explicit
         run: |
           node scripts/expect-saas-stage-gate.mjs test:e2e
@@ -114,7 +135,15 @@ jobs:
       - run: npm run lint:saas
       - run: npm run typecheck
       - run: npm run test:scaffold
+      - id: p02-evidence-phase
+        run: node scripts/db/resolve-evidence-phase.mjs
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
+          P02_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: npm test
+        env:
+          P02_EVIDENCE_PHASE: ${{ steps.p02-evidence-phase.outputs.phase }}
       - run: npm run build:saas
       - name: Verify Web production bundle
         run: |
@@ -127,7 +156,7 @@ jobs:
       - name: Verify tracked sources remain reproducible
         run: git diff --exit-code
 
-  db-integration:
+  db-platform-arm64:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     steps:
@@ -137,10 +166,64 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '24.15.0'
+          node-version: '24.18.0'
           cache: npm
       - run: npm ci
       - run: npm run contracts:check
+      - run: npx vitest run tests/db/postgres-image-policy.test.ts tests/db/validator-mutations.test.ts --reporter=verbose
+      - run: node scripts/db/validate-static.mjs
+      - run: npm run test:db:preflight
       - run: npm run test:db:integration
-      - run: npm run prisma:validate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-platform-arm64-${{ env.SAAS_SOURCE_SHA }}
+          path: |
+            .reports/db/preflight.json
+            .reports/db/integration.json
+          if-no-files-found: error
+          retention-days: 14
       - run: git diff --exit-code
+
+  db-evidence-arm64:
+    needs: db-platform-arm64
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.p02_evidence_ready == true }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: db-platform-arm64-${{ env.SAAS_SOURCE_SHA }}
+          path: .artifacts/db-platform-arm64
+      - run: node scripts/db/validate-platform-artifact.mjs --root .artifacts/db-platform-arm64 --source-sha "$SAAS_SOURCE_SHA" --platform linux/arm64
+      - run: npm run prisma:validate
+      - run: npx vitest run tests/db/tester-evidence-boundary.test.ts tests/db/validator-mutations.test.ts tests/db/evidence-bootstrap.test.ts tests/db/p03-merge-evidence.test.ts --reporter=verbose
+        env:
+          P02_EVIDENCE_PHASE: post-freeze
+      - run: git diff --exit-code
+
+  db-evidence-arm64-required:
+    needs: [db-platform-arm64, db-evidence-arm64]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.18.0'
+      - run: node scripts/db/check-evidence-ci-state.mjs
+        env:
+          P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
+          P02_PLATFORM_RESULT: ${{ needs.db-platform-arm64.result }}
+          P02_EVIDENCE_RESULT: ${{ needs.db-evidence-arm64.result }}

@@ -28,13 +28,24 @@ describe('P02 Prisma and RLS scaffold red baseline', () => {
   });
 
   test('pins a PostgreSQL 17 patch image, platform, and immutable sha256 digest', () => {
-    const image = readJson<{ image?: string; platform?: string; digest?: string }>(
+    const image = readJson<{
+      schemaVersion?: number;
+      image?: string;
+      platforms?: Array<{ platform?: string; digest?: string; immutableReference?: string }>;
+    }>(
       'tests/integration/db/postgres-image.json',
     );
 
+    expect(image?.schemaVersion).toBe(2);
     expect(image?.image).toMatch(/^postgres:17\.\d+-bookworm$/);
-    expect(image?.platform).toMatch(/^linux\/(?:amd64|arm64)$/);
-    expect(image?.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(image?.platforms?.map((entry) => entry.platform)).toEqual([
+      'linux/amd64',
+      'linux/arm64',
+    ]);
+    for (const entry of image?.platforms ?? []) {
+      expect(entry.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
+      expect(entry.immutableReference).toBe(`${image?.image}@${entry.digest}`);
+    }
   });
 
   test('defines the minimal mapped Tenant and Agent Prisma models', () => {
@@ -138,7 +149,8 @@ describe('P02 Prisma and RLS scaffold red baseline', () => {
       status: 'PASS',
       command: ['npm', 'run', '--silent', 'prisma:validate:active'],
     });
-    expect(workflow).toContain('db-integration:');
+    expect(workflow).toContain('db-platform-arm64:');
+    expect(workflow).toContain('db-evidence-arm64:');
     expect(workflow).toContain('npm run test:db:integration');
     expect(workflow).not.toMatch(/test:db:integration[^\n]*(?:\|\|\s*true|continue-on-error)/);
   });

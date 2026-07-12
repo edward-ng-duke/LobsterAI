@@ -1,20 +1,34 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 import pg from 'pg';
 
 import {
   createRunMetadata,
-  readJson,
   repositoryRoot,
   writeAtomicJson,
 } from './common.mjs';
+import {
+  createPostgresImagePolicyError,
+  loadPostgresImageManifest,
+  normalizeDockerPlatform,
+  PostgresImagePolicyErrorCode,
+  selectApprovedPostgresImage,
+  validateApprovedPostgresImageInspection,
+  validatePostgresServerSettings,
+} from './postgres-image-policy.mjs';
+import { stopPostgresContainer } from './postgres-container-cleanup.mjs';
+import { runPostgresMigrationLifecycle } from './postgres-migration-lifecycle.mjs';
+import { loadVitestJsonEvidence } from './vitest-json-evidence.mjs';
 
 const { Client } = pg;
 const report = {
   ...createRunMetadata('P02_DATABASE_INTEGRATION'),
   status: 'RUNNING',
-  skipped: 0,
+  skipped: null,
   checks: {},
 };
 
@@ -25,8 +39,6 @@ const run = (command, args, env = {}) =>
     env: { ...process.env, ...env },
   });
 
-const blocked = (message) => Object.assign(new Error(message), { blocked: true });
-
 const requireSuccessful = (result, label) => {
   if (result.status !== 0) {
     throw new Error(`${label} failed: ${result.stderr || result.stdout}`.trim());
@@ -36,15 +48,28 @@ const requireSuccessful = (result, label) => {
 
 let container;
 let exitCode = 0;
+let vitestReportRoot;
+const appendReportError = (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  report.error = report.error ? `${report.error}; ${message}` : message;
+};
 try {
   requireSuccessful(run(process.execPath, ['scripts/db/preflight.mjs', '--contracts']), 'contract preflight');
-  const image = readJson('tests/integration/db/postgres-image.json');
+  const manifest = loadPostgresImageManifest(repositoryRoot);
   const dockerInfo = run('docker', ['info', '--format', '{{.OSType}}/{{.Architecture}}']);
-  if (dockerInfo.status !== 0) throw blocked('Docker provider is unavailable');
-  const dockerPlatform = dockerInfo.stdout.trim().replace('aarch64', 'arm64').replace('x86_64', 'amd64');
-  if (dockerPlatform !== image.platform) {
-    throw blocked(`image platform ${image.platform} does not match Docker ${dockerPlatform}`);
+  if (dockerInfo.status !== 0) {
+    throw createPostgresImagePolicyError(
+      PostgresImagePolicyErrorCode.DockerProviderUnavailable,
+      'Docker provider is unavailable',
+      true,
+    );
   }
+  const dockerPlatform = normalizeDockerPlatform(dockerInfo.stdout.trim());
+  const approvedImage = selectApprovedPostgresImage(
+    manifest,
+    dockerInfo.stdout.trim(),
+    process.arch,
+  );
   if (!process.env.DOCKER_HOST) {
     process.env.DOCKER_HOST = requireSuccessful(
       run('docker', ['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']),
@@ -53,21 +78,25 @@ try {
   }
   process.env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ??= '/var/run/docker.sock';
 
-  let inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+  let inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
   if (inspect.status !== 0) {
-    const pull = run('docker', ['pull', image.immutableReference]);
-    if (pull.status !== 0) throw blocked(`immutable PostgreSQL image unavailable: ${pull.stderr}`);
-    inspect = run('docker', ['image', 'inspect', image.immutableReference]);
+    const pull = run('docker', ['pull', approvedImage.immutableReference]);
+    if (pull.status !== 0) {
+      throw createPostgresImagePolicyError(
+        PostgresImagePolicyErrorCode.ImageUnavailable,
+        `immutable PostgreSQL image unavailable: ${pull.stderr}`,
+        true,
+      );
+    }
+    inspect = run('docker', ['image', 'inspect', approvedImage.immutableReference]);
   }
   const inspected = JSON.parse(requireSuccessful(inspect, 'PostgreSQL image inspect'))[0];
-  if (!(inspected.RepoDigests ?? []).some((value) => value.endsWith(`@${image.digest}`))) {
-    throw new Error('local PostgreSQL image digest differs from the immutable manifest');
-  }
+  const inspection = validateApprovedPostgresImageInspection(approvedImage, inspected);
 
   const { GenericContainer, Wait } = await import('testcontainers');
   const adminPassword = `p02-${report.runId}`;
   const database = 'p02_integration';
-  container = await new GenericContainer(image.immutableReference)
+  container = await new GenericContainer(approvedImage.immutableReference)
     .withEnvironment({
       POSTGRES_DB: database,
       POSTGRES_PASSWORD: adminPassword,
@@ -86,6 +115,11 @@ try {
   const migrationEnv = { DATABASE_URL: adminUrl };
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'empty database migration');
   requireSuccessful(run('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'], migrationEnv), 'repeat migration');
+  const migrationLifecycle = {
+    first: true,
+    repeat: true,
+    ...await runPostgresMigrationLifecycle({ adminUrl, runId: report.runId }),
+  };
 
   const admin = new Client({ connectionString: adminUrl });
   await admin.connect();
@@ -113,6 +147,12 @@ try {
   const catalog = new Client({ connectionString: adminUrl });
   await catalog.connect();
   const serverVersion = (await catalog.query('SHOW server_version')).rows[0].server_version;
+  const locale = await catalog.query(
+    'SELECT datcollate, datctype FROM pg_database WHERE datname = current_database()',
+  );
+  const runtimeSettings = await catalog.query(
+    "SELECT current_setting('TimeZone') AS timezone, current_setting('ssl') AS ssl",
+  );
   const migrations = await catalog.query(
     'SELECT migration_name, finished_at IS NOT NULL AS finished FROM _prisma_migrations ORDER BY started_at',
   );
@@ -130,6 +170,14 @@ try {
     'SELECT tenant_id::text, logical_id, id::text FROM agents ORDER BY tenant_id, logical_id',
   );
   await catalog.end();
+
+  const serverSettings = validatePostgresServerSettings(manifest, {
+    serverVersion,
+    lcCollate: locale.rows[0]?.datcollate,
+    lcCtype: locale.rows[0]?.datctype,
+    timezone: runtimeSettings.rows[0]?.timezone,
+    ssl: runtimeSettings.rows[0]?.ssl,
+  });
 
   if (migrations.rowCount !== 1 || migrations.rows[0]?.finished !== true) {
     throw new Error('repeat migrate did not preserve one completed Prisma migration history row');
@@ -150,54 +198,120 @@ try {
     P02_APP_DATABASE_URL: appUrl,
     P02_CONTAINER_ID: container.getId(),
     P02_DATABASE_RUN_ID: report.runId,
+    P02_MIGRATION_LIFECYCLE_EVIDENCE: JSON.stringify(migrationLifecycle),
   };
-  const tests = run(
-    'npx',
-    ['vitest', 'run', '--config', 'vitest.db.config.ts', '--reporter=verbose'],
-    testEnv,
-  );
-  process.stdout.write(tests.stdout);
-  process.stderr.write(tests.stderr);
-  if (tests.status !== 0) throw new Error(`database integration tests failed with exit ${tests.status}`);
-
-  report.status = 'PASS';
-  report.checks = {
+  const baseChecks = {
     provider: {
       dockerPlatform,
-      image: image.image,
-      immutableReference: image.immutableReference,
-      digest: image.digest,
+      runnerOs: process.platform,
+      runnerArch: process.arch,
+      image: manifest.image,
+      immutableReference: approvedImage.immutableReference,
+      digest: approvedImage.digest,
+      ...inspection,
       containerId: container.getId(),
-      serverVersion,
+      ...serverSettings,
     },
-    migrations: migrations.rows,
+    migrations: migrationLifecycle,
     rls: rls.rows,
     roles: roles.rows,
     seed: seedRows.rows,
-    testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
+    checksPassed: null,
+    checksTotal: null,
+    testResults: null,
+    testOutputSha256: null,
   };
+  report.checks = baseChecks;
+  vitestReportRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-vitest-report-'));
+  const vitestReportPath = path.join(vitestReportRoot, 'integration.json');
+  let tests;
+  let testResults;
+  let parseError;
+  try {
+    tests = run(
+      'npx',
+      [
+        'vitest',
+        'run',
+        '--config',
+        'vitest.db.config.ts',
+        '--reporter=json',
+        `--outputFile=${vitestReportPath}`,
+      ],
+      testEnv,
+    );
+    process.stdout.write(tests.stdout);
+    process.stderr.write(tests.stderr);
+  } finally {
+    report.checks = {
+      ...baseChecks,
+      testOutputSha256: createHash('sha256')
+        .update(`${tests?.stdout ?? ''}\n${tests?.stderr ?? ''}`)
+        .digest('hex'),
+    };
+    try {
+      testResults = loadVitestJsonEvidence(vitestReportPath);
+      report.skipped = testResults.skipped;
+      report.checks = {
+        ...report.checks,
+        checksPassed: testResults.passed,
+        checksTotal: testResults.total,
+        testResults,
+      };
+    } catch (error) {
+      parseError = error;
+    }
+  }
+
+  const testErrors = [];
+  if (tests?.error) testErrors.push(`database integration tests could not start: ${tests.error.message}`);
+  if (tests?.status !== 0) {
+    testErrors.push(`database integration tests failed with exit ${tests?.status ?? 'unknown'}`);
+  }
+  if (parseError) testErrors.push(parseError.message);
+  if (testResults && (
+    testResults.failed !== 0 || testResults.skipped !== 0 || testResults.todo !== 0
+  )) {
+    testErrors.push(
+      `Vitest JSON report is not all-pass: passed=${testResults.passed}, failed=${testResults.failed}, ` +
+      `skipped=${testResults.skipped}, todo=${testResults.todo}, total=${testResults.total}`,
+    );
+  }
+  if (testErrors.length > 0) throw new Error(testErrors.join('; '));
+  console.log(JSON.stringify({ status: 'PASS', testResults }));
+
+  report.status = 'PASS';
 } catch (error) {
   const isBlocked = Boolean(error?.blocked) || /Could not find a working container runtime strategy/.test(String(error));
   report.status = isBlocked ? 'BLOCKED' : 'FAILED';
-  report.error = error instanceof Error ? error.message : String(error);
+  appendReportError(error);
   exitCode = isBlocked ? 2 : 1;
 } finally {
-  if (container) {
-    try {
-      const containerId = container.getId();
-      await container.stop();
-      report.cleanup = { containerId, removed: true };
-    } catch (error) {
-      report.status = 'FAILED';
-      report.cleanup = {
-        containerId: container.getId(),
-        removed: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-      exitCode = 1;
-    }
+  try {
+    report.cleanup = await stopPostgresContainer(container);
+  } catch (error) {
+    report.cleanup = { attempted: Boolean(container), removed: false };
+    appendReportError(error);
   }
-  writeAtomicJson('.reports/db/integration.json', report);
+  if (container && !report.cleanup.removed) {
+    report.status = 'FAILED';
+    appendReportError('PostgreSQL cleanup did not remove the container');
+    exitCode = 1;
+  }
+  try {
+    if (vitestReportRoot) rmSync(vitestReportRoot, { recursive: true, force: true });
+  } catch (error) {
+    report.status = 'FAILED';
+    appendReportError(`Vitest temporary report cleanup failed: ${error.message}`);
+    exitCode = 1;
+  }
+  try {
+    writeAtomicJson('.reports/db/integration.json', report);
+  } catch (error) {
+    report.status = 'FAILED';
+    appendReportError(`integration artifact write failed: ${error.message}`);
+    exitCode = 1;
+  }
   (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
   process.exitCode = exitCode;
 }

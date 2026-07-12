@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   mkdirSync,
@@ -16,7 +17,11 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { validateEvidenceOnlyDescendant } from '../../scripts/db/evidence-provenance.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
+const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
+const trustedBootstrapSha256 = '802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8';
 const temporaryRoots: string[] = [];
+const sha256File = (target: string) =>
+  createHash('sha256').update(readFileSync(target)).digest('hex');
 
 const createCopy = (): string => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-static-'));
@@ -28,7 +33,9 @@ const createCopy = (): string => {
     'libs/server/db',
     'package.json',
     'prisma',
+    'scripts/check-saas-scaffold.mjs',
     'scripts/db',
+    'scripts/json-without-duplicate-keys.mjs',
     'scripts/saas-stage-gates.json',
     'tests/integration/db/postgres-image.json',
     'tests/integration/db/tenant-extension.test.ts',
@@ -56,18 +63,109 @@ const run = (root: string) =>
     encoding: 'utf8',
   });
 
-const runEvidence = (root: string) =>
-  spawnSync(
-    process.execPath,
-    ['scripts/db/validate-evidence.mjs', '--root', root, '--git-root', repositoryRoot],
-    { cwd: root, encoding: 'utf8' },
-  );
-
 const git = (root: string, ...args: string[]) => {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   return result.stdout.trim();
 };
+
+type NativeReportName =
+  | 'contracts-preflight.json'
+  | 'preflight.json'
+  | 'integration.json'
+  | 'validation.json';
+type NativeReports = Record<NativeReportName, Record<string, unknown>>;
+
+const createTrustedEvidenceRepository = (
+  mutateReports?: (reports: NativeReports) => void,
+): string => {
+  const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-trusted-mutation-'));
+  temporaryRoots.push(root);
+  git(root, 'init', '-b', 'main');
+  git(root, 'config', 'user.name', 'P02 Trusted Mutation Test');
+  git(root, 'config', 'user.email', 'p02-trusted-mutation@example.invalid');
+  for (const relativePath of [
+    'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
+    'tests/integration/db/postgres-image.json',
+    'scripts/json-without-duplicate-keys.mjs',
+    'scripts/db/common.mjs',
+    'scripts/db/evidence-bootstrap.mjs',
+    'scripts/db/evidence-bundle.schema.json',
+    'scripts/db/evidence-provenance.mjs',
+    'scripts/db/evidence-trust-launcher.mjs',
+    'scripts/db/existing-schema-evidence.mjs',
+    'scripts/db/postgres-image-policy.mjs',
+    'scripts/db/preflight.mjs',
+    'scripts/db/run-integration.mjs',
+    'scripts/db/validate-evidence.mjs',
+    'scripts/db/validate.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
+  ]) {
+    const target = path.join(root, relativePath);
+    mkdirSync(path.dirname(target), { recursive: true });
+    cpSync(path.join(repositoryRoot, relativePath), target);
+  }
+  git(root, 'add', '.');
+  git(root, 'commit', '-m', 'feat: trusted implementation');
+  const sourceSha = git(root, 'rev-parse', 'HEAD');
+
+  const evidenceDirectory = path.join(root, evidencePath);
+  mkdirSync(evidenceDirectory, { recursive: true });
+  const runners: Record<NativeReportName, string> = {
+    'contracts-preflight.json': 'scripts/db/preflight.mjs',
+    'preflight.json': 'scripts/db/preflight.mjs',
+    'integration.json': 'scripts/db/run-integration.mjs',
+    'validation.json': 'scripts/db/validate.mjs',
+  };
+  const reports = {} as NativeReports;
+  for (const reportName of Object.keys(runners) as NativeReportName[]) {
+    const report = JSON.parse(
+      readFileSync(path.join(repositoryRoot, evidencePath, reportName), 'utf8'),
+    ) as Record<string, unknown>;
+    report.sourceSha = sourceSha;
+    reports[reportName] = report;
+  }
+  mutateReports?.(reports);
+  for (const [reportName, report] of Object.entries(reports)) {
+    writeFileSync(
+      path.join(evidenceDirectory, reportName),
+      `${JSON.stringify(report, null, 2)}\n`,
+    );
+  }
+  const manifestReports = Object.fromEntries(
+    Object.entries(runners).map(([reportName, runner]) => [
+      reportName,
+      {
+        sourceSha,
+        sha256: sha256File(path.join(evidenceDirectory, reportName)),
+        runner,
+        runnerSha256: sha256File(path.join(root, runner)),
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(evidenceDirectory, 'evidence-manifest.json'),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      codeEvidenceSha: sourceSha,
+      reports: manifestReports,
+    }, null, 2)}\n`,
+  );
+  git(root, 'add', '.');
+  git(root, 'commit', '-m', 'docs: native evidence');
+  return root;
+};
+
+const runEvidence = (root: string) => spawnSync(
+  process.execPath,
+  [
+    'scripts/db/evidence-trust-launcher.mjs',
+    '--expected-bootstrap-sha256',
+    trustedBootstrapSha256,
+  ],
+  { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } },
+);
 
 const createEvidenceRepository = (): { root: string; implementationSha: string } => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-evidence-git-'));
@@ -116,7 +214,7 @@ describe('P02 static gate mutation resistance', () => {
     [
       'removed evidence bootstrap entry',
       'package.json',
-      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23',
+      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8',
       'node scripts/db/validate-evidence.mjs',
     ],
   ] as const)('rejects the %s mutation', (_label, relativePath, from, to) => {
@@ -132,28 +230,73 @@ describe('P02 static gate mutation resistance', () => {
     expect(run(root).status).not.toBe(0);
   });
 
-  test('evidence schema rejects an unknown report field', () => {
+  test('rejects a duplicate root key in the PostgreSQL manifest', () => {
     const root = createCopy();
-    const target = path.join(
+    mutate(
       root,
-      'docs/db/20260711_P02_Prisma与RLS脚手架证据/integration.json',
+      'tests/integration/db/postgres-image.json',
+      '"schemaVersion": 2',
+      '"schemaVersion": 2, "schemaVersion": 2',
     );
-    const report = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>;
-    report.untrustedSummary = true;
-    writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`);
-    expect(runEvidence(root).status).not.toBe(0);
+    expect(run(root).status).not.toBe(0);
+  });
+
+  test('rejects missing duplicate and reordered PostgreSQL platforms', () => {
+    for (const mutation of ['missing', 'duplicate', 'reordered'] as const) {
+      const root = createCopy();
+      const target = path.join(root, 'tests/integration/db/postgres-image.json');
+      const image = JSON.parse(readFileSync(target, 'utf8')) as {
+        platforms: Array<Record<string, unknown>>;
+      };
+      if (mutation === 'missing') image.platforms.shift();
+      if (mutation === 'duplicate') image.platforms[1] = { ...image.platforms[0] };
+      if (mutation === 'reordered') image.platforms.reverse();
+      writeFileSync(target, `${JSON.stringify(image, null, 2)}\n`);
+      expect(run(root).status).not.toBe(0);
+    }
+  });
+
+  test('rejects coordinated removal of a policy fixture and both external digest updates', () => {
+    const root = createCopy();
+    const manifestPath = path.join(root, 'scripts/saas-stage-gates.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+      gates: Record<string, { fixtures: string[] }>;
+    };
+    manifest.gates['prisma:validate'].fixtures = manifest.gates['prisma:validate'].fixtures.filter(
+      (fixture) => fixture !== 'scripts/db/postgres-image-policy.mjs',
+    );
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const digest = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+    for (const relativePath of ['package.json', 'scripts/check-saas-scaffold.mjs']) {
+      const target = path.join(root, relativePath);
+      const source = readFileSync(target, 'utf8');
+      writeFileSync(
+        target,
+        source.replace(/(?<=prisma:validate )[a-f0-9]{64}/, digest),
+      );
+    }
+
+    expect(run(root).status).not.toBe(0);
+  });
+
+  test('evidence schema rejects an unknown report field', () => {
+    const root = createTrustedEvidenceRepository((reports) => {
+      reports['integration.json'].untrustedSummary = true;
+    });
+    const result = runEvidence(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('unknown property untrustedSummary');
+    expect(result.stderr).not.toContain('trusted bootstrap');
   });
 
   test('evidence provenance rejects a stale report source SHA', () => {
-    const root = createCopy();
-    const target = path.join(
-      root,
-      'docs/db/20260711_P02_Prisma与RLS脚手架证据/preflight.json',
-    );
-    const report = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>;
-    report.sourceSha = '0000000000000000000000000000000000000000';
-    writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`);
-    expect(runEvidence(root).status).not.toBe(0);
+    const root = createTrustedEvidenceRepository((reports) => {
+      reports['preflight.json'].sourceSha = '0000000000000000000000000000000000000000';
+    });
+    const result = runEvidence(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('source SHA does not match codeEvidenceSha');
+    expect(result.stderr).not.toContain('trusted bootstrap');
   });
 
   test('evidence provenance accepts direct evidence-only first-parent commits', () => {

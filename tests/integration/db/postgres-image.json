@@ -1,10 +1,19 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "image": "postgres:17.10-bookworm",
-  "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-  "platform": "linux/arm64",
   "serverMajor": 17,
   "serverVersion": "17.10",
   "distribution": "Debian bookworm",
-  "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a"
+  "platforms": [
+    {
+      "platform": "linux/amd64",
+      "digest": "sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf",
+      "immutableReference": "postgres:17.10-bookworm@sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf"
+    },
+    {
+      "platform": "linux/arm64",
+      "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
+      "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a"
+    }
+  ]
 }

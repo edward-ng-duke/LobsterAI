@@ -1,28 +1,92 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_INTEGRATION",
-  "runId": "17184ecf-d751-4ec8-8569-8d7cf7be4b4f",
-  "generatedAt": "2026-07-11T20:18:53.805Z",
-  "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-  "nodeVersion": "v24.15.0",
-  "platform": "darwin/arm64",
+  "runId": "d1c034ab-e44a-42bd-8f51-b46672c22350",
+  "generatedAt": "2026-07-12T21:41:53.905Z",
+  "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+  "nodeVersion": "v24.18.0",
+  "platform": "linux/x64",
   "status": "PASS",
   "skipped": 0,
   "checks": {
     "provider": {
-      "dockerPlatform": "linux/arm64",
+      "dockerPlatform": "linux/amd64",
+      "runnerOs": "linux",
+      "runnerArch": "x64",
       "image": "postgres:17.10-bookworm",
-      "immutableReference": "postgres:17.10-bookworm@sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-      "digest": "sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a",
-      "containerId": "335c69d7b72bfb0bdd6c7f81d4b648d7f84665746b68298957f09687904c0941",
-      "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)"
+      "immutableReference": "postgres:17.10-bookworm@sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf",
+      "digest": "sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf",
+      "inspectedOs": "linux",
+      "inspectedArch": "amd64",
+      "repoDigests": [
+        "postgres@sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf"
+      ],
+      "containerId": "154e7089246641013dfa22eb6ca1f8ed91b8b9056598b189f4908fa1d69ee37d",
+      "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)",
+      "serverMajor": 17,
+      "lcCollate": "en_US.utf8",
+      "lcCtype": "en_US.utf8",
+      "timezone": "Etc/UTC",
+      "ssl": "off"
     },
-    "migrations": [
-      {
-        "migration_name": "20260711000000_init_prisma_rls_scaffold",
-        "finished": true
+    "migrations": {
+      "first": true,
+      "repeat": true,
+      "existingSchema": {
+        "independentDatabase": true,
+        "prepared": true,
+        "preserved": true,
+        "completedMigrations": 2,
+        "beforeCatalog": {
+          "payload": {
+            "tables": [
+              "_prisma_migrations",
+              "p02_preexisting_catalog"
+            ]
+          },
+          "sha256": "9c770abd6b242f5d6f8fe7eec596e0f940aa3dc5214af6bdddd23bc53ce8dc24"
+        },
+        "afterCatalog": {
+          "payload": {
+            "tables": [
+              "_prisma_migrations",
+              "agents",
+              "p02_preexisting_catalog",
+              "tenants"
+            ]
+          },
+          "sha256": "1b35b00c013a4970a5d706765dd716e3fe3488783ac960fbe57b0a3528a9672c"
+        },
+        "migrationHistory": [
+          {
+            "migrationName": "20260710000000_existing_catalog_baseline",
+            "checksum": "07df3c3d18d5825b4ff89edee462bb160422f5132624df82bdca8800e582431e",
+            "finished": true,
+            "rolledBack": false
+          },
+          {
+            "migrationName": "20260711000000_init_prisma_rls_scaffold",
+            "checksum": "129f3ce0dd1164f30c1ea185b956989198457f6a2b10954a5eb9c160f5c31aca",
+            "finished": true,
+            "rolledBack": false
+          }
+        ]
+      },
+      "rollback": {
+        "failed": true,
+        "partialTableAbsent": true,
+        "rolledBackRows": 1,
+        "repaired": true
+      },
+      "concurrent": {
+        "safe": true,
+        "exitCodes": [
+          0,
+          0
+        ],
+        "completedRows": 1
       }
-    ],
+    },
     "rls": [
       {
         "relrowsecurity": true,
@@ -57,10 +121,20 @@
         "id": "b0000000-0000-4000-8000-000000000002"
       }
     ],
-    "testOutputSha256": "9fe09624d2c4618c7093a00ce29643bdd2fa7ca555e20f9ecf81006f97d6a724"
+    "checksPassed": 27,
+    "checksTotal": 27,
+    "testResults": {
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0,
+      "todo": 0,
+      "total": 27
+    },
+    "testOutputSha256": "5d3e62d32e85431bc7feac3774e3acf3afe992dfb992b33720f53c6081038f71"
   },
   "cleanup": {
-    "containerId": "335c69d7b72bfb0bdd6c7f81d4b648d7f84665746b68298957f09687904c0941",
+    "attempted": true,
+    "containerId": "154e7089246641013dfa22eb6ca1f8ed91b8b9056598b189f4908fa1d69ee37d",
     "removed": true
   }
 }

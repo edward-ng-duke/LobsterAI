@@ -1,17 +1,41 @@
 import { spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { resolveProductSourceSha } from '../scripts/check-supply-chain.mjs';
+import * as supplyChain from '../scripts/check-supply-chain.mjs';
+
+const { resolveProductSourceSha } = supplyChain;
+
+type ParseGitNameStatusZ = (output: Buffer) => string[] | undefined;
+type GitFailureMode = 'nonzero' | 'enoent' | 'signal' | 'overflow' | 'malformed';
+type GitRunnerOptions = {
+  cwd: string;
+  encoding?: BufferEncoding;
+  maxBuffer?: number;
+};
+type GitRunnerResult = {
+  error?: Error;
+  status: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string | Buffer | null;
+  stderr: string | Buffer | null;
+};
+type GitRunner = (args: string[], options: GitRunnerOptions) => GitRunnerResult;
+type ProductSourceShaResolver = (root?: string) => string | undefined;
+type CreateProductSourceShaResolver = (runGit?: GitRunner) => ProductSourceShaResolver;
 
 const temporaryRoots: string[] = [];
 
@@ -19,6 +43,40 @@ const git = (root: string, ...args: string[]) => {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   return result.stdout.trim();
+};
+
+const gitRaw = (root: string, ...args: string[]) => {
+  const result = spawnSync('git', args, { cwd: root });
+  expect(result.status, `${result.stdout.toString()}\n${result.stderr.toString()}`).toBe(0);
+  expect(Buffer.isBuffer(result.stdout)).toBe(true);
+  return result.stdout;
+};
+
+const parseGitNameStatusZ = (output: Buffer) => {
+  const parser = (supplyChain as typeof supplyChain & {
+    parseGitNameStatusZ?: ParseGitNameStatusZ;
+  }).parseGitNameStatusZ;
+  expect(parser, 'check-supply-chain.mjs must export parseGitNameStatusZ').toBeTypeOf('function');
+  return parser?.(output);
+};
+
+const createProductSourceShaResolver = (runGit?: GitRunner) => {
+  const factory = (supplyChain as typeof supplyChain & {
+    createProductSourceShaResolver?: CreateProductSourceShaResolver;
+  }).createProductSourceShaResolver;
+  expect(factory, 'check-supply-chain.mjs must export createProductSourceShaResolver')
+    .toBeTypeOf('function');
+  return (factory as CreateProductSourceShaResolver)(runGit);
+};
+
+const temporaryProductRoots = () => new Set(
+  readdirSync(tmpdir()).filter(entry => entry.startsWith('lobsterai-p03-product-source-')),
+);
+
+const cleanupTemporaryRoot = (root: string) => {
+  rmSync(root, { recursive: true, force: true });
+  const rootIndex = temporaryRoots.indexOf(root);
+  if (rootIndex >= 0) temporaryRoots.splice(rootIndex, 1);
 };
 
 const write = (root: string, relativePath: string, content: string) => {
@@ -44,11 +102,343 @@ const createRepository = () => {
   return { root, baseline };
 };
 
+const createFailingGitRunner = (mode: GitFailureMode) => {
+  let delegatedCalls = 0;
+  let nameStatusCalls = 0;
+  let nameStatusMaxBuffer: number | undefined;
+  const runGit: GitRunner = (args, options) => {
+    const isNameStatus = ['diff', 'diff-tree'].includes(args[0])
+      && args.includes('--name-status');
+    if (!isNameStatus) {
+      delegatedCalls += 1;
+      return spawnSync('git', args, options) as unknown as GitRunnerResult;
+    }
+
+    nameStatusCalls += 1;
+    nameStatusMaxBuffer = options.maxBuffer;
+    const result: GitRunnerResult = {
+      status: 0,
+      signal: null,
+      stdout: Buffer.alloc(0),
+      stderr: Buffer.alloc(0),
+    };
+    if (mode === 'nonzero') return { ...result, status: 42 };
+    if (mode === 'enoent') {
+      return {
+        ...result,
+        error: Object.assign(new Error('spawn git ENOENT'), { code: 'ENOENT' }),
+        status: null,
+      };
+    }
+    if (mode === 'signal') return { ...result, signal: 'SIGTERM', status: null };
+    if (mode === 'overflow') {
+      return {
+        ...result,
+        error: Object.assign(new Error('stdout maxBuffer length exceeded'), { code: 'ENOBUFS' }),
+        status: null,
+        stdout: Buffer.alloc(17 * 1024 * 1024, 0x61),
+      };
+    }
+    return { ...result, stdout: Buffer.from('M\0docs/frozen.md') };
+  };
+  return {
+    runGit,
+    calls: () => ({ delegatedCalls, nameStatusCalls, nameStatusMaxBuffer }),
+  };
+};
+
 afterEach(() => {
-  temporaryRoots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
+  const roots = temporaryRoots.splice(0);
+  roots.forEach(root => rmSync(root, { recursive: true, force: true }));
+  roots.forEach(root => expect(existsSync(root)).toBe(false));
+});
+
+describe('parseGitNameStatusZ', () => {
+  test('parses empty and legal single-path records without normalizing Unicode', () => {
+    const records = [
+      ['A', 'docs/caf\u00e9.md'],
+      ['D', 'docs/deleted.md'],
+      ['M', 'docs/cafe\u0301.md'],
+      ['T', 'docs/type-changed.md'],
+      ['U', 'docs/unmerged.md'],
+      ['X', 'docs/unknown.md'],
+      ['B', 'docs/broken-pairing.md'],
+    ];
+    const expectedPaths = records.map(([, relativePath]) => relativePath);
+
+    expect(parseGitNameStatusZ(Buffer.alloc(0))).toEqual([]);
+    expect(parseGitNameStatusZ(Buffer.from(
+      records.map(([status, relativePath]) => `${status}\0${relativePath}\0`).join(''),
+    ))).toEqual(expectedPaths);
+  });
+
+  test('parses R0/R100 and C0/C100 similarity boundaries with both paths', () => {
+    const records = [
+      ['R0', 'docs/r0-old.txt', 'scripts/r0-new.txt'],
+      ['R100', 'docs/r100 old.txt', 'scripts/r100\tnew.txt'],
+      ['C0', 'apps/c0-source.ts', 'tests/c0-copy.ts'],
+      ['C100', 'apps/c100-source.ts', 'tests/c100-copy\nsource.ts'],
+      ['C087', 'apps/c087-source.ts', 'tests/c087-copy.ts'],
+    ];
+    const expectedPaths = records.flatMap(([, oldPath, newPath]) => [oldPath, newPath]);
+
+    expect(parseGitNameStatusZ(Buffer.from(
+      records.map(([status, oldPath, newPath]) => `${status}\0${oldPath}\0${newPath}\0`).join(''),
+    ))).toEqual(expectedPaths);
+  });
+
+  test('preserves a leading UTF-8 BOM as a path character without Unicode normalization', () => {
+    const pathBytes = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from('docs/cafe\u0301.md'),
+    ]);
+    const output = Buffer.concat([Buffer.from('A\0'), pathBytes, Buffer.from([0])]);
+
+    expect(parseGitNameStatusZ(output)).toEqual(['\uFEFFdocs/cafe\u0301.md']);
+    expect(parseGitNameStatusZ(output)?.[0]).not.toBe('\uFEFFdocs/caf\u00e9.md');
+  });
+
+  test('parses 100,000 records within a constrained child-process heap', () => {
+    const moduleUrl = new URL('../scripts/check-supply-chain.mjs', import.meta.url).href;
+    const childScript = `
+      import { parseGitNameStatusZ } from ${JSON.stringify(moduleUrl)};
+      const recordCount = 100_000;
+      const input = Buffer.allocUnsafe(888_890);
+      let offset = 0;
+      for (let index = 0; index < recordCount; index += 1) {
+        offset += input.write('A', offset, 'ascii');
+        input[offset++] = 0;
+        offset += input.write(\`p\${index}\`, offset, 'utf8');
+        input[offset++] = 0;
+      }
+      if (offset !== input.length) throw new Error(\`fixture size mismatch: \${offset}\`);
+      const paths = parseGitNameStatusZ(input);
+      if (paths?.length !== recordCount || paths[0] !== 'p0' || paths.at(-1) !== 'p99999') {
+        throw new Error('parser did not preserve all paths');
+      }
+    `;
+    const result = spawnSync(process.execPath, [
+      '--max-old-space-size=24',
+      '--input-type=module',
+      '--eval',
+      childScript,
+    ], {
+      cwd: path.dirname(fileURLToPath(import.meta.url)),
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test.each([
+    ['missing trailing NUL', Buffer.from('M\0docs/file.md')],
+    ['truncated rename', Buffer.from('R100\0docs/old.md\0')],
+    ['unknown status', Buffer.from('Z\0docs/file.md\0')],
+    ['rename without similarity', Buffer.from('R\0docs/old.md\0docs/new.md\0')],
+    ['out-of-range similarity', Buffer.from('C101\0docs/old.md\0docs/new.md\0')],
+    ['empty path', Buffer.from('A\0\0')],
+    ['extra path', Buffer.from('M\0docs/file.md\0docs/extra.md\0')],
+    ['invalid UTF-8 path', Buffer.from([0x4d, 0x00, 0xc3, 0x28, 0x00])],
+  ])('fails closed for malformed output: %s', (_label, output) => {
+    expect(parseGitNameStatusZ(output)).toBeUndefined();
+  });
 });
 
 describe('P03 product-source evidence boundaries', () => {
+  test('uses the exact root diff-tree command and fails closed at the root commit', () => {
+    const { root, baseline } = createRepository();
+    const calls: Array<{ args: string[]; options: GitRunnerOptions }> = [];
+    const runGit: GitRunner = (args, options) => {
+      calls.push({ args: [...args], options: { ...options } });
+      if (args[0] === 'diff-tree') {
+        return {
+          status: 73,
+          signal: null,
+          stdout: Buffer.alloc(0),
+          stderr: Buffer.from('controlled root diff-tree failure'),
+        };
+      }
+      return spawnSync('git', args, options) as unknown as GitRunnerResult;
+    };
+
+    expect(createProductSourceShaResolver(runGit)(root)).toBe(baseline);
+    expect(calls.map(call => call.args)).toEqual([
+      ['rev-list', '--first-parent', 'HEAD'],
+      ['rev-list', '--parents', '--max-count=1', baseline],
+      [
+        'diff-tree', '--root', '--no-commit-id', '-r',
+        '--name-status', '-z', '-M', '-C', baseline,
+      ],
+    ]);
+    expect(calls[2]?.options).toEqual({
+      cwd: root,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+  });
+
+  test('keeps the default factory behavior equivalent to the public resolver', () => {
+    const { root, baseline } = createRepository();
+    write(root, 'docs/default-factory-🦞.md', 'frozen documentation\n');
+    commit(root, 'docs: exercise default resolver factory');
+
+    expect(createProductSourceShaResolver()(root)).toBe(baseline);
+    expect(createProductSourceShaResolver()(root)).toBe(resolveProductSourceSha(root));
+  });
+
+  test('preserves real Git emoji, CR, leading-dash, and BOM-like Unicode paths', () => {
+    const environmentBefore = { ...process.env };
+    const rootsBefore = temporaryProductRoots();
+    const { root, baseline } = createRepository();
+    try {
+      const frozenPaths = [
+        'docs/emoji-🦞.md',
+        'docs/carriage\rreturn.md',
+        'docs/-leading-dash.md',
+        'docs/\uFEFFname.md',
+      ];
+      frozenPaths.forEach(relativePath => write(root, relativePath, 'frozen path\n'));
+      const frozenCommit = commit(root, 'docs: add control and Unicode path fixtures');
+      const frozenOutput = gitRaw(
+        root,
+        'diff', '--name-status', '-z', '-M', '-C', `${frozenCommit}^`, frozenCommit,
+      );
+      frozenPaths.forEach(relativePath => {
+        expect(frozenOutput.includes(Buffer.from(`${relativePath}\0`))).toBe(true);
+      });
+      expect(resolveProductSourceSha(root)).toBe(baseline);
+
+      const unknownPaths = [
+        '-leading-dash-🦞.bin',
+        '\uFEFFdocs/looks-frozen.md',
+      ];
+      unknownPaths.forEach(relativePath => write(root, relativePath, 'unknown product path\n'));
+      const unknownCommit = commit(root, 'feat: add deceptive Unicode product paths');
+      const unknownOutput = gitRaw(
+        root,
+        'diff', '--name-status', '-z', '-M', '-C', `${unknownCommit}^`, unknownCommit,
+      );
+      unknownPaths.forEach(relativePath => {
+        expect(unknownOutput.includes(Buffer.from(`${relativePath}\0`))).toBe(true);
+      });
+      expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+    } finally {
+      cleanupTemporaryRoot(root);
+    }
+    expect(existsSync(root)).toBe(false);
+    expect(temporaryProductRoots()).toEqual(rootsBefore);
+    expect(process.env).toEqual(environmentBefore);
+  });
+
+  test('fails closed for abnormal raw and text runner result shapes', () => {
+    const { root } = createRepository();
+    write(root, 'docs/abnormal-runner.md', 'frozen documentation\n');
+    const analyzedCommit = commit(root, 'docs: add abnormal runner fixture');
+    const rawResults: Array<[string, GitRunnerResult]> = [
+      ['string stdout', {
+        status: 0,
+        signal: null,
+        stdout: 'M\0docs/frozen.md\0',
+        stderr: '',
+      }],
+      ['Uint8Array stdout', {
+        status: 0,
+        signal: null,
+        stdout: new Uint8Array(Buffer.from('M\0docs/frozen.md\0')),
+        stderr: Buffer.alloc(0),
+      } as unknown as GitRunnerResult],
+      ['status zero with error', {
+        error: new Error('contradictory raw error'),
+        status: 0,
+        signal: null,
+        stdout: Buffer.from('M\0docs/frozen.md\0'),
+        stderr: Buffer.alloc(0),
+      }],
+    ];
+    for (const [label, abnormalResult] of rawResults) {
+      const runGit: GitRunner = (args, options) => (
+        ['diff', 'diff-tree'].includes(args[0]) && args.includes('--name-status')
+          ? abnormalResult
+          : spawnSync('git', args, options) as unknown as GitRunnerResult
+      );
+      expect(createProductSourceShaResolver(runGit)(root), label).toBe(analyzedCommit);
+    }
+
+    const textResults: Array<[string, Partial<GitRunnerResult>]> = [
+      ['Buffer stdout', { stdout: Buffer.from(`${analyzedCommit}\n`) }],
+      ['null stdout', { stdout: null }],
+      ['status zero with error', {
+        error: new Error('contradictory text error'),
+        stdout: `${analyzedCommit}\n`,
+      }],
+      ['status zero with signal', {
+        signal: 'SIGTERM',
+        stdout: `${analyzedCommit}\n`,
+      }],
+    ];
+    const outcomes = Object.fromEntries(textResults.map(([label, abnormalResult]) => {
+      let textCallCount = 0;
+      const runGit: GitRunner = (args, options) => {
+        if (args[0] === 'rev-list') {
+          textCallCount += 1;
+          if (textCallCount === 2) {
+            return {
+              status: 0,
+              signal: null,
+              stdout: '',
+              stderr: '',
+              ...abnormalResult,
+            } as GitRunnerResult;
+          }
+        }
+        return spawnSync('git', args, options) as unknown as GitRunnerResult;
+      };
+      try {
+        return [label, createProductSourceShaResolver(runGit)(root)];
+      } catch (error) {
+        return [label, `${error}`];
+      }
+    }));
+    expect(outcomes).toEqual(Object.fromEntries(
+      textResults.map(([label]) => [label, analyzedCommit]),
+    ));
+  });
+
+  test.each([
+    ['name-status Git nonzero exit', 'nonzero'],
+    ['name-status spawnSync.error / ENOENT', 'enoent'],
+    ['name-status child signal', 'signal'],
+    ['name-status stdout overflow above 16 MiB', 'overflow'],
+    ['name-status malformed output producing parser undefined', 'malformed'],
+  ] as const)('fails closed to the analyzed commit for %s', (_label, mode) => {
+    const { root, baseline } = createRepository();
+    write(root, 'docs/frozen.md', `frozen failure boundary: ${mode}\n`);
+    const analyzedCommit = commit(root, `docs: add ${mode} failure boundary`);
+    expect(resolveProductSourceSha(root)).toBe(baseline);
+
+    const controlledGit = createFailingGitRunner(mode);
+    const resolveWithFailure = createProductSourceShaResolver(controlledGit.runGit);
+    expect(resolveWithFailure(root)).toBe(analyzedCommit);
+    expect(controlledGit.calls()).toEqual({
+      delegatedCalls: 2,
+      nameStatusCalls: 1,
+      nameStatusMaxBuffer: 16 * 1024 * 1024,
+    });
+  });
+
+  test.each(['true', 'false'])(
+    'keeps pathological UTF-8 frozen paths frozen with core.quotepath=%s',
+    (quotePath) => {
+      const { root, baseline } = createRepository();
+      git(root, 'config', 'core.quotepath', quotePath);
+      write(root, '改造计划/含 空格\t引号“与换行\n记录.md', '# frozen role record\n');
+      write(root, '改造计划/Unicode-caf\u00e9-cafe\u0301.md', '# NFC and NFD\n');
+      commit(root, 'docs: add pathological UTF-8 records');
+
+      expect(resolveProductSourceSha(root)).toBe(baseline);
+    },
+  );
+
   test('ignores frozen documentation, plan, test, and role/evidence paths', () => {
     const { root, baseline } = createRepository();
     for (const [relativePath, content] of [
@@ -113,6 +503,75 @@ describe('P03 product-source evidence boundaries', () => {
     write(root, 'future-surface/input.bin', 'future image input\n');
     const unknownCommit = commit(root, 'feat: add unclassified source path');
     expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+  });
+
+  test('advances source for an unknown UTF-8 path containing whitespace and newlines', () => {
+    const { root } = createRepository();
+    write(root, '未来产品/中文 空格\t引号“与换行\n输入.bin', 'future image input\n');
+    const unknownCommit = commit(root, 'feat: add unclassified UTF-8 source path');
+
+    expect(resolveProductSourceSha(root)).toBe(unknownCommit);
+  });
+
+  test('checks frozen and product paths on both sides of rename and copy records', () => {
+    const frozenToProductRename = createRepository();
+    write(frozenToProductRename.root, 'docs/重命名 源.txt', 'rename source\n');
+    commit(frozenToProductRename.root, 'docs: add frozen rename source');
+    mkdirSync(path.join(frozenToProductRename.root, 'scripts'), { recursive: true });
+    renameSync(
+      path.join(frozenToProductRename.root, 'docs/重命名 源.txt'),
+      path.join(frozenToProductRename.root, 'scripts/重命名 目标.txt'),
+    );
+    const promotedRename = commit(frozenToProductRename.root, 'feat: promote frozen rename source');
+    expect(resolveProductSourceSha(frozenToProductRename.root)).toBe(promotedRename);
+
+    const productToFrozenRename = createRepository();
+    write(productToFrozenRename.root, 'apps/api/降级 源.txt', 'rename source\n');
+    commit(productToFrozenRename.root, 'feat: add product rename source');
+    mkdirSync(path.join(productToFrozenRename.root, 'docs'), { recursive: true });
+    renameSync(
+      path.join(productToFrozenRename.root, 'apps/api/降级 源.txt'),
+      path.join(productToFrozenRename.root, 'docs/降级 目标.txt'),
+    );
+    const demotedRename = commit(productToFrozenRename.root, 'docs: demote product rename source');
+    expect(resolveProductSourceSha(productToFrozenRename.root)).toBe(demotedRename);
+
+    const repeatedLines = Array.from({ length: 200 }, (_, index) => `copy line ${index}`).join('\n');
+    const frozenToProductCopy = createRepository();
+    write(frozenToProductCopy.root, 'docs/复制 源.txt', `${repeatedLines}\n`);
+    commit(frozenToProductCopy.root, 'docs: add frozen copy source');
+    mkdirSync(path.join(frozenToProductCopy.root, 'scripts'), { recursive: true });
+    copyFileSync(
+      path.join(frozenToProductCopy.root, 'docs/复制 源.txt'),
+      path.join(frozenToProductCopy.root, 'scripts/复制 目标.txt'),
+    );
+    write(frozenToProductCopy.root, 'docs/复制 源.txt', `${repeatedLines}\nfrozen source changed\n`);
+    const promotedCopy = commit(frozenToProductCopy.root, 'feat: copy frozen source into product');
+    const promotedCopyOutput = gitRaw(
+      frozenToProductCopy.root,
+      'diff', '--name-status', '-z', '-M', '-C', `${promotedCopy}^`, promotedCopy,
+    );
+    expect(promotedCopyOutput.includes(Buffer.from('C100\0docs/复制 源.txt\0scripts/复制 目标.txt\0')))
+      .toBe(true);
+    expect(resolveProductSourceSha(frozenToProductCopy.root)).toBe(promotedCopy);
+
+    const productToFrozenCopy = createRepository();
+    write(productToFrozenCopy.root, 'apps/api/复制 源.txt', `${repeatedLines}\n`);
+    commit(productToFrozenCopy.root, 'feat: add product copy source');
+    mkdirSync(path.join(productToFrozenCopy.root, 'docs'), { recursive: true });
+    copyFileSync(
+      path.join(productToFrozenCopy.root, 'apps/api/复制 源.txt'),
+      path.join(productToFrozenCopy.root, 'docs/复制 目标.txt'),
+    );
+    write(productToFrozenCopy.root, 'apps/api/复制 源.txt', `${repeatedLines}\nproduct source changed\n`);
+    const demotedCopy = commit(productToFrozenCopy.root, 'docs: copy product source into frozen path');
+    const demotedCopyOutput = gitRaw(
+      productToFrozenCopy.root,
+      'diff', '--name-status', '-z', '-M', '-C', `${demotedCopy}^`, demotedCopy,
+    );
+    expect(demotedCopyOutput.includes(Buffer.from('C100\0apps/api/复制 源.txt\0docs/复制 目标.txt\0')))
+      .toBe(true);
+    expect(resolveProductSourceSha(productToFrozenCopy.root)).toBe(demotedCopy);
   });
 
   test('allows test and role-record commits without invalidating product evidence', () => {

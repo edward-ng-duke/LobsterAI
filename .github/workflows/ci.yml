@@ -151,10 +151,13 @@ jobs:
 
   # ========== Stage 6: 测试 (Node.js 内置) ==========
   test:
-    needs: [build-main]
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24.x'
@@ -163,5 +166,14 @@ jobs:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
           restore-keys: npm-${{ runner.os }}-
-      - run: npm install
+      - run: npm ci
+      - id: p02-evidence-phase
+        run: node scripts/db/resolve-evidence-phase.mjs
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
+          P02_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: npm test
+        env:
+          SAAS_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          P02_EVIDENCE_PHASE: ${{ steps.p02-evidence-phase.outputs.phase }}

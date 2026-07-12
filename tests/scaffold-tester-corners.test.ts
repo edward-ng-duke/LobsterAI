@@ -17,6 +17,8 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
+import { createWebWorkspaceBuildFixture } from './helpers/web-workspace-build-fixture';
+
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const temporaryRoots: string[] = [];
 
@@ -155,22 +157,25 @@ describe('SaaS scaffold independent tester corner cases', () => {
   }, 30_000);
 
   test('Web production HTML references only assets present in the emitted bundle', () => {
-    const webDist = path.join(repositoryRoot, 'apps/web/dist');
-    rmSync(webDist, { recursive: true, force: true });
-    const build = spawnSync('npm', ['run', 'build', '--workspace', '@lobsterai/web'], {
-      cwd: repositoryRoot,
-      encoding: 'utf8',
-    });
-    expect(build.status, `${build.stdout}\n${build.stderr}`).toBe(0);
+    const fixture = createWebWorkspaceBuildFixture();
+    try {
+      const build = spawnSync('npm', ['run', 'build', '--workspace', '@lobsterai/web'], {
+        cwd: fixture.root,
+        encoding: 'utf8',
+      });
+      expect(build.status, `${build.stdout}\n${build.stderr}`).toBe(0);
 
-    const html = readFileSync(path.join(webDist, 'index.html'), 'utf8');
-    const references = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]);
-    expect(references.length).toBeGreaterThan(0);
-    for (const reference of references) {
-      expect(reference).not.toMatch(/^(?:https?:|data:|\/src\/)/);
-      const emittedPath = path.join(webDist, reference.replace(/^\//, ''));
-      expect(existsSync(emittedPath), reference).toBe(true);
-      expect(createHash('sha256').update(readFileSync(emittedPath)).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
+      const html = readFileSync(fixture.resolveWebDist('index.html'), 'utf8');
+      const references = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]);
+      expect(references.length).toBeGreaterThan(0);
+      for (const reference of references) {
+        expect(reference).not.toMatch(/^(?:https?:|data:|\/src\/)/);
+        const emittedPath = fixture.resolveWebDist(reference.replace(/^\//, ''));
+        expect(existsSync(emittedPath), reference).toBe(true);
+        expect(createHash('sha256').update(readFileSync(emittedPath)).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
+      }
+    } finally {
+      fixture.cleanup();
     }
   }, 30_000);
 });

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const rootArgument = process.argv.indexOf('--root');
@@ -35,7 +35,15 @@ const requirePattern = (content, pattern, message) => {
 
 const packageJson = json('package.json');
 const dbPackage = json('libs/server/db/package.json');
-const image = json('tests/integration/db/postgres-image.json');
+let image = {};
+let selectedImage;
+try {
+  const policy = await import(pathToFileURL(path.join(root, 'scripts/db/postgres-image-policy.mjs')));
+  image = policy.loadPostgresImageManifest(root);
+  selectedImage = policy.selectApprovedPostgresImage(image, process.arch, process.arch);
+} catch (error) {
+  errors.push(`invalid PostgreSQL image policy: ${error.message}`);
+}
 const schema = read('prisma/schema.prisma');
 const inventory = json('prisma/rls/tenant-scoped-models.json');
 const context = read('libs/server/db/src/tenant-context.ts');
@@ -43,9 +51,11 @@ const dbClient = read('libs/server/db/src/client.ts');
 const tenantScope = read('libs/server/db/src/tenant-scope.ts');
 const extensionIntegration = read('tests/integration/db/tenant-extension.test.ts');
 const integrationRunner = read('scripts/db/run-integration.mjs');
+const platformArtifactValidator = read('scripts/db/validate-platform-artifact.mjs');
 const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
+const scaffoldChecker = read('scripts/check-saas-scaffold.mjs');
 const evidenceValidator = read('scripts/db/validate-evidence.mjs');
 const evidenceBootstrap = read('scripts/db/evidence-bootstrap.mjs');
 const evidenceTrustLauncher = read('scripts/db/evidence-trust-launcher.mjs');
@@ -100,12 +110,16 @@ for (const required of [
 ]) {
   if (!evidenceBootstrap.includes(required)) errors.push(`evidence bootstrap lacks ${required}`);
 }
-for (const required of [
+const activePrismaGate = packageJson.scripts?.['prisma:validate:active'] ?? '';
+if (!activePrismaGate.startsWith(
+  'npm run build --workspace @lobsterai/shared-contracts && node scripts/db/validate.mjs && ',
+)) {
+  errors.push('active Prisma gate must build shared contracts before database validation');
+}
+if (!activePrismaGate.includes(
   'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256',
-]) {
-  if (!packageJson.scripts?.['prisma:validate:active']?.includes(required)) {
-    errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
-  }
+)) {
+  errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
 }
 for (const required of [
   'external bootstrap digest is required',
@@ -119,6 +133,7 @@ for (const required of [
 for (const relativePath of [
   'scripts/db/evidence-bootstrap.mjs',
   'scripts/db/evidence-trust-launcher.mjs',
+  'scripts/db/vitest-json-evidence.mjs',
 ]) {
   if (!stageManifest.gates?.['prisma:validate']?.trustedFiles?.[relativePath]) {
     errors.push(`Prisma stage must externally pin ${relativePath}`);
@@ -133,6 +148,50 @@ for (const relativePath of [
 const stageManifestSha256 = sha256File('scripts/saas-stage-gates.json');
 if (!packageJson.scripts?.['prisma:validate']?.endsWith(stageManifestSha256)) {
   errors.push('Prisma stage entry must include the externally accepted gate manifest digest');
+}
+if (!scaffoldChecker.includes(
+  `'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate ${stageManifestSha256}'`,
+)) {
+  errors.push('scaffold policy must include the externally accepted gate manifest digest');
+}
+const requiredPrismaFixtures = [
+  '.github/workflows/saas-scaffold.yml',
+  '.github/workflows/ci.yml',
+  'package.json',
+  'scripts/json-without-duplicate-keys.mjs',
+  'scripts/db/postgres-image-policy.mjs',
+  'scripts/db/postgres-container-cleanup.mjs',
+  'scripts/db/postgres-migration-lifecycle.mjs',
+  'scripts/db/existing-schema-evidence.mjs',
+  'scripts/db/vitest-json-evidence.mjs',
+  'scripts/db/check-evidence-ci-state.mjs',
+  'scripts/db/resolve-evidence-phase.mjs',
+  'scripts/db/validate-platform-artifact.mjs',
+  'scripts/db/preflight.mjs',
+  'scripts/db/run-integration.mjs',
+  'scripts/db/validate-static.mjs',
+  'tests/integration/db/postgres-image.json',
+  'tests/integration/db/migration-lifecycle.test.ts',
+  'tests/db/postgres-image-policy.test.ts',
+  'tests/db/postgres-platform-artifact.test.ts',
+  'tests/db/p02-b00-4-tester-artifact-bindings.test.ts',
+  'tests/db/postgres-platform-workflow.test.ts',
+  'tests/db/postgres-container-cleanup.test.ts',
+  'tests/db/vitest-json-evidence.test.ts',
+  'tests/db/postgres-evidence-ci-state.test.ts',
+  'tests/db/integration-failure-artifact.test.mjs',
+  'tests/db/evidence-bootstrap.test.ts',
+  'tests/db/validator-mutations.test.ts',
+  'tests/db/tester-evidence-boundary.test.ts',
+  'tests/db/postgres-stage-boundary.test.ts',
+  'tests/db/p03-merge-evidence.test.ts',
+  'tests/db/reviewer-round2-red.test.ts',
+  'vitest.db.config.ts',
+];
+for (const fixture of requiredPrismaFixtures) {
+  if (!stageManifest.gates?.['prisma:validate']?.fixtures?.includes(fixture)) {
+    errors.push(`Prisma stage fixture missing ${fixture}`);
+  }
 }
 for (const required of ['--first-parent', 'non-evidence change after source SHA']) {
   if (!evidenceProvenance.includes(required)) errors.push(`evidence provenance lacks ${required}`);
@@ -159,19 +218,6 @@ if (
   dbPackage.dependencies?.pg !== '8.22.0'
 ) {
   errors.push('server-db Prisma client and pg dependencies are not pinned');
-}
-
-if (!/^postgres:17\.\d+-bookworm$/.test(image.image ?? '')) {
-  errors.push('PostgreSQL image must use an exact 17.x bookworm patch tag');
-}
-if (!/^linux\/(?:amd64|arm64)$/.test(image.platform ?? '')) {
-  errors.push('PostgreSQL image platform must be linux/amd64 or linux/arm64');
-}
-if (!/^sha256:[a-f0-9]{64}$/.test(image.digest ?? '')) {
-  errors.push('PostgreSQL image requires an immutable sha256 digest');
-}
-if (image.immutableReference !== `${image.image}@${image.digest}`) {
-  errors.push('PostgreSQL immutable reference must bind exact tag and digest');
 }
 
 requirePattern(schema, /model Tenant\s*\{/, 'schema lacks Tenant isolation root');
@@ -298,8 +344,25 @@ if (
 ) {
   errors.push('prisma:validate stage gate is not active');
 }
-if (!workflow.includes('db-integration:') || !workflow.includes('npm run test:db:integration')) {
-  errors.push('workflow lacks an independent database integration job');
+for (const required of [
+  'db-platform-arm64:',
+  'db-evidence-arm64:',
+  'npm run test:db:preflight',
+  'npm run test:db:integration',
+  'npm run prisma:validate',
+  'validate-platform-artifact.mjs',
+]) {
+  if (!workflow.includes(required)) errors.push(`workflow lacks required database gate: ${required}`);
+}
+for (const required of [
+  '--source-sha',
+  '--platform',
+  'checksPassed',
+  'cleanup.removed',
+]) {
+  if (!platformArtifactValidator.includes(required)) {
+    errors.push(`platform artifact validator lacks ${required}`);
+  }
 }
 if (!rootVitestConfig.includes("'tests/integration/**'")) {
   errors.push('default Vitest fast loop must exclude explicit database integration tests');
@@ -316,5 +379,6 @@ console.log(JSON.stringify({
   status: 'PASS',
   migration: migrationDirectories[0],
   tenantScopedTables: registered.map((entry) => entry.table),
-  image: image.immutableReference,
+  dockerPlatform: selectedImage.platform,
+  image: selectedImage.immutableReference,
 }));

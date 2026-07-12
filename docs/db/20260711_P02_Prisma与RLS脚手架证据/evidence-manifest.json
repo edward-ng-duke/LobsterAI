@@ -1,38 +1,38 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-11T20:19:49.545Z",
-  "codeEvidenceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
+  "generatedAt": "2026-07-12T21:43:28.129Z",
+  "codeEvidenceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
   "reports": {
     "contracts-preflight.json": {
-      "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-      "sha256": "1fb5188ae459653995ca764d11c1678c53d4936077a2a924f55ce8118dc3122a",
+      "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+      "sha256": "56c1b159e8599820b56ad1bdf063947361e5eedd5de75aeb0df8e6564e5cc532",
       "runner": "scripts/db/preflight.mjs",
-      "runnerSha256": "8d14bdc0422c74a46707cf1bde15d03faf5fe6a00faa776ce64d3d0b072acc4a"
+      "runnerSha256": "b581a6a04815caf68d173fac51849aa9cbe6c07416cc7a4f1620eda3bc303d1f"
     },
     "preflight.json": {
-      "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-      "sha256": "3fd9d655cc69bb77023de74c511141f9e8c396d606caa7a1d6fd3cc0c1509706",
+      "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+      "sha256": "11ecdcca92f39f7f66648f030493c04bc235de4f9faa47ecf3fef0484c5fb39e",
       "runner": "scripts/db/preflight.mjs",
-      "runnerSha256": "8d14bdc0422c74a46707cf1bde15d03faf5fe6a00faa776ce64d3d0b072acc4a"
+      "runnerSha256": "b581a6a04815caf68d173fac51849aa9cbe6c07416cc7a4f1620eda3bc303d1f"
     },
     "integration.json": {
-      "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-      "sha256": "669db108d33a218a14bff6643661213f9bbd43b3e97841a7bbfda5aa99f7bbdc",
+      "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+      "sha256": "027f3579dee27351b1fe4906f90dfdf7d5abe7189ffba6efcd3b74b1a572485d",
       "runner": "scripts/db/run-integration.mjs",
-      "runnerSha256": "15ed560ff020b3bc4d78ed09cdeb72f3c9490bdddcde36dee7e34dbea423b81e"
+      "runnerSha256": "bd5ff7f49bd5d260bc4826aac28fbacafafa30dfee40759150a65ddbb7befaab"
     },
     "validation.json": {
-      "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-      "sha256": "2fab5b65908b28362c00d44cc39889178ceea12a976f6a56e013fd44b0fada67",
+      "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
+      "sha256": "606ab23ba641211f8853c67dc2965fa228decac006a139c12f05909a3abf5d30",
       "runner": "scripts/db/validate.mjs",
       "runnerSha256": "dc3bbd447d980d7a45e19fba2e15f7c2bb76542e2023613cc404cfeb857277f9"
     },
     "prisma-stage-gate.json": {
-      "sourceSha": "2f8e33e42d12249470a3b800612338ac448d0751",
-      "sha256": "a83ff1150b8f872f0418c9fdf5b13eb4e8fe6384ce935b421acc2b2fa4561b0b",
+      "sourceSha": "4eb8525698d4e0f1cb711b7831fa4b85e70cd8f0",
+      "sha256": "d237896cdb70cc2b062cdd6b03908abc16c8f750cb7af8dba6ba15841a47406b",
       "runner": "scripts/run-saas-stage-gate.mjs",
       "runnerSha256": "af982ca6ed4f5e0c0573abf976e08ab1d2c33d4e46615ff575a2fa892a1c03e6"
     }
   },
-  "stageEvidenceSha": "2f8e33e42d12249470a3b800612338ac448d0751"
+  "stageEvidenceSha": "4eb8525698d4e0f1cb711b7831fa4b85e70cd8f0"
 }

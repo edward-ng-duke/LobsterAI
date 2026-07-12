@@ -1,0 +1,433 @@
+import { spawnSync } from 'node:child_process';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import { describe, expect, test } from 'vitest';
+
+const repositoryRoot = path.resolve(import.meta.dirname, '../..');
+type EvidencePhase = 'pre-freeze' | 'post-freeze';
+
+const oppositeEvidencePhase = (phase: EvidencePhase): EvidencePhase =>
+  phase === 'pre-freeze' ? 'post-freeze' : 'pre-freeze';
+
+const resolveCurrentEvidencePhase = (): EvidencePhase => {
+  const configured = process.env.P02_EVIDENCE_PHASE;
+  if (configured) {
+    if (configured === 'pre-freeze' || configured === 'post-freeze') return configured;
+    throw new Error(`invalid P02_EVIDENCE_PHASE for P02 tests: ${configured}`);
+  }
+
+  const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  }).stdout.trim();
+  const result = spawnSync(process.execPath, ['scripts/db/resolve-evidence-phase.mjs'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GITHUB_EVENT_NAME: 'push',
+      P02_EVIDENCE_READY: '',
+      P02_SOURCE_SHA: sourceSha,
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(`unable to derive the current P02 evidence phase: ${result.stderr}`);
+  }
+  const phase = (JSON.parse(result.stdout) as { phase?: string }).phase;
+  if (phase !== 'pre-freeze' && phase !== 'post-freeze') {
+    throw new Error(`resolver returned an invalid P02 evidence phase: ${phase ?? ''}`);
+  }
+  return phase;
+};
+
+const runEvidenceTests = (phase: string) => spawnSync(
+  'npx',
+  [
+    'vitest',
+    'run',
+    'tests/db/p03-merge-evidence.test.ts',
+    'tests/db/reviewer-round2-red.test.ts',
+    '--reporter=dot',
+  ],
+  {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: { ...process.env, P02_EVIDENCE_PHASE: phase },
+  },
+);
+
+const runRequiredState = (values: Record<string, string>) => spawnSync(
+  process.execPath,
+  ['scripts/db/check-evidence-ci-state.mjs'],
+  {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: { ...process.env, ...values },
+  },
+);
+
+describe('P02 pre-freeze and post-freeze CI state', () => {
+  test('derives the official phase from event input and trusted source state', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const { resolveEvidencePhase } = await import(resolverPath);
+
+    expect(resolveEvidencePhase({
+      eventName: 'pull_request', evidenceReady: '', trustedEvidenceValid: false,
+    })).toBe('pre-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'push', evidenceReady: '', trustedEvidenceValid: true,
+    })).toBe('post-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'workflow_dispatch', evidenceReady: 'false', trustedEvidenceValid: false,
+    })).toBe('pre-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'workflow_dispatch', evidenceReady: 'true', trustedEvidenceValid: true,
+    })).toBe('post-freeze');
+  });
+
+  test.each([
+    ['stale evidence presented as post-freeze', 'workflow_dispatch', 'true', false],
+    ['valid evidence held in pre-freeze', 'workflow_dispatch', 'false', true],
+    ['a dispatch input on push', 'push', 'false', false],
+    ['an invalid dispatch input', 'workflow_dispatch', 'invalid', false],
+  ])('rejects %s', async (_label, eventName, evidenceReady, trustedEvidenceValid) => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const { resolveEvidencePhase } = await import(resolverPath);
+
+    expect(() => resolveEvidencePhase({
+      eventName, evidenceReady, trustedEvidenceValid,
+    })).toThrow();
+  });
+
+  test('binds CLI source state to the trusted launcher without an override', () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const source = readFileSync(resolverPath, 'utf8');
+
+    expect(source).toContain('evidence-trust-launcher.mjs');
+    expect(source).toContain('scripts/saas-stage-gates.json');
+    expect(source).not.toMatch(/continue-on-error|\|\|\s*true|TRUSTED_EVIDENCE_STATUS/);
+  });
+
+  test('requires the checked-out HEAD to equal the workflow source SHA', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { requireCheckedOutSource } = await import(resolverPath);
+    const sourceSha = 'a'.repeat(40);
+
+    expect(requireCheckedOutSource(sourceSha, sourceSha)).toBe(sourceSha);
+    expect(() => requireCheckedOutSource(sourceSha, 'b'.repeat(40))).toThrow();
+    expect(() => requireCheckedOutSource('', sourceSha)).toThrow();
+  });
+
+  test('classifies only auditable source drift as pre-freeze evidence', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { classifyTrustedEvidenceValidation } = await import(resolverPath);
+
+    expect(classifyTrustedEvidenceValidation({
+      status: 0, stdout: '{"status":"PASS"}', stderr: '',
+    })).toBe(true);
+    expect(classifyTrustedEvidenceValidation({
+      status: 86,
+      stdout: '',
+      stderr: 'P02 evidence bootstrap: trusted file mismatch package.json\n',
+    })).toBe(false);
+    expect(classifyTrustedEvidenceValidation({
+      status: 86,
+      stdout: '',
+      stderr: 'P02 evidence bootstrap: trusted file mismatch scripts/db/validate-evidence.mjs\n',
+    })).toBe(false);
+    for (const relativePath of [
+      'scripts/db/postgres-image-policy.mjs',
+      'scripts/json-without-duplicate-keys.mjs',
+      'tests/integration/db/postgres-image.json',
+    ]) {
+      expect(classifyTrustedEvidenceValidation({
+        status: 86,
+        stdout: '',
+        stderr: `P02 evidence bootstrap: trusted file mismatch ${relativePath}\n`,
+      })).toBe(false);
+    }
+    expect(classifyTrustedEvidenceValidation({
+      status: 1,
+      stdout: '',
+      stderr: JSON.stringify({
+        status: 'FAILED',
+        errors: [
+          `codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (${'a'.repeat(40)})`,
+          `stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (${'a'.repeat(40)})`,
+        ],
+      }),
+    })).toBe(false);
+  });
+
+  test('uses the complete exported protected set for every CI phase decision', async () => {
+    const bootstrapPath = path.join(repositoryRoot, 'scripts/db/evidence-bootstrap.mjs');
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const {
+      evidenceRequiredProtectedFiles,
+      evidenceOptionalProtectedFiles,
+      evidenceAuditableProtectedFiles,
+    } = await import(bootstrapPath);
+    const { classifyTrustedEvidenceValidation, resolveEvidencePhase } = await import(resolverPath);
+    const expectedAuditableSet = [
+      ...evidenceRequiredProtectedFiles,
+      ...evidenceOptionalProtectedFiles,
+      'scripts/db/evidence-bootstrap.mjs',
+    ];
+
+    expect(new Set(evidenceAuditableProtectedFiles).size).toBe(expectedAuditableSet.length);
+    expect([...evidenceAuditableProtectedFiles].sort()).toEqual(expectedAuditableSet.sort());
+
+    for (const relativePath of evidenceAuditableProtectedFiles) {
+      const trustedEvidenceValid = classifyTrustedEvidenceValidation({
+        status: 86,
+        stdout: '',
+        stderr: `P02 evidence bootstrap: trusted file mismatch ${relativePath}\n`,
+      });
+      expect(trustedEvidenceValid, relativePath).toBe(false);
+      for (const eventName of ['push', 'pull_request']) {
+        expect(resolveEvidencePhase({
+          eventName,
+          evidenceReady: '',
+          trustedEvidenceValid,
+        }), `${eventName}: ${relativePath}`).toBe('pre-freeze');
+      }
+      expect(() => resolveEvidencePhase({
+        eventName: 'workflow_dispatch',
+        evidenceReady: 'true',
+        trustedEvidenceValid,
+      }), relativePath).toThrow();
+    }
+  });
+
+  test.each([
+    ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
+    ['nonregular trusted file', 86, '', 'P02 evidence bootstrap: trusted file must be a regular file package.json'],
+    ['trusted file root escape', 86, '', 'P02 evidence bootstrap: trusted file escapes root package.json'],
+    ['unapproved trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch scripts/db/untrusted-validator.mjs'],
+    ['invalid manifest', 1, '', 'SyntaxError: Unexpected token'],
+    ['evidence digest corruption', 1, '{"status":"FAILED","errors":["integration.json: manifest report digest mismatch"]}', ''],
+    ['missing trusted file', 86, '', 'P02 evidence bootstrap: missing trusted package.json'],
+    ['provenance JSON on stdout', 1, '{"status":"FAILED","errors":["codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)","stageEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)"]}', ''],
+    ['stderr diagnostic with noise', 1, '', 'noise\n{"status":"FAILED","errors":[]}'],
+    ['multiple stderr diagnostics', 1, '', '{"status":"FAILED","errors":[]}\n{"status":"FAILED","errors":[]}'],
+    ['conflicting output streams', 1, '{"status":"PASS"}', '{"status":"FAILED","errors":[]}'],
+    ['successful stdout with noise', 0, 'noise\n{"status":"PASS"}', ''],
+    ['successful validation with stderr', 0, '{"status":"PASS"}', '{"status":"FAILED"}'],
+    ['missing stage pair', 1, '', JSON.stringify({
+      status: 'FAILED',
+      errors: [`codeEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`],
+    })],
+    ['mismatched path pair', 1, '', JSON.stringify({
+      status: 'FAILED',
+      errors: [
+        `codeEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+        `stageEvidenceSha: non-evidence change after source SHA: A src/b.ts (${'a'.repeat(40)})`,
+      ],
+    })],
+    ['duplicate stage pair', 1, '', JSON.stringify({
+      status: 'FAILED',
+      errors: [
+        `codeEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+        `stageEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+        `stageEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+      ],
+    })],
+    ['mixed provenance and digest failure', 1, '', JSON.stringify({
+      status: 'FAILED',
+      errors: [
+        `codeEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+        `stageEvidenceSha: non-evidence change after source SHA: A src/a.ts (${'a'.repeat(40)})`,
+        'integration.json: manifest report digest mismatch',
+      ],
+    })],
+  ])('does not mask %s as a pre-freeze source', async (_label, status, stdout, stderr) => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { classifyTrustedEvidenceValidation } = await import(resolverPath);
+
+    expect(() => classifyTrustedEvidenceValidation({ status, stdout, stderr })).toThrow();
+  });
+
+  test('classifies the real trusted launcher stderr after a linear source drift commit', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-phase-drift-'));
+    const worktree = path.join(root, 'worktree');
+    try {
+      const added = spawnSync('git', ['worktree', 'add', '--detach', worktree, '6c7bf0b9'], {
+        cwd: repositoryRoot,
+        encoding: 'utf8',
+      });
+      expect(added.status, added.stderr).toBe(0);
+      const gates = JSON.parse(
+        readFileSync(path.join(worktree, 'scripts/saas-stage-gates.json'), 'utf8'),
+      ) as {
+        gates: Record<string, { trustedFiles: Record<string, string> }>;
+      };
+      const digest = gates.gates['prisma:validate']
+        .trustedFiles['scripts/db/evidence-bootstrap.mjs'];
+      const launch = () => spawnSync(
+        process.execPath,
+        [
+          'scripts/db/evidence-trust-launcher.mjs',
+          '--expected-bootstrap-sha256',
+          digest,
+        ],
+        { cwd: worktree, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } },
+      );
+      const valid = launch();
+      expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+
+      mkdirSync(path.join(worktree, 'src'), { recursive: true });
+      for (const [name, source] of [
+        ['p02-phase-drift-a.ts', 'export const p02PhaseDriftA = true;\n'],
+        ['p02-phase-drift-b.ts', 'export const p02PhaseDriftB = true;\n'],
+      ]) {
+        writeFileSync(path.join(worktree, 'src', name), source);
+      }
+      expect(spawnSync('git', ['add', 'src/p02-phase-drift-a.ts', 'src/p02-phase-drift-b.ts'], {
+        cwd: worktree, encoding: 'utf8',
+      }).status).toBe(0);
+      const committed = spawnSync(
+        'git',
+        [
+          '-c', 'core.hooksPath=/dev/null',
+          '-c', 'user.name=P02 Phase Test',
+          '-c', 'user.email=p02-phase@example.invalid',
+          'commit', '-m', 'test: add two linear phase drift probes',
+        ],
+        { cwd: worktree, encoding: 'utf8' },
+      );
+      expect(committed.status, committed.stderr).toBe(0);
+      const drift = launch();
+      expect(drift.status).toBe(1);
+      expect(drift.stdout).toBe('');
+      const firstDiagnostic = JSON.parse(drift.stderr) as { status: string; errors: string[] };
+      expect(firstDiagnostic.status).toBe('FAILED');
+      expect(firstDiagnostic.errors).toHaveLength(4);
+
+      const { classifyTrustedEvidenceValidation } = await import(
+        path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs')
+      );
+      expect(classifyTrustedEvidenceValidation(drift)).toBe(false);
+
+      writeFileSync(
+        path.join(worktree, 'src/p02-phase-drift-c.ts'),
+        'export const p02PhaseDriftC = true;\n',
+      );
+      expect(spawnSync('git', ['add', 'src/p02-phase-drift-c.ts'], {
+        cwd: worktree, encoding: 'utf8',
+      }).status).toBe(0);
+      const secondCommit = spawnSync(
+        'git',
+        [
+          '-c', 'core.hooksPath=/dev/null',
+          '-c', 'user.name=P02 Phase Test',
+          '-c', 'user.email=p02-phase@example.invalid',
+          'commit', '-m', 'test: add another linear phase drift probe',
+        ],
+        { cwd: worktree, encoding: 'utf8' },
+      );
+      expect(secondCommit.status, secondCommit.stderr).toBe(0);
+      const secondDrift = launch();
+      expect(secondDrift.status).toBe(1);
+      expect((JSON.parse(secondDrift.stderr) as { errors: string[] }).errors).toHaveLength(6);
+      expect(classifyTrustedEvidenceValidation(secondDrift)).toBe(false);
+    } finally {
+      spawnSync('git', ['worktree', 'remove', '--force', worktree], {
+        cwd: repositoryRoot,
+      });
+      spawnSync('git', ['worktree', 'prune'], { cwd: repositoryRoot });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('runs the real resolver matrix for the official current evidence phase', () => {
+    const expectedPhase = resolveCurrentEvidencePhase();
+    const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    }).stdout.trim();
+    const runResolver = (eventName: string, evidenceReady = '') => spawnSync(
+      process.execPath,
+      ['scripts/db/resolve-evidence-phase.mjs'],
+      {
+        cwd: repositoryRoot,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_EVENT_NAME: eventName,
+          P02_EVIDENCE_READY: evidenceReady,
+          P02_SOURCE_SHA: sourceSha,
+        },
+      },
+    );
+
+    const matchingReady = expectedPhase === 'post-freeze' ? 'true' : 'false';
+    for (const [eventName, ready] of [
+      ['push', ''],
+      ['pull_request', ''],
+      ['workflow_dispatch', matchingReady],
+    ]) {
+      const result = runResolver(eventName, ready);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        status: 'PASS', phase: expectedPhase, sourceSha,
+      });
+    }
+    const oppositeReady = expectedPhase === 'post-freeze' ? 'false' : 'true';
+    expect(runResolver('workflow_dispatch', oppositeReady).status).toBe(1);
+  });
+
+  test('accepts evidence tests in the official current phase', () => {
+    const result = runEvidenceTests(resolveCurrentEvidencePhase());
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test('rejects evidence tests in the phase opposite the official current state', () => {
+    const oppositePhase = oppositeEvidencePhase(resolveCurrentEvidencePhase());
+    expect(runEvidenceTests(oppositePhase).status).not.toBe(0);
+  });
+
+  test('marks the pre-freeze required state ready after the platform job', () => {
+    const result = runRequiredState({
+      P02_EVIDENCE_READY: 'false',
+      P02_PLATFORM_RESULT: 'success',
+      P02_EVIDENCE_RESULT: 'skipped',
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('WAITING_POST_FREEZE');
+  });
+
+  test('requires successful evidence when the explicit freeze input is ready', () => {
+    const success = runRequiredState({
+      P02_EVIDENCE_READY: 'true',
+      P02_PLATFORM_RESULT: 'success',
+      P02_EVIDENCE_RESULT: 'success',
+    });
+    expect(success.status, success.stderr).toBe(0);
+    expect(success.stdout).toContain('POST_FREEZE_PASSED');
+
+    for (const evidenceResult of ['skipped', 'failure']) {
+      expect(runRequiredState({
+        P02_EVIDENCE_READY: 'true',
+        P02_PLATFORM_RESULT: 'success',
+        P02_EVIDENCE_RESULT: evidenceResult,
+      }).status).toBe(1);
+    }
+  });
+});

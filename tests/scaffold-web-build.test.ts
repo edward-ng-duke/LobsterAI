@@ -1,22 +1,41 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
-const repositoryRoot = path.resolve(import.meta.dirname, '..');
-const webDist = path.join(repositoryRoot, 'apps/web/dist');
+import { createWebWorkspaceBuildFixture } from './helpers/web-workspace-build-fixture';
 
 describe('P00 Web production build gate', () => {
   test('workspace build emits an HTML entry and static asset', () => {
-    rmSync(webDist, { recursive: true, force: true });
-    const result = spawnSync('npm', ['run', 'build', '--workspace', '@lobsterai/web'], {
-      cwd: repositoryRoot,
-      encoding: 'utf8',
-    });
+    const fixture = createWebWorkspaceBuildFixture();
+    try {
+      for (const excludedOutput of [
+        'apps/web/dist',
+        'apps/web/dist-types',
+        'apps/web/tsconfig.tsbuildinfo',
+        'libs/client/bridge/dist',
+        'libs/client/bridge/tsconfig.tsbuildinfo',
+        'libs/shared/contracts/dist',
+        'libs/shared/contracts/tsconfig.tsbuildinfo',
+        'libs/shared/types/dist',
+        'libs/shared/types/tsconfig.tsbuildinfo',
+      ]) {
+        expect(existsSync(path.join(fixture.root, excludedOutput)), excludedOutput).toBe(false);
+      }
 
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(existsSync(path.join(webDist, 'index.html'))).toBe(true);
-    expect(readdirSync(path.join(webDist, 'assets')).some((file) => file.endsWith('.js'))).toBe(true);
+      const result = spawnSync('npm', ['run', 'build', '--workspace', '@lobsterai/web'], {
+        cwd: fixture.root,
+        encoding: 'utf8',
+      });
+
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(existsSync(fixture.resolveWebDist('index.html'))).toBe(true);
+      expect(
+        readdirSync(fixture.resolveWebDist('assets')).some((file) => file.endsWith('.js')),
+      ).toBe(true);
+    } finally {
+      fixture.cleanup();
+    }
   }, 30_000);
 });

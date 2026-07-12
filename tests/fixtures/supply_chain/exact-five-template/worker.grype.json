@@ -1,0 +1,17 @@
+{
+  "source": {
+    "type": "image",
+    "target": {
+      "userInput": "lobsterai-p03-__IMAGE_NAME__:__SOURCE_PREFIX__",
+      "imageID": "__LOCAL_IMAGE_ID__",
+      "tags": ["lobsterai-p03-__IMAGE_NAME__:__SOURCE_PREFIX__"],
+      "repoDigests": [],
+      "manifestDigest": "__IMAGE_DIGEST__"
+    }
+  },
+  "descriptor": { "name": "grype", "version": "0.112.0" },
+  "matches": [{
+    "vulnerability": { "id": "SYNTHETIC-__IMAGE_NAME__-001", "severity": "Low" },
+    "artifact": { "id": "synthetic-__IMAGE_NAME__-artifact", "name": "synthetic-__IMAGE_NAME__", "version": "1.0.0" }
+  }]
+}

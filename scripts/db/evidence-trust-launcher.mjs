@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -13,8 +13,44 @@ if (!/^[a-f0-9]{64}$/.test(expectedBootstrapSha256 ?? '')) {
 const forwardedArguments = process.argv.slice(2);
 forwardedArguments.splice(expectedIndex, 2);
 const rootIndex = forwardedArguments.indexOf('--root');
-const root = path.resolve(rootIndex >= 0 ? forwardedArguments[rootIndex + 1] : process.cwd());
-const bootstrapPath = path.join(root, 'scripts/db/evidence-bootstrap.mjs');
+const requestedRoot = path.resolve(
+  rootIndex >= 0 ? forwardedArguments[rootIndex + 1] : process.cwd(),
+);
+let root;
+try {
+  root = realpathSync(requestedRoot);
+  if (!lstatSync(root).isDirectory()) throw new Error('root is not a directory');
+} catch {
+  console.error('P02 evidence trust launcher: unable to resolve root');
+  process.exit(86);
+}
+
+const bootstrapRelativePath = 'scripts/db/evidence-bootstrap.mjs';
+const bootstrapPath = path.resolve(root, bootstrapRelativePath);
+let bootstrapStats;
+try {
+  bootstrapStats = lstatSync(bootstrapPath);
+} catch {
+  console.error(`P02 evidence trust launcher: missing bootstrap ${bootstrapRelativePath}`);
+  process.exit(86);
+}
+if (!bootstrapStats.isFile() || bootstrapStats.isSymbolicLink()) {
+  console.error(
+    `P02 evidence trust launcher: bootstrap must be a regular file ${bootstrapRelativePath}`,
+  );
+  process.exit(86);
+}
+let realBootstrapPath;
+try {
+  realBootstrapPath = realpathSync(bootstrapPath);
+} catch {
+  console.error(`P02 evidence trust launcher: unable to resolve bootstrap ${bootstrapRelativePath}`);
+  process.exit(86);
+}
+if (realBootstrapPath !== bootstrapPath) {
+  console.error(`P02 evidence trust launcher: bootstrap escapes root ${bootstrapRelativePath}`);
+  process.exit(86);
+}
 const bootstrapSha256 = createHash('sha256').update(readFileSync(bootstrapPath)).digest('hex');
 if (bootstrapSha256 !== expectedBootstrapSha256) {
   console.error('P02 evidence trust launcher: bootstrap integrity mismatch');
