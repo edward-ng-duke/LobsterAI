@@ -17,6 +17,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const sourceSha = '1234567890abcdef1234567890abcdef12345678';
 const digest = 'sha256:17b6c778de50f4bb9a878c36e736110fbcd9b7020377d6fdfdf20f7c0347e40a';
+const amd64Digest = 'sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf';
 const temporaryRoots: string[] = [];
 const baselineMigrationName = '20260710000000_existing_catalog_baseline';
 const currentMigrationName = '20260711000000_init_prisma_rls_scaffold';
@@ -203,6 +204,21 @@ const mutate = (
   writeFileSync(target, `${JSON.stringify(value)}\n`);
 };
 
+const convertToAmd64 = (root: string): void => {
+  for (const file of ['preflight.json', 'integration.json']) {
+    mutate(root, file, (value) => {
+      value.platform = 'linux/amd64';
+      const checks = value.checks as { provider: Record<string, unknown> };
+      checks.provider.dockerPlatform = 'linux/amd64';
+      checks.provider.runnerArch = 'x64';
+      checks.provider.inspectedArch = 'amd64';
+      checks.provider.digest = amd64Digest;
+      checks.provider.immutableReference = `postgres:17.10-bookworm@${amd64Digest}`;
+      checks.provider.repoDigests = [`postgres@${amd64Digest}`];
+    });
+  }
+};
+
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
@@ -212,6 +228,47 @@ describe('PostgreSQL native platform artifact boundary', () => {
     const result = run(writeArtifact());
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test('accepts canonical amd64 reports with the raw Node x64 runner fact', () => {
+    const root = writeArtifact();
+    convertToAmd64(root);
+
+    const result = run(root, 'linux/amd64');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test.each([
+    ['linux/x86_64', 'linux/amd64'],
+    ['linux/aarch64', 'linux/arm64'],
+    ['amd64', 'linux/amd64'],
+    ['x86_64', 'linux/amd64'],
+    ['aarch64', 'linux/arm64'],
+  ])('rejects non-runtime top-level platform alias %s', (platform, requestedPlatform) => {
+    const root = writeArtifact();
+    if (requestedPlatform === 'linux/amd64') convertToAmd64(root);
+    for (const file of ['preflight.json', 'integration.json']) {
+      mutate(root, file, (value) => { value.platform = platform; });
+    }
+
+    expect(run(root, requestedPlatform).status).toBe(1);
+  });
+
+  test.each([
+    ['x86_64', 'linux/amd64'],
+    ['amd64', 'linux/amd64'],
+    ['aarch64', 'linux/arm64'],
+  ])('rejects non-Node runnerArch alias %s', (runnerArch, requestedPlatform) => {
+    const root = writeArtifact();
+    if (requestedPlatform === 'linux/amd64') convertToAmd64(root);
+    for (const file of ['preflight.json', 'integration.json']) {
+      mutate(root, file, (value) => {
+        const checks = value.checks as { provider: Record<string, unknown> };
+        checks.provider.runnerArch = runnerArch;
+      });
+    }
+
+    expect(run(root, requestedPlatform).status).toBe(1);
   });
 
   test('rejects a report from another source SHA', () => {
