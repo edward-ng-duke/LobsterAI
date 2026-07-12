@@ -42,6 +42,7 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
       'tests/integration/db/migration-lifecycle.test.ts',
       'tests/db/postgres-image-policy.test.ts',
       'tests/db/postgres-platform-artifact.test.ts',
+      'tests/db/p02-b00-4-tester-artifact-bindings.test.ts',
       'tests/db/postgres-platform-workflow.test.ts',
       'tests/db/postgres-container-cleanup.test.ts',
       'tests/db/vitest-json-evidence.test.ts',
