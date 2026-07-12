@@ -60,6 +60,14 @@ export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) =>
     return true;
   }
 
+  if (
+    status === 86 &&
+    stdout.trim() === '' &&
+    stderr.trim() === 'P02 evidence bootstrap: trusted file mismatch package.json'
+  ) {
+    return false;
+  }
+
   if (status === 1 && stdout.trim() === '') {
     const result = parseUniqueJson(stderr, 'stderr');
     const fields = Object.keys(result ?? {}).sort();
@@ -67,18 +75,32 @@ export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) =>
       JSON.stringify(fields) === JSON.stringify(['errors', 'status']) &&
       result.status === 'FAILED' &&
       Array.isArray(result.errors) &&
-      result.errors.length === 2
+      result.errors.length > 0
     ) {
       const pattern = /^(codeEvidenceSha|stageEvidenceSha): non-evidence change after source SHA: ((?:A|M|D|R\d+|C\d+) [^\r\n]+ \([a-f0-9]{40}\))$/;
       const matches = result.errors.map((error) =>
         typeof error === 'string' ? error.match(pattern) : null,
       );
-      if (
-        matches.every(Boolean) &&
-        new Set(matches.map((match) => match[1])).size === 2 &&
-        matches[0][2] === matches[1][2]
-      ) {
-        return false;
+      if (matches.every(Boolean)) {
+        const changes = new Map();
+        let duplicateSource = false;
+        for (const match of matches) {
+          const [, source, change] = match;
+          const sources = changes.get(change) ?? new Set();
+          if (sources.has(source)) duplicateSource = true;
+          sources.add(source);
+          changes.set(change, sources);
+        }
+        if (
+          !duplicateSource &&
+          [...changes.values()].every((sources) =>
+            sources.size === 2 &&
+            sources.has('codeEvidenceSha') &&
+            sources.has('stageEvidenceSha'),
+          )
+        ) {
+          return false;
+        }
       }
     }
   }
