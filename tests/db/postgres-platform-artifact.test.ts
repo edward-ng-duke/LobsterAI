@@ -54,7 +54,16 @@ const writeArtifact = (): string => {
       migrations: {
         first: true,
         repeat: true,
-        existingSchema: true,
+        existingSchema: {
+          independentDatabase: true,
+          prepared: true,
+          preserved: true,
+          completedMigrations: 1,
+          beforeTables: ['p02_preexisting_catalog'],
+          afterTables: ['_prisma_migrations', 'agents', 'p02_preexisting_catalog', 'tenants'],
+          beforeCatalogSha256: '1'.repeat(64),
+          afterCatalogSha256: '2'.repeat(64),
+        },
         rollback: {
           failed: true,
           partialTableAbsent: true,
@@ -151,6 +160,18 @@ describe('PostgreSQL native platform artifact boundary', () => {
       };
       checks.testResults.passed = 23;
       checks.testResults.skipped = 1;
+    });
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects an existing-schema claim without its preparation fact', () => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      const checks = value.checks as {
+        migrations: { existingSchema: { prepared: boolean } };
+      };
+      checks.migrations.existingSchema.prepared = false;
     });
 
     expect(run(root).status).toBe(1);
