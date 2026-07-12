@@ -60,6 +60,13 @@ const requireEqual = (actual, expected, label) => {
   if (actual !== expected) fail(`${label} differs: expected ${expected}, received ${actual}`);
 };
 
+const normalizeReportPlatform = (value) => {
+  if (typeof value !== 'string') return null;
+  const [os, arch, extra] = value.split('/');
+  if (os !== 'linux' || !arch || extra !== undefined) return null;
+  return normalizeDockerPlatform(arch);
+};
+
 const validateProvider = (provider, name, kind) => {
   const commonFields = [
     'dockerPlatform',
@@ -241,13 +248,13 @@ try {
 
     const provider = report.checks?.provider;
     requireEqual(
-      normalizeDockerPlatform(report.platform),
+      normalizeReportPlatform(report.platform),
       normalizedPlatform,
       `${name} platform`,
     );
     requireEqual(provider?.dockerPlatform, normalizedPlatform, `${name} dockerPlatform`);
     requireEqual(
-      normalizeDockerPlatform(report.platform),
+      normalizeReportPlatform(report.platform),
       provider?.dockerPlatform,
       `${name} platform/provider dockerPlatform`,
     );
