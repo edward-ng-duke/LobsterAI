@@ -97,6 +97,20 @@ export default [
     },
   },
 
+  // Generated modules preserve the deterministic order defined by the contract generator.
+  {
+    files: [
+      'apps/api/src/generated/**/*.{ts,tsx}',
+      'apps/web/src/generated/**/*.{ts,tsx}',
+      'libs/client/bridge/src/generated/**/*.{ts,tsx}',
+      'libs/shared/contracts/generated/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'simple-import-sort/imports': 'off',
+      'simple-import-sort/exports': 'off',
+    },
+  },
+
   // Prettier must be last to override formatting rules
   eslintConfigPrettier,
 ];
