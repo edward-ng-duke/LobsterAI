@@ -104,7 +104,11 @@ const validateStrictReportSchema = (report, name, kind) => {
     'cleanup',
   ];
   if (kind === 'P02_DATABASE_INTEGRATION') rootFields.push('skipped');
+  if (report?.status === 'FAILED' || report?.status === 'BLOCKED') rootFields.push('error');
   exactFields(report, rootFields, name);
+  if (rootFields.includes('error') && (typeof report.error !== 'string' || report.error.length === 0)) {
+    fail(`${name} error is required for ${report.status}`);
+  }
   exactFields(report.cleanup, ['attempted', 'containerId', 'removed'], `${name} cleanup`);
   requireEqual(report.cleanup.attempted, true, `${name} cleanup.attempted`);
   requireEqual(report.cleanup.removed, true, `${name} cleanup.removed`);
@@ -204,7 +208,9 @@ try {
     requireEqual(report.schemaVersion, 1, `${name} schemaVersion`);
     requireEqual(report.kind, kind, `${name} kind`);
     requireEqual(report.sourceSha, sourceSha, `${name} sourceSha`);
-    requireEqual(report.status, 'PASS', `${name} status`);
+    if (!['PASS', 'FAILED', 'BLOCKED'].includes(report.status)) {
+      fail(`${name} status is invalid`);
+    }
     if (typeof report.runId !== 'string' || report.runId.length === 0) {
       fail(`${name} runId is required`);
     }
@@ -231,6 +237,33 @@ try {
       RepoDigests: provider?.repoDigests,
     });
     validatePostgresServerSettings(manifest, provider);
+  }
+
+  requireEqual(preflight.status, 'PASS', 'preflight.json status');
+  if (integration.status !== 'PASS') {
+    const failedResults = integration.checks?.testResults;
+    for (const field of ['passed', 'failed', 'skipped', 'todo', 'total']) {
+      if (!Number.isInteger(failedResults?.[field]) || failedResults[field] < 0) {
+        fail(`integration failed testResults.${field} is invalid`);
+      }
+    }
+    if (
+      failedResults.passed + failedResults.failed + failedResults.skipped + failedResults.todo !==
+      failedResults.total
+    ) {
+      fail('integration failed test result counts do not add up to total');
+    }
+    requireEqual(
+      integration.checks?.checksPassed,
+      failedResults.passed,
+      'integration failed checksPassed',
+    );
+    requireEqual(
+      integration.checks?.checksTotal,
+      failedResults.total,
+      'integration failed checksTotal',
+    );
+    fail(`structurally valid ${integration.status} integration artifact cannot pass the required gate`);
   }
 
   requireEqual(integration.skipped, 0, 'integration skipped');

@@ -49,6 +49,10 @@ const requireSuccessful = (result, label) => {
 let container;
 let exitCode = 0;
 let vitestReportRoot;
+const appendReportError = (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  report.error = report.error ? `${report.error}; ${message}` : message;
+};
 try {
   requireSuccessful(run(process.execPath, ['scripts/db/preflight.mjs', '--contracts']), 'contract preflight');
   const manifest = loadPostgresImageManifest(repositoryRoot);
@@ -196,29 +200,7 @@ try {
     P02_DATABASE_RUN_ID: report.runId,
     P02_MIGRATION_LIFECYCLE_EVIDENCE: JSON.stringify(migrationLifecycle),
   };
-  vitestReportRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-vitest-report-'));
-  const vitestReportPath = path.join(vitestReportRoot, 'integration.json');
-  const tests = run(
-    'npx',
-    [
-      'vitest',
-      'run',
-      '--config',
-      'vitest.db.config.ts',
-      '--reporter=json',
-      `--outputFile=${vitestReportPath}`,
-    ],
-    testEnv,
-  );
-  process.stdout.write(tests.stdout);
-  process.stderr.write(tests.stderr);
-  if (tests.status !== 0) throw new Error(`database integration tests failed with exit ${tests.status}`);
-  const testResults = loadVitestJsonEvidence(vitestReportPath);
-  report.skipped = testResults.skipped;
-  console.log(JSON.stringify({ status: 'PASS', testResults }));
-
-  report.status = 'PASS';
-  report.checks = {
+  const baseChecks = {
     provider: {
       dockerPlatform,
       runnerOs: process.platform,
@@ -234,32 +216,102 @@ try {
     rls: rls.rows,
     roles: roles.rows,
     seed: seedRows.rows,
-    checksPassed: testResults.passed,
-    checksTotal: testResults.total,
-    testResults,
-    testOutputSha256: createHash('sha256').update(`${tests.stdout}\n${tests.stderr}`).digest('hex'),
+    checksPassed: null,
+    checksTotal: null,
+    testResults: null,
+    testOutputSha256: null,
   };
+  report.checks = baseChecks;
+  vitestReportRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-vitest-report-'));
+  const vitestReportPath = path.join(vitestReportRoot, 'integration.json');
+  let tests;
+  let testResults;
+  let parseError;
+  try {
+    tests = run(
+      'npx',
+      [
+        'vitest',
+        'run',
+        '--config',
+        'vitest.db.config.ts',
+        '--reporter=json',
+        `--outputFile=${vitestReportPath}`,
+      ],
+      testEnv,
+    );
+    process.stdout.write(tests.stdout);
+    process.stderr.write(tests.stderr);
+  } finally {
+    report.checks = {
+      ...baseChecks,
+      testOutputSha256: createHash('sha256')
+        .update(`${tests?.stdout ?? ''}\n${tests?.stderr ?? ''}`)
+        .digest('hex'),
+    };
+    try {
+      testResults = loadVitestJsonEvidence(vitestReportPath);
+      report.skipped = testResults.skipped;
+      report.checks = {
+        ...report.checks,
+        checksPassed: testResults.passed,
+        checksTotal: testResults.total,
+        testResults,
+      };
+    } catch (error) {
+      parseError = error;
+    }
+  }
+
+  const testErrors = [];
+  if (tests?.error) testErrors.push(`database integration tests could not start: ${tests.error.message}`);
+  if (tests?.status !== 0) {
+    testErrors.push(`database integration tests failed with exit ${tests?.status ?? 'unknown'}`);
+  }
+  if (parseError) testErrors.push(parseError.message);
+  if (testResults && (
+    testResults.failed !== 0 || testResults.skipped !== 0 || testResults.todo !== 0
+  )) {
+    testErrors.push(
+      `Vitest JSON report is not all-pass: passed=${testResults.passed}, failed=${testResults.failed}, ` +
+      `skipped=${testResults.skipped}, todo=${testResults.todo}, total=${testResults.total}`,
+    );
+  }
+  if (testErrors.length > 0) throw new Error(testErrors.join('; '));
+  console.log(JSON.stringify({ status: 'PASS', testResults }));
+
+  report.status = 'PASS';
 } catch (error) {
   const isBlocked = Boolean(error?.blocked) || /Could not find a working container runtime strategy/.test(String(error));
   report.status = isBlocked ? 'BLOCKED' : 'FAILED';
-  report.error = error instanceof Error ? error.message : String(error);
-  if (error?.testResults) {
-    report.skipped = error.testResults.skipped;
-    report.checks = {
-      checksPassed: error.testResults.passed,
-      checksTotal: error.testResults.total,
-      testResults: error.testResults,
-    };
-  }
+  appendReportError(error);
   exitCode = isBlocked ? 2 : 1;
 } finally {
-  report.cleanup = await stopPostgresContainer(container);
+  try {
+    report.cleanup = await stopPostgresContainer(container);
+  } catch (error) {
+    report.cleanup = { attempted: Boolean(container), removed: false };
+    appendReportError(error);
+  }
   if (container && !report.cleanup.removed) {
     report.status = 'FAILED';
+    appendReportError('PostgreSQL cleanup did not remove the container');
     exitCode = 1;
   }
-  if (vitestReportRoot) rmSync(vitestReportRoot, { recursive: true, force: true });
-  writeAtomicJson('.reports/db/integration.json', report);
+  try {
+    if (vitestReportRoot) rmSync(vitestReportRoot, { recursive: true, force: true });
+  } catch (error) {
+    report.status = 'FAILED';
+    appendReportError(`Vitest temporary report cleanup failed: ${error.message}`);
+    exitCode = 1;
+  }
+  try {
+    writeAtomicJson('.reports/db/integration.json', report);
+  } catch (error) {
+    report.status = 'FAILED';
+    appendReportError(`integration artifact write failed: ${error.message}`);
+    exitCode = 1;
+  }
   (exitCode === 0 ? console.log : console.error)(JSON.stringify(report));
   process.exitCode = exitCode;
 }
