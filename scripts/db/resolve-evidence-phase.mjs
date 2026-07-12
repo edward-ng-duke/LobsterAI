@@ -60,12 +60,21 @@ export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) =>
     return true;
   }
 
-  if (
-    status === 86 &&
-    stdout.trim() === '' &&
-    stderr.trim() === 'P02 evidence bootstrap: trusted file mismatch package.json'
-  ) {
-    return false;
+  if (status === 86 && stdout.trim() === '') {
+    const mismatch = stderr.trim().match(/^P02 evidence bootstrap: trusted file mismatch (.+)$/);
+    const auditableSourceFiles = new Set([
+      'package.json',
+      'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
+      'scripts/db/evidence-bootstrap.mjs',
+      'scripts/db/evidence-bundle.schema.json',
+      'scripts/db/evidence-provenance.mjs',
+      'scripts/db/evidence-trust-launcher.mjs',
+      'scripts/db/existing-schema-evidence.mjs',
+      'scripts/db/validate-evidence.mjs',
+      'scripts/run-saas-stage-gate.mjs',
+      'scripts/saas-stage-gates.json',
+    ]);
+    if (mismatch && auditableSourceFiles.has(mismatch[1])) return false;
   }
 
   if (status === 1 && stdout.trim() === '') {
