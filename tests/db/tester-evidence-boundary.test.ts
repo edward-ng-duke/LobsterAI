@@ -56,6 +56,7 @@ const createEvidenceFixture = (): string => {
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
     'scripts/db/validate.mjs',
+    'scripts/db/vitest-json-evidence.mjs',
   ]) {
     const target = path.join(root, relativePath);
     mkdirSync(path.dirname(target), { recursive: true });
