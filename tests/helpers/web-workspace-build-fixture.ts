@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
 } from 'node:fs';
@@ -11,10 +12,17 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
+const canonicalRepositoryRoot = realpathSync(repositoryRoot);
 const webProjectConfig = 'apps/web/tsconfig.json';
 
 interface TypeScriptProjectConfig {
   references?: Array<{ path: string }>;
+}
+
+interface TypeScriptProject {
+  absoluteDirectory: string;
+  manifest: { name?: string };
+  relativeDirectory: string;
 }
 
 export interface WebWorkspaceBuildFixture {
@@ -25,38 +33,73 @@ export interface WebWorkspaceBuildFixture {
 
 const normalizeRelativePath = (value: string): string => value.replaceAll(path.sep, '/');
 
+const assertContainedPath = (root: string, candidate: string, label: string): string => {
+  const resolvedRoot = path.resolve(root);
+  const resolvedCandidate = path.resolve(candidate);
+  const relative = path.relative(resolvedRoot, resolvedCandidate);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`${label} must stay within ${resolvedRoot}: ${resolvedCandidate}`);
+  }
+  return resolvedCandidate;
+};
+
+const assertRepositorySource = (candidate: string, label: string): string => {
+  const resolvedCandidate = assertContainedPath(repositoryRoot, candidate, label);
+  assertContainedPath(canonicalRepositoryRoot, realpathSync(resolvedCandidate), `${label} canonical path`);
+  return resolvedCandidate;
+};
+
 const resolveProjectConfig = (configPath: string, referencePath: string): string => {
   const candidate = path.resolve(path.dirname(configPath), referencePath);
   return candidate.endsWith('.json') ? candidate : path.join(candidate, 'tsconfig.json');
 };
 
-const collectProjectReferenceClosure = (entryConfig: string): string[] => {
-  const projects = new Set<string>();
-  const visit = (relativeConfig: string): void => {
-    const normalizedConfig = normalizeRelativePath(relativeConfig);
-    if (projects.has(normalizedConfig)) return;
-    projects.add(normalizedConfig);
+const collectProjectReferenceClosure = (entryConfig: string): TypeScriptProject[] => {
+  const projectConfigs = new Set<string>();
+  const visit = (candidateConfig: string): void => {
+    const absoluteConfig = assertRepositorySource(candidateConfig, 'TypeScript project config');
+    if (projectConfigs.has(absoluteConfig)) return;
+    projectConfigs.add(absoluteConfig);
 
     const config = JSON.parse(
-      readFileSync(path.join(repositoryRoot, normalizedConfig), 'utf8'),
+      readFileSync(absoluteConfig, 'utf8'),
     ) as TypeScriptProjectConfig;
     for (const reference of config.references ?? []) {
-      const absoluteReference = resolveProjectConfig(
-        path.join(repositoryRoot, normalizedConfig),
-        reference.path,
-      );
-      visit(path.relative(repositoryRoot, absoluteReference));
+      if (!reference || typeof reference.path !== 'string' || reference.path.length === 0) {
+        throw new Error(`Invalid TypeScript project reference in ${absoluteConfig}`);
+      }
+      visit(resolveProjectConfig(absoluteConfig, reference.path));
     }
   };
 
-  visit(entryConfig);
-  return [...projects].sort();
+  visit(path.resolve(repositoryRoot, entryConfig));
+  return [...projectConfigs]
+    .sort()
+    .map((absoluteConfig) => {
+      const absoluteDirectory = assertRepositorySource(
+        path.dirname(absoluteConfig),
+        'TypeScript project directory',
+      );
+      const manifestPath = assertRepositorySource(
+        path.join(absoluteDirectory, 'package.json'),
+        'TypeScript project manifest',
+      );
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { name?: string };
+      return {
+        absoluteDirectory,
+        manifest,
+        relativeDirectory: normalizeRelativePath(path.relative(repositoryRoot, absoluteDirectory)),
+      };
+    });
 };
 
-const copyProject = (targetRoot: string, relativeConfig: string): void => {
-  const projectDirectory = path.dirname(relativeConfig);
-  const source = path.join(repositoryRoot, projectDirectory);
-  const destination = path.join(targetRoot, projectDirectory);
+const copyProject = (targetRoot: string, project: TypeScriptProject): void => {
+  const source = assertRepositorySource(project.absoluteDirectory, 'TypeScript project directory');
+  const destination = assertContainedPath(
+    targetRoot,
+    path.resolve(targetRoot, project.relativeDirectory),
+    'Fixture project destination',
+  );
   mkdirSync(path.dirname(destination), { recursive: true });
   cpSync(source, destination, {
     recursive: true,
@@ -68,43 +111,53 @@ const copyProject = (targetRoot: string, relativeConfig: string): void => {
   });
 };
 
-const linkExternalNodeModules = (targetRoot: string, projectConfigs: string[]): void => {
+const linkExternalNodeModules = (targetRoot: string, projects: TypeScriptProject[]): void => {
   const sourceNodeModules = path.join(repositoryRoot, 'node_modules');
   const targetNodeModules = path.join(targetRoot, 'node_modules');
   mkdirSync(targetNodeModules, { recursive: true });
 
   for (const entry of readdirSync(sourceNodeModules)) {
     if (entry === '@lobsterai') continue;
-    symlinkSync(path.join(sourceNodeModules, entry), path.join(targetNodeModules, entry));
+    symlinkSync(
+      path.join(sourceNodeModules, entry),
+      assertContainedPath(targetNodeModules, path.resolve(targetNodeModules, entry), 'Dependency link'),
+    );
   }
 
   const lobsteraiScope = path.join(targetNodeModules, '@lobsterai');
   mkdirSync(lobsteraiScope, { recursive: true });
-  for (const relativeConfig of projectConfigs) {
-    const projectDirectory = path.dirname(relativeConfig);
-    const manifest = JSON.parse(
-      readFileSync(path.join(targetRoot, projectDirectory, 'package.json'), 'utf8'),
-    ) as { name?: string };
-    const packageName = manifest.name?.replace(/^@lobsterai\//, '');
-    if (!packageName || manifest.name === packageName) continue;
+  for (const project of projects) {
+    const packageName = project.manifest.name?.replace(/^@lobsterai\//, '');
+    if (!packageName || project.manifest.name === packageName) continue;
+    if (packageName.includes('/') || packageName.includes('\\')) {
+      throw new Error(`Invalid @lobsterai package name: ${project.manifest.name}`);
+    }
     symlinkSync(
-      path.join(targetRoot, projectDirectory),
-      path.join(lobsteraiScope, packageName),
+      assertContainedPath(
+        targetRoot,
+        path.resolve(targetRoot, project.relativeDirectory),
+        'Fixture package source',
+      ),
+      assertContainedPath(
+        lobsteraiScope,
+        path.resolve(lobsteraiScope, packageName),
+        'Fixture package link',
+      ),
       process.platform === 'win32' ? 'junction' : 'dir',
     );
   }
 };
 
 export const createWebWorkspaceBuildFixture = (): WebWorkspaceBuildFixture => {
+  const projects = collectProjectReferenceClosure(webProjectConfig);
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-web-build-'));
   try {
     for (const rootFile of ['package.json', 'tsconfig.base.json']) {
       cpSync(path.join(repositoryRoot, rootFile), path.join(root, rootFile));
     }
 
-    const projectConfigs = collectProjectReferenceClosure(webProjectConfig);
-    projectConfigs.forEach((config) => copyProject(root, config));
-    linkExternalNodeModules(root, projectConfigs);
+    projects.forEach((project) => copyProject(root, project));
+    linkExternalNodeModules(root, projects);
 
     return {
       cleanup: () => rmSync(root, { recursive: true, force: true }),

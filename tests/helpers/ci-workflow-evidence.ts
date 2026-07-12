@@ -1,5 +1,5 @@
 export interface WorkflowStep {
-  'continue-on-error'?: boolean;
+  'continue-on-error'?: unknown;
   if?: string;
   run?: string;
   uses?: string;
@@ -37,8 +37,31 @@ export const validateMainCiWorkflow = (workflow: Workflow): string[] => {
     errors.push('pull_request trigger must not filter paths');
   }
 
-  const checkout = steps.find((step) => step.uses === 'actions/checkout@v4');
+  const checkoutSteps = steps.filter((step) => step.uses === 'actions/checkout@v4');
+  const setupNodeSteps = steps.filter((step) => step.uses === 'actions/setup-node@v4');
+  const cacheSteps = steps.filter((step) => step.uses === 'actions/cache@v4');
+  const installSteps = steps.filter((step) => step.run?.trim() === 'npm ci');
+  const testSteps = steps.filter((step) => step.run?.trim() === 'npm test');
+  const requiredSteps = [checkoutSteps, setupNodeSteps, cacheSteps, installSteps, testSteps];
+  const requiredStepNames = ['checkout', 'setup-node', 'npm cache', 'npm ci', 'npm test'];
+  requiredSteps.forEach((matches, index) => {
+    if (matches.length !== 1) errors.push(`test job must contain exactly one ${requiredStepNames[index]} step`);
+  });
+
+  const checkout = checkoutSteps[0];
   if (checkout?.with?.['fetch-depth'] !== 0) errors.push('checkout must fetch full history');
+
+  const requiredIndexes = requiredSteps.map((matches) => steps.indexOf(matches[0]));
+  if (requiredIndexes.some((index) => index < 0) ||
+      requiredIndexes.some((index, position) => position > 0 && index <= requiredIndexes[position - 1])) {
+    errors.push('test steps must run in checkout, setup-node, cache, npm ci, npm test order');
+  }
+
+  for (const commandStep of [...installSteps, ...testSteps]) {
+    if (Object.hasOwn(commandStep, 'if')) {
+      errors.push(`${commandStep.run?.trim()} step must be unconditional`);
+    }
+  }
 
   const commands = steps.flatMap((step) => (typeof step.run === 'string' ? [step.run.trim()] : []));
   if (!commands.includes('npm ci')) errors.push('test job must run npm ci');
@@ -52,7 +75,7 @@ export const validateMainCiWorkflow = (workflow: Workflow): string[] => {
   if (commands.some((command) => command.includes('|| true'))) {
     errors.push('test job must not bypass command failures');
   }
-  if (steps.some((step) => step['continue-on-error'] === true)) {
+  if (steps.some((step) => Object.hasOwn(step, 'continue-on-error'))) {
     errors.push('test job must not continue on error');
   }
 
