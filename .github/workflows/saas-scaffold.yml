@@ -77,6 +77,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24.15.0'
@@ -90,9 +92,12 @@ jobs:
         with:
           syft-version: v1.44.0
       - name: Install pinned Grype
+        id: grype
         uses: anchore/scan-action/download-grype@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           grype-version: v0.112.0
+      - name: Add Grype to PATH
+        run: echo "$(dirname "${{ steps.grype.outputs.cmd }}")" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run scaffold:check
       - run: npm run contracts:generate
@@ -125,6 +130,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24.15.0'
