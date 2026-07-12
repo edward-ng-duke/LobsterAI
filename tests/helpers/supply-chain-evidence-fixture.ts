@@ -81,15 +81,15 @@ const buildImageEvidence = (
   plugins: JsonObject[],
 ) => {
   const sourcePrefix = sourceSha.slice(0, 12);
-  const digest = sha256(`synthetic-image:${imageName}:${sourceSha}`);
-  const manifestDigest = sha256(`synthetic-manifest:${imageName}:${sourceSha}`);
+  const localImageId = sha256(`synthetic-config:${imageName}:${sourceSha}`);
+  const digest = sha256(`synthetic-manifest:${imageName}:${sourceSha}`);
   const replacements = {
     __IMAGE_NAME__: imageName,
     __SOURCE_PREFIX__: sourcePrefix,
     __IMAGE_DIGEST__: digest,
-    __MANIFEST_DIGEST__: manifestDigest,
-    __MANIFEST_DIGEST_HEX__: manifestDigest.slice('sha256:'.length),
-    __ENCODED_MANIFEST_DIGEST__: encodeURIComponent(manifestDigest),
+    __LOCAL_IMAGE_ID__: localImageId,
+    __IMAGE_DIGEST_HEX__: digest.slice('sha256:'.length),
+    __ENCODED_IMAGE_DIGEST__: encodeURIComponent(digest),
   };
   const spdxPath = path.join(evidenceDirectory, `${imageName}.spdx.json`);
   const grypePath = path.join(evidenceDirectory, `${imageName}.grype.json`);
@@ -112,6 +112,7 @@ const buildImageEvidence = (
     imageName,
     image: `${tag}@${digest}`,
     digest,
+    localImageId,
     sourceSha,
     buildEvidence: {
       dockerfile: `docker/${imageName}/Dockerfile`,
@@ -202,12 +203,12 @@ if (isInspect) {
   const image = state.images.find(candidate => candidate.tag === args[2]);
   if (!image) process.exit(64);
   if (process.env.P03_FIXTURE_DOCKER_MODE === 'unavailable') process.exit(1);
-  const digest = process.env.P03_FIXTURE_DOCKER_MODE === 'digest-drift'
+  const localImageId = process.env.P03_FIXTURE_DOCKER_MODE === 'digest-drift'
     ? 'sha256:' + '0'.repeat(64)
-    : image.digest;
+    : image.localImageId;
   process.stdout.write(JSON.stringify({
-    Id: digest,
-    RepoDigests: [image.repository + '@' + digest],
+    Id: localImageId,
+    RepoDigests: [],
   }));
   process.exit(0);
 }
@@ -288,7 +289,13 @@ export const createSupplyChainEvidenceFixture = (
       evidenceDirectory,
       plugins,
     ));
-    const report = { ...reportTemplate, sourceSha, images };
+    const report = {
+      ...reportTemplate,
+      checkoutSha: sourceSha,
+      productSourceSha: sourceSha,
+      sourceSha,
+      images,
+    };
     const reportPath = path.join(evidenceDirectory, 'docker-build-check.json');
     writeJson(reportPath, report);
     const canonicalEvidenceDocuments = new Map<string, {
@@ -314,6 +321,7 @@ export const createSupplyChainEvidenceFixture = (
         tag: `lobsterai-p03-${image.imageName}:${sourceSha.slice(0, 12)}`,
         repository: `lobsterai-p03-${image.imageName}`,
         digest: image.digest,
+        localImageId: image.localImageId,
       })),
       openClawTag: `lobsterai-p03-openclaw-runtime:${sourceSha.slice(0, 12)}`,
       pluginInspectionScript: p03HardenedPluginInspectionScript,

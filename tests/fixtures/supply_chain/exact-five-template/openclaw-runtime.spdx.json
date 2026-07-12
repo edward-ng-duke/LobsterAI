@@ -7,10 +7,10 @@
     "SPDXID": "SPDXRef-RootPackage",
     "name": "lobsterai-p03-__IMAGE_NAME__",
     "versionInfo": "__SOURCE_PREFIX__",
-    "checksums": [{ "algorithm": "SHA256", "checksumValue": "__MANIFEST_DIGEST_HEX__" }],
+    "checksums": [{ "algorithm": "SHA256", "checksumValue": "__IMAGE_DIGEST_HEX__" }],
     "externalRefs": [{
       "referenceType": "purl",
-      "referenceLocator": "pkg:oci/lobsterai-p03-__IMAGE_NAME__@__ENCODED_MANIFEST_DIGEST__?tag=__SOURCE_PREFIX__"
+      "referenceLocator": "pkg:oci/lobsterai-p03-__IMAGE_NAME__@__ENCODED_IMAGE_DIGEST__?tag=__SOURCE_PREFIX__"
     }]
   }],
   "relationships": [{

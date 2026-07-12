@@ -66,6 +66,31 @@ describe('P03 on-disk supply-chain evidence verification', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
+  test('separates unpushed local image IDs from OCI manifest digests', () => {
+    const root = createFixtureRoot();
+    const fixture = fixtureForRoot(root);
+    const report = fixture.readReport();
+    expect(report.checkoutSha).toBe(fixture.sourceSha);
+    expect(report.productSourceSha).toBe(fixture.sourceSha);
+    expect(report.sourceSha).toBe(report.productSourceSha);
+
+    for (const image of report.images) {
+      expect(image.localImageId).toMatch(/^sha256:[a-f0-9]{64}$/);
+      expect(image.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
+      expect(image.localImageId).not.toBe(image.digest);
+      expect(image.image).toBe(
+        `lobsterai-p03-${image.imageName}:${fixture.sourceSha.slice(0, 12)}@${image.digest}`,
+      );
+      const grype = readJson(path.join(fixture.evidenceDirectory, image.vulnerabilityScan.path));
+      expect(grype.source.target.imageID).toBe(image.localImageId);
+      expect(grype.source.target.manifestDigest).toBe(image.digest);
+      expect(grype.source.target.repoDigests).toEqual([]);
+    }
+
+    const result = fixture.runChecker();
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
   const mutations: Array<{
     name: string;
     mutate: (root: string) => void;
@@ -209,6 +234,12 @@ describe('P03 on-disk supply-chain evidence verification', () => {
       name: 'Grype repository digest drift with coordinated hash',
       mutate: root => mutateEvidenceDocument(root, 'web', 'vulnerabilityScan', document => {
         document.source.target.repoDigests = [`lobsterai-p03-web@sha256:${'f'.repeat(64)}`];
+      }),
+    },
+    {
+      name: 'Grype local image ID drift with coordinated hash',
+      mutate: root => mutateEvidenceDocument(root, 'web', 'vulnerabilityScan', document => {
+        document.source.target.imageID = `sha256:${'f'.repeat(64)}`;
       }),
     },
     {
@@ -376,6 +407,18 @@ describe('P03 on-disk supply-chain evidence verification', () => {
 
   test.each([
     {
+      name: 'missing checkout SHA',
+      mutate: (report: Record<string, any>) => delete report.checkoutSha,
+    },
+    {
+      name: 'missing product source SHA',
+      mutate: (report: Record<string, any>) => delete report.productSourceSha,
+    },
+    {
+      name: 'missing local image ID',
+      mutate: (report: Record<string, any>) => delete report.images[0].localImageId,
+    },
+    {
       name: 'missing required runtime field',
       mutate: (report: Record<string, any>) => delete report.images[0].runtimeEvidence.status,
     },
@@ -524,7 +567,7 @@ describe('P03 on-disk supply-chain evidence verification', () => {
 
     const driftRoot = createFixtureRoot({ dockerMode: 'digest-drift' });
     const drift = runChecker(driftRoot);
-    expect(`${drift.stdout}\n${drift.stderr}`).toContain('local Docker image digest does not match evidence');
+    expect(`${drift.stdout}\n${drift.stderr}`).toContain('local Docker image ID does not match evidence');
     expect(drift.status).not.toBe(0);
   });
 
