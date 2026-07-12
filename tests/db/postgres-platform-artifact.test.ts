@@ -54,8 +54,18 @@ const writeArtifact = (): string => {
       migrations: {
         first: true,
         repeat: true,
-        rollback: true,
-        concurrent: true,
+        existingSchema: true,
+        rollback: {
+          failed: true,
+          partialTableAbsent: true,
+          rolledBackRows: 1,
+          repaired: true,
+        },
+        concurrent: {
+          safe: true,
+          exitCodes: [0, 0],
+          completedRows: 1,
+        },
       },
       checksPassed: 24,
       checksTotal: 24,
