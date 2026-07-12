@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -133,6 +141,7 @@ const run = (root: string, bootstrapped: boolean) =>
       cwd: root,
       encoding: 'utf8',
       env: { ...process.env, NODE_OPTIONS: '' },
+      timeout: 5_000,
     },
   );
 
@@ -307,6 +316,21 @@ const semanticMutations: NamedMutation[] = [
       `postgres@sha256:${'b'.repeat(64)}`,
     ];
   }],
+  ['RepoDigests contains an extra repository alias', (reports) => {
+    const provider = nestedRecord(reports['integration.json'], 'checks', 'provider');
+    const [approvedDigest] = provider.repoDigests as string[];
+    provider.repoDigests = [approvedDigest, approvedDigest.replace('postgres@', 'mirror@')];
+  }],
+  ['RepoDigests duplicates the approved repository digest', (reports) => {
+    const provider = nestedRecord(reports['integration.json'], 'checks', 'provider');
+    const [approvedDigest] = provider.repoDigests as string[];
+    provider.repoDigests = [approvedDigest, approvedDigest];
+  }],
+  ['RepoDigests reorders an extra repository alias before the approved digest', (reports) => {
+    const provider = nestedRecord(reports['integration.json'], 'checks', 'provider');
+    const [approvedDigest] = provider.repoDigests as string[];
+    provider.repoDigests = [approvedDigest.replace('postgres@', 'mirror@'), approvedDigest];
+  }],
   ['immutable reference differs from the approved digest', (reports) => {
     nestedRecord(reports['preflight.json'], 'checks', 'provider').immutableReference =
       `postgres:17.10-bookworm@sha256:${'b'.repeat(64)}`;
@@ -361,6 +385,22 @@ const semanticMutations: NamedMutation[] = [
       'exitCodes',
     ).push(0);
   }],
+  ['rollback claims the failed migration left a partial table', (reports) => {
+    nestedRecord(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'rollback',
+    ).partialTableAbsent = false;
+  }],
+  ['concurrent migration evidence reports an unsafe race', (reports) => {
+    nestedRecord(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'concurrent',
+    ).safe = false;
+  }],
   ['checksPassed is zero', (reports) => {
     const checks = nestedRecord(reports['integration.json'], 'checks');
     checks.checksPassed = 0;
@@ -382,6 +422,12 @@ const semanticMutations: NamedMutation[] = [
   }],
   ['testResults total differs from checksTotal', (reports) => {
     nestedRecord(reports['integration.json'], 'checks', 'testResults').total = 26;
+  }],
+  ['testResults skipped is nonzero', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'testResults').skipped = 1;
+  }],
+  ['testResults todo is nonzero', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'testResults').todo = 1;
   }],
 ];
 
@@ -482,6 +528,28 @@ describe('P02 external evidence bootstrap boundary', () => {
     const result = run(root, true);
     expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
     expect(result.stderr).toContain(`trusted file mismatch ${relativePath}`);
+  });
+
+  test.each([
+    'scripts/db/validate-evidence.mjs',
+    'scripts/json-without-duplicate-keys.mjs',
+    'tests/integration/db/postgres-image.json',
+  ])('rejects an external same-byte symlink for protected input %s', (relativePath) => {
+    const root = createFixture();
+    const externalRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-symlink-target-'));
+    temporaryRoots.push(externalRoot);
+    const protectedPath = path.join(root, relativePath);
+    const externalPath = path.join(externalRoot, path.basename(relativePath));
+    writeFileSync(externalPath, readFileSync(protectedPath));
+    rmSync(protectedPath);
+    symlinkSync(externalPath, protectedPath);
+
+    const result = run(root, true);
+    expect(result.signal, `${result.stdout}\n${result.stderr}`).not.toBe('SIGTERM');
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
+    );
   });
 
   test('rejects a coordinated approved digest and report replacement after the source commit', () => {

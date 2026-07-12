@@ -139,6 +139,46 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
     })).toBe(false);
   });
 
+  test('uses the complete exported protected set for every CI phase decision', async () => {
+    const bootstrapPath = path.join(repositoryRoot, 'scripts/db/evidence-bootstrap.mjs');
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const {
+      evidenceRequiredProtectedFiles,
+      evidenceOptionalProtectedFiles,
+      evidenceAuditableProtectedFiles,
+    } = await import(bootstrapPath);
+    const { classifyTrustedEvidenceValidation, resolveEvidencePhase } = await import(resolverPath);
+    const expectedAuditableSet = [
+      ...evidenceRequiredProtectedFiles,
+      ...evidenceOptionalProtectedFiles,
+      'scripts/db/evidence-bootstrap.mjs',
+    ];
+
+    expect(new Set(evidenceAuditableProtectedFiles).size).toBe(expectedAuditableSet.length);
+    expect([...evidenceAuditableProtectedFiles].sort()).toEqual(expectedAuditableSet.sort());
+
+    for (const relativePath of evidenceAuditableProtectedFiles) {
+      const trustedEvidenceValid = classifyTrustedEvidenceValidation({
+        status: 86,
+        stdout: '',
+        stderr: `P02 evidence bootstrap: trusted file mismatch ${relativePath}\n`,
+      });
+      expect(trustedEvidenceValid, relativePath).toBe(false);
+      for (const eventName of ['push', 'pull_request']) {
+        expect(resolveEvidencePhase({
+          eventName,
+          evidenceReady: '',
+          trustedEvidenceValid,
+        }), `${eventName}: ${relativePath}`).toBe('pre-freeze');
+      }
+      expect(() => resolveEvidencePhase({
+        eventName: 'workflow_dispatch',
+        evidenceReady: 'true',
+        trustedEvidenceValid,
+      }), relativePath).toThrow();
+    }
+  });
+
   test.each([
     ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
     ['unapproved trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch scripts/db/untrusted-validator.mjs'],
