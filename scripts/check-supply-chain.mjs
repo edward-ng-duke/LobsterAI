@@ -94,35 +94,32 @@ export const parseGitNameStatusZ = (output) => {
   if (output.length === 0) return [];
   if (output.at(-1) !== 0) return undefined;
 
-  const fields = [];
-  let fieldStart = 0;
-  for (let index = 0; index < output.length; index += 1) {
-    if (output[index] !== 0) continue;
-    fields.push(output.subarray(fieldStart, index));
-    fieldStart = index + 1;
-  }
-
   const paths = [];
-  for (let index = 0; index < fields.length;) {
-    const statusField = fields[index];
-    if (statusField.length === 0 || statusField.some(byte => byte > 0x7f)) return undefined;
-    const status = statusField.toString('ascii');
+  let cursor = 0;
+  while (cursor < output.length) {
+    const statusEnd = output.indexOf(0, cursor);
+    if (statusEnd <= cursor) return undefined;
+    for (let index = cursor; index < statusEnd; index += 1) {
+      if (output[index] > 0x7f) return undefined;
+    }
+    const status = output.toString('ascii', cursor, statusEnd);
+    cursor = statusEnd + 1;
     const similarityStatus = /^([RC])(\d{1,3})$/.exec(status);
     const pathCount = /^[ADMTUXB]$/.test(status)
       ? 1
       : similarityStatus && Number(similarityStatus[2]) <= 100 ? 2 : undefined;
-    if (!pathCount || index + pathCount >= fields.length) return undefined;
+    if (!pathCount) return undefined;
 
-    for (let pathIndex = 1; pathIndex <= pathCount; pathIndex += 1) {
-      const pathField = fields[index + pathIndex];
-      if (pathField.length === 0) return undefined;
+    for (let pathIndex = 0; pathIndex < pathCount; pathIndex += 1) {
+      const pathEnd = output.indexOf(0, cursor);
+      if (pathEnd <= cursor) return undefined;
       try {
-        paths.push(nameStatusPathDecoder.decode(pathField));
+        paths.push(nameStatusPathDecoder.decode(output.subarray(cursor, pathEnd)));
       } catch {
         return undefined;
       }
+      cursor = pathEnd + 1;
     }
-    index += pathCount + 1;
   }
   return paths;
 };
