@@ -157,6 +157,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24.x'
@@ -171,6 +172,7 @@ jobs:
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           P02_EVIDENCE_READY: ${{ inputs.p02_evidence_ready }}
+          P02_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: npm test
         env:
           P02_EVIDENCE_PHASE: ${{ steps.p02-evidence-phase.outputs.phase }}

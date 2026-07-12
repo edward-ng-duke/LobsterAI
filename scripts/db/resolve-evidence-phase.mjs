@@ -27,6 +27,16 @@ export const resolveEvidencePhase = ({ eventName, evidenceReady, trustedEvidence
   return trustedEvidenceValid ? 'post-freeze' : 'pre-freeze';
 };
 
+export const requireCheckedOutSource = (expectedSha, actualSha) => {
+  if (!/^[a-f0-9]{40}$/.test(expectedSha ?? '')) {
+    throw new Error('P02_SOURCE_SHA must be a 40-character Git SHA');
+  }
+  if (!/^[a-f0-9]{40}$/.test(actualSha ?? '') || actualSha !== expectedSha) {
+    throw new Error(`checked-out HEAD does not match P02_SOURCE_SHA: ${actualSha ?? ''}`);
+  }
+  return expectedSha;
+};
+
 export const classifyTrustedEvidenceValidation = ({ status, stdout, stderr }) => {
   const parseUniqueJson = (stream, label) => {
     if (typeof stream !== 'string' || stream.trim().length === 0) {
@@ -110,6 +120,15 @@ const isMain = process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   try {
+    const head = spawnSync('git', ['rev-parse', 'HEAD'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+    });
+    if (head.status !== 0) throw new Error('unable to resolve checked-out HEAD for P02 phase');
+    const sourceSha = requireCheckedOutSource(
+      process.env.P02_SOURCE_SHA,
+      head.stdout.trim(),
+    );
     const trustedEvidence = inspectTrustedEvidence();
     const phase = resolveEvidencePhase({
       eventName: process.env.GITHUB_EVENT_NAME ?? '',
@@ -122,6 +141,7 @@ if (isMain) {
     console.log(JSON.stringify({
       status: 'PASS',
       phase,
+      sourceSha,
       trustedEvidenceExitCode: trustedEvidence.exitCode,
     }));
   } catch (error) {
