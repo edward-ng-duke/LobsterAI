@@ -8,7 +8,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = '7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3';
+const trustedBootstrapSha256 = '7a05353adb59b7d63b570e9df27b595eecebf0d876434231a667eecdf93a6d93';
 const postgresManifest = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'tests/integration/db/postgres-image.json'),
   'utf8',

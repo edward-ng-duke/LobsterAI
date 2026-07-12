@@ -18,7 +18,7 @@ import { validateEvidenceOnlyDescendant } from '../../scripts/db/evidence-proven
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = '7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3';
+const trustedBootstrapSha256 = '7a05353adb59b7d63b570e9df27b595eecebf0d876434231a667eecdf93a6d93';
 const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
@@ -86,12 +86,15 @@ const createTrustedEvidenceRepository = (
   git(root, 'config', 'user.email', 'p02-trusted-mutation@example.invalid');
   for (const relativePath of [
     'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
+    'tests/integration/db/postgres-image.json',
+    'scripts/json-without-duplicate-keys.mjs',
     'scripts/db/common.mjs',
     'scripts/db/evidence-bootstrap.mjs',
     'scripts/db/evidence-bundle.schema.json',
     'scripts/db/evidence-provenance.mjs',
     'scripts/db/evidence-trust-launcher.mjs',
     'scripts/db/existing-schema-evidence.mjs',
+    'scripts/db/postgres-image-policy.mjs',
     'scripts/db/preflight.mjs',
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
@@ -210,7 +213,7 @@ describe('P02 static gate mutation resistance', () => {
     [
       'removed evidence bootstrap entry',
       'package.json',
-      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3',
+      'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 7a05353adb59b7d63b570e9df27b595eecebf0d876434231a667eecdf93a6d93',
       'node scripts/db/validate-evidence.mjs',
     ],
   ] as const)('rejects the %s mutation', (_label, relativePath, from, to) => {

@@ -4,6 +4,28 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+export const evidenceRequiredProtectedFiles = Object.freeze([
+  'scripts/db/validate-evidence.mjs',
+  'scripts/db/evidence-provenance.mjs',
+  'scripts/db/evidence-bundle.schema.json',
+  'scripts/db/existing-schema-evidence.mjs',
+  'scripts/db/postgres-image-policy.mjs',
+  'scripts/json-without-duplicate-keys.mjs',
+  'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
+  'tests/integration/db/postgres-image.json',
+]);
+export const evidenceOptionalProtectedFiles = Object.freeze([
+  'package.json',
+  'scripts/db/evidence-trust-launcher.mjs',
+  'scripts/run-saas-stage-gate.mjs',
+  'scripts/saas-stage-gates.json',
+]);
+export const evidenceAuditableProtectedFiles = Object.freeze([
+  ...evidenceRequiredProtectedFiles,
+  ...evidenceOptionalProtectedFiles,
+  'scripts/db/evidence-bootstrap.mjs',
+]);
+
 const target = path.resolve(process.argv[1] ?? '');
 if (target.endsWith(path.join('scripts', 'db', 'validate-evidence.mjs'))) {
   const argument = (name) => {
@@ -23,19 +45,8 @@ if (target.endsWith(path.join('scripts', 'db', 'validate-evidence.mjs'))) {
     process.exit(86);
   }
 
-  const protectedFiles = [
-    'scripts/db/validate-evidence.mjs',
-    'scripts/db/evidence-provenance.mjs',
-    'scripts/db/evidence-bundle.schema.json',
-    'scripts/db/existing-schema-evidence.mjs',
-    'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
-  ];
-  for (const relativePath of [
-    'package.json',
-    'scripts/db/evidence-trust-launcher.mjs',
-    'scripts/run-saas-stage-gate.mjs',
-    'scripts/saas-stage-gates.json',
-  ]) {
+  const protectedFiles = [...evidenceRequiredProtectedFiles];
+  for (const relativePath of evidenceOptionalProtectedFiles) {
     if (existsSync(path.join(root, relativePath))) protectedFiles.push(relativePath);
   }
   const bootstrapRelativePath = path.relative(root, fileURLToPath(import.meta.url));
