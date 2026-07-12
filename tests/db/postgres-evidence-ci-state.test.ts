@@ -80,6 +80,40 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
     expect(source).not.toMatch(/continue-on-error|\|\|\s*true|TRUSTED_EVIDENCE_STATUS/);
   });
 
+  test('classifies only auditable source drift as pre-freeze evidence', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { classifyTrustedEvidenceValidation } = await import(resolverPath);
+
+    expect(classifyTrustedEvidenceValidation({
+      status: 0, stdout: '{"status":"PASS"}', stderr: '',
+    })).toBe(true);
+    expect(classifyTrustedEvidenceValidation({
+      status: 86,
+      stdout: '',
+      stderr: 'P02 evidence bootstrap: trusted file mismatch package.json\n',
+    })).toBe(false);
+    expect(classifyTrustedEvidenceValidation({
+      status: 1,
+      stdout: JSON.stringify({
+        status: 'FAILED',
+        errors: ['codeEvidenceSha: non-evidence change after source SHA: M src/file.ts (abc)'],
+      }),
+      stderr: '',
+    })).toBe(false);
+  });
+
+  test.each([
+    ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
+    ['invalid manifest', 1, '', 'SyntaxError: Unexpected token'],
+    ['evidence digest corruption', 1, '{"status":"FAILED","errors":["integration.json: manifest report digest mismatch"]}', ''],
+    ['missing trusted file', 86, '', 'P02 evidence bootstrap: missing trusted package.json'],
+  ])('does not mask %s as a pre-freeze source', async (_label, status, stdout, stderr) => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { classifyTrustedEvidenceValidation } = await import(resolverPath);
+
+    expect(() => classifyTrustedEvidenceValidation({ status, stdout, stderr })).toThrow();
+  });
+
   test('treats stale trusted evidence as the expected pre-freeze state', () => {
     const result = runEvidenceTests('pre-freeze');
 
