@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-12T18:32:12.255Z",
-  "codeEvidenceSha": "c2bdc3ef1af6bf3fc8792bb1f1da6753748608e7",
+  "generatedAt": "2026-07-12T19:32:46.564Z",
+  "codeEvidenceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
   "reports": {
     "contracts-preflight.json": {
-      "sourceSha": "c2bdc3ef1af6bf3fc8792bb1f1da6753748608e7",
-      "sha256": "ecb5f7c4ced352d82c4d27b961b6699c635e18d424e083f15830374899b8376e",
+      "sourceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
+      "sha256": "c2bde0f2ff84ccc7ff4070a975f3095b6f1bb22c8ae3c36b7bd5b170add6e1a6",
       "runner": "scripts/db/preflight.mjs",
       "runnerSha256": "b581a6a04815caf68d173fac51849aa9cbe6c07416cc7a4f1620eda3bc303d1f"
     },
     "preflight.json": {
-      "sourceSha": "c2bdc3ef1af6bf3fc8792bb1f1da6753748608e7",
-      "sha256": "f84ce7702b7c2fc22f8f6a5cfee349006d3a121e6ce9eb2f1b4959d539faefc5",
+      "sourceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
+      "sha256": "ca1efc3a1827cede3eb018de5f93f59e7c7fe153118388f696b449b52fbf3c32",
       "runner": "scripts/db/preflight.mjs",
       "runnerSha256": "b581a6a04815caf68d173fac51849aa9cbe6c07416cc7a4f1620eda3bc303d1f"
     },
     "integration.json": {
-      "sourceSha": "c2bdc3ef1af6bf3fc8792bb1f1da6753748608e7",
-      "sha256": "51b24d6127a0172a7af0e2bafccee0718baf90c91490a8f22d90043e877a3be7",
+      "sourceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
+      "sha256": "caaba407ee28fbd852e8b779f2bc88c734e6127d45c2a956873d1b82d5235886",
       "runner": "scripts/db/run-integration.mjs",
       "runnerSha256": "bd5ff7f49bd5d260bc4826aac28fbacafafa30dfee40759150a65ddbb7befaab"
     },
     "validation.json": {
-      "sourceSha": "c2bdc3ef1af6bf3fc8792bb1f1da6753748608e7",
-      "sha256": "3c350c20d23d371bdec6a19ae9ba9799499fe5860617d34215227c854beb8020",
+      "sourceSha": "c7d506670b614dad52ef6e7728bea2f47d21b965",
+      "sha256": "03fbede3d4fa8dad84c25e1d41ddc1158ee844fd7ae3b8063b46ebc69cb15990",
       "runner": "scripts/db/validate.mjs",
       "runnerSha256": "dc3bbd447d980d7a45e19fba2e15f7c2bb76542e2023613cc404cfeb857277f9"
     }
