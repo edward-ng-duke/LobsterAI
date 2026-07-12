@@ -16,7 +16,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = '7a05353adb59b7d63b570e9df27b595eecebf0d876434231a667eecdf93a6d93';
+const trustedBootstrapSha256 = 'bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f';
 const postgresManifest = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'tests/integration/db/postgres-image.json'),
   'utf8',
@@ -597,6 +597,43 @@ describe('P02 external evidence bootstrap boundary', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
     expect(result.stderr).toContain(
       `P02 evidence bootstrap: trusted file must be a regular file ${relativePath}`,
+    );
+  });
+
+  test('rejects a regular protected file reached through an external parent symlink', () => {
+    const root = createFixture();
+    const externalRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-parent-target-'));
+    temporaryRoots.push(externalRoot);
+    const relativeDirectory = 'tests/integration/db';
+    const protectedDirectory = path.join(root, relativeDirectory);
+    const externalDirectory = path.join(externalRoot, 'db');
+    cpSync(protectedDirectory, externalDirectory, { recursive: true });
+    rmSync(protectedDirectory, { recursive: true });
+    symlinkSync(externalDirectory, protectedDirectory, 'dir');
+
+    const result = run(root, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      'P02 evidence bootstrap: trusted file escapes root ' +
+        'tests/integration/db/postgres-image.json',
+    );
+  });
+
+  test('rejects the bootstrap reached through an external parent symlink', () => {
+    const root = createFixture();
+    const externalRoot = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-launcher-parent-'));
+    temporaryRoots.push(externalRoot);
+    const relativeDirectory = 'scripts/db';
+    const protectedDirectory = path.join(root, relativeDirectory);
+    const externalDirectory = path.join(externalRoot, 'db');
+    cpSync(protectedDirectory, externalDirectory, { recursive: true });
+    rmSync(protectedDirectory, { recursive: true });
+    symlinkSync(externalDirectory, protectedDirectory, 'dir');
+
+    const result = run(root, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      'P02 evidence trust launcher: bootstrap escapes root scripts/db/evidence-bootstrap.mjs',
     );
   });
 

@@ -181,6 +181,8 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
 
   test.each([
     ['bootstrap integrity failure', 86, '', 'P02 evidence trust launcher: bootstrap integrity mismatch'],
+    ['nonregular trusted file', 86, '', 'P02 evidence bootstrap: trusted file must be a regular file package.json'],
+    ['trusted file root escape', 86, '', 'P02 evidence bootstrap: trusted file escapes root package.json'],
     ['unapproved trusted file mismatch', 86, '', 'P02 evidence bootstrap: trusted file mismatch scripts/db/untrusted-validator.mjs'],
     ['invalid manifest', 1, '', 'SyntaxError: Unexpected token'],
     ['evidence digest corruption', 1, '{"status":"FAILED","errors":["integration.json: manifest report digest mismatch"]}', ''],

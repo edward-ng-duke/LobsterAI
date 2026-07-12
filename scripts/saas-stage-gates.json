@@ -33,8 +33,8 @@
       "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "trustedFiles": {
-        "scripts/db/evidence-bootstrap.mjs": "7a05353adb59b7d63b570e9df27b595eecebf0d876434231a667eecdf93a6d93",
-        "scripts/db/evidence-trust-launcher.mjs": "3c1346227841f91f872991f7e69d45c679c6d645afb48bf922c1a5bde1f63509"
+        "scripts/db/evidence-bootstrap.mjs": "bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f",
+        "scripts/db/evidence-trust-launcher.mjs": "a6449cb4b6f53d748466462aab4b49b3e4f6ef60a658880a4ef53fba0c0cada4"
       },
       "fixtures": [
         ".github/workflows/saas-scaffold.yml",
