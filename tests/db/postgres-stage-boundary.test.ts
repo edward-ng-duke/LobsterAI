@@ -24,11 +24,14 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
   test('includes every policy consumer runtime helper workflow and test fixture', () => {
     expect(manifest.gates?.['prisma:validate']?.fixtures).toEqual(expect.arrayContaining([
       '.github/workflows/saas-scaffold.yml',
+      '.github/workflows/ci.yml',
       'package.json',
       'scripts/json-without-duplicate-keys.mjs',
       'scripts/db/postgres-image-policy.mjs',
       'scripts/db/postgres-container-cleanup.mjs',
       'scripts/db/postgres-migration-lifecycle.mjs',
+      'scripts/db/vitest-json-evidence.mjs',
+      'scripts/db/check-evidence-ci-state.mjs',
       'scripts/db/validate-platform-artifact.mjs',
       'scripts/db/preflight.mjs',
       'scripts/db/run-integration.mjs',
@@ -39,6 +42,10 @@ describe('PostgreSQL stage fixture and external digest boundary', () => {
       'tests/db/postgres-platform-artifact.test.ts',
       'tests/db/postgres-platform-workflow.test.ts',
       'tests/db/postgres-container-cleanup.test.ts',
+      'tests/db/vitest-json-evidence.test.ts',
+      'tests/db/postgres-evidence-ci-state.test.ts',
+      'tests/db/p03-merge-evidence.test.ts',
+      'tests/db/reviewer-round2-red.test.ts',
       'vitest.db.config.ts',
     ]));
   });
