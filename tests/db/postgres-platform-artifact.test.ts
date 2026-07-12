@@ -69,6 +69,13 @@ const writeArtifact = (): string => {
       },
       checksPassed: 24,
       checksTotal: 24,
+      testResults: {
+        passed: 24,
+        failed: 0,
+        skipped: 0,
+        todo: 0,
+        total: 24,
+      },
     },
     cleanup: { containerId: 'container-id', removed: true },
   })}\n`);
@@ -131,6 +138,19 @@ describe('PostgreSQL native platform artifact boundary', () => {
       value.skipped = 1;
       const cleanup = value.cleanup as { removed: boolean };
       cleanup.removed = false;
+    });
+
+    expect(run(root).status).toBe(1);
+  });
+
+  test('rejects a structured test result containing one skipped test', () => {
+    const root = writeArtifact();
+    mutate(root, 'integration.json', (value) => {
+      const checks = value.checks as {
+        testResults: { passed: number; skipped: number };
+      };
+      checks.testResults.passed = 23;
+      checks.testResults.skipped = 1;
     });
 
     expect(run(root).status).toBe(1);
