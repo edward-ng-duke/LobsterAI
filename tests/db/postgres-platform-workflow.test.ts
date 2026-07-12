@@ -5,24 +5,34 @@ import { describe, expect, test } from 'vitest';
 import { parse } from 'yaml';
 
 interface WorkflowStep {
+  env?: Record<string, unknown>;
   run?: string;
   uses?: string;
   with?: Record<string, unknown>;
 }
 
 interface WorkflowJob {
+  if?: string;
   needs?: string | string[];
   'runs-on'?: string;
   steps?: WorkflowStep[];
 }
 
 interface Workflow {
+  on?: {
+    workflow_dispatch?: {
+      inputs?: Record<string, { type?: string; required?: boolean; default?: unknown }>;
+    };
+  };
   jobs?: Record<string, WorkflowJob>;
 }
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const workflow = parse(
   readFileSync(path.join(repositoryRoot, '.github/workflows/saas-scaffold.yml'), 'utf8'),
+) as Workflow;
+const mainWorkflow = parse(
+  readFileSync(path.join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8'),
 ) as Workflow;
 
 const commands = (job: WorkflowJob | undefined): string[] =>
@@ -58,6 +68,9 @@ describe('PostgreSQL native arm64 CI stages', () => {
 
     expect(job?.['runs-on']).toBe('ubuntu-24.04-arm');
     expect(needs).toEqual(['db-platform-arm64']);
+    expect(job?.if).toBe(
+      "${{ github.event_name == 'workflow_dispatch' && inputs.p02_evidence_ready == true }}",
+    );
     expect(jobCommands).toContain('npm ci');
     expect(jobCommands).toContain('npm run prisma:validate');
     expect(jobCommands).toContain(
@@ -67,6 +80,31 @@ describe('PostgreSQL native arm64 CI stages', () => {
       'npx vitest run tests/db/tester-evidence-boundary.test.ts tests/db/validator-mutations.test.ts tests/db/evidence-bootstrap.test.ts tests/db/p03-merge-evidence.test.ts --reporter=verbose',
     );
     expect(jobCommands).toContain('git diff --exit-code');
+  });
+
+  test('runs official pre-freeze tests without consuming trusted evidence', () => {
+    const scaffoldTest = workflow.jobs?.scaffold?.steps?.find(
+      (step) => step.run?.trim() === 'npm test',
+    );
+    const mainTest = mainWorkflow.jobs?.test?.steps?.find(
+      (step) => step.run?.trim() === 'npm test',
+    );
+
+    expect(scaffoldTest?.env?.P02_EVIDENCE_PHASE).toBe('pre-freeze');
+    expect(mainTest?.env?.P02_EVIDENCE_PHASE).toBe('pre-freeze');
+  });
+
+  test('exposes an explicit evidence-ready dispatch and auditable required state', () => {
+    expect(workflow.on?.workflow_dispatch?.inputs?.p02_evidence_ready).toMatchObject({
+      type: 'boolean',
+      required: true,
+      default: false,
+    });
+    const stateJob = workflow.jobs?.['db-evidence-arm64-required'];
+    const needs = Array.isArray(stateJob?.needs) ? stateJob.needs : [stateJob?.needs];
+    expect(needs).toEqual(['db-platform-arm64', 'db-evidence-arm64']);
+    expect(stateJob?.if).toBe('${{ always() }}');
+    expect(commands(stateJob)).toContain('node scripts/db/check-evidence-ci-state.mjs');
   });
 
   test('downloads only the matching source-bound arm64 artifact', () => {
