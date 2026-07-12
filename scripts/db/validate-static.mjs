@@ -51,6 +51,7 @@ const dbClient = read('libs/server/db/src/client.ts');
 const tenantScope = read('libs/server/db/src/tenant-scope.ts');
 const extensionIntegration = read('tests/integration/db/tenant-extension.test.ts');
 const integrationRunner = read('scripts/db/run-integration.mjs');
+const platformArtifactValidator = read('scripts/db/validate-platform-artifact.mjs');
 const workflow = read('.github/workflows/saas-scaffold.yml');
 const rootVitestConfig = read('vitest.config.ts');
 const stageManifest = json('scripts/saas-stage-gates.json');
@@ -293,8 +294,25 @@ if (
 ) {
   errors.push('prisma:validate stage gate is not active');
 }
-if (!workflow.includes('db-integration:') || !workflow.includes('npm run test:db:integration')) {
-  errors.push('workflow lacks an independent database integration job');
+for (const required of [
+  'db-platform-arm64:',
+  'db-evidence-arm64:',
+  'npm run test:db:preflight',
+  'npm run test:db:integration',
+  'npm run prisma:validate',
+  'validate-platform-artifact.mjs',
+]) {
+  if (!workflow.includes(required)) errors.push(`workflow lacks required database gate: ${required}`);
+}
+for (const required of [
+  '--source-sha',
+  '--platform',
+  'checksPassed',
+  'cleanup.removed',
+]) {
+  if (!platformArtifactValidator.includes(required)) {
+    errors.push(`platform artifact validator lacks ${required}`);
+  }
 }
 if (!rootVitestConfig.includes("'tests/integration/**'")) {
   errors.push('default Vitest fast loop must exclude explicit database integration tests');

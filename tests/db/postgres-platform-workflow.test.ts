@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { parse } from 'yaml';
 import { describe, expect, test } from 'vitest';
+import { parse } from 'yaml';
 
 interface WorkflowStep {
   run?: string;
