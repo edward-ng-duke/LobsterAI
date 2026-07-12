@@ -37,12 +37,19 @@
         "scripts/db/evidence-trust-launcher.mjs": "3c1346227841f91f872991f7e69d45c679c6d645afb48bf922c1a5bde1f63509"
       },
       "fixtures": [
+        ".github/workflows/saas-scaffold.yml",
+        "package.json",
         "prisma/schema.prisma",
         "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
         "prisma/rls/tenant-scoped-models.json",
         "prisma/seed/index.ts",
         "libs/server/db/src/tenant-context.ts",
         "libs/server/db/src/tenant-scope.ts",
+        "scripts/json-without-duplicate-keys.mjs",
+        "scripts/db/postgres-image-policy.mjs",
+        "scripts/db/postgres-container-cleanup.mjs",
+        "scripts/db/postgres-migration-lifecycle.mjs",
+        "scripts/db/validate-platform-artifact.mjs",
         "scripts/db/validate.mjs",
         "scripts/db/validate-evidence.mjs",
         "scripts/db/evidence-bootstrap.mjs",
@@ -54,9 +61,15 @@
         "scripts/db/preflight.mjs",
         "scripts/db/run-integration.mjs",
         "tests/integration/db/postgres-image.json",
+        "tests/integration/db/migration-lifecycle.test.ts",
         "tests/integration/db/rls.test.ts",
         "tests/integration/db/tenant-context.test.ts",
-        "tests/integration/db/tenant-extension.test.ts"
+        "tests/integration/db/tenant-extension.test.ts",
+        "tests/db/postgres-image-policy.test.ts",
+        "tests/db/postgres-platform-artifact.test.ts",
+        "tests/db/postgres-platform-workflow.test.ts",
+        "tests/db/postgres-container-cleanup.test.ts",
+        "vitest.db.config.ts"
       ]
     },
     "supply-chain:check": {

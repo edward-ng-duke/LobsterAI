@@ -75,6 +75,7 @@ const createRepositoryCopy = (): string => {
     'tests',
     'tsconfig.base.json',
     'tsconfig.workspace.json',
+    'vitest.db.config.ts',
     '改造计划/附录A-IPC通道与接口映射.md',
   ]) {
     const source = path.join(repositoryRoot, relativePath);
