@@ -68,21 +68,7 @@ const loadSchemaValidators = (root) => {
   };
 };
 
-const gitOutput = (root, args) => {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : undefined;
-};
-
-const gitNameStatusOutput = (root, args) => {
-  const result = spawnSync('git', args, {
-    cwd: root,
-    maxBuffer: 16 * 1024 * 1024,
-  });
-  if (result.status !== 0 || result.error || result.signal || !Buffer.isBuffer(result.stdout)) {
-    return undefined;
-  }
-  return result.stdout;
-};
+const defaultGitRunner = (args, options) => spawnSync('git', args, options);
 
 const nameStatusPathDecoder = new TextDecoder('utf-8', {
   fatal: true,
@@ -130,31 +116,52 @@ const isImageBuildInput = relativePath => imageBuildInputFiles.has(relativePath)
 const isFrozenNonImagePath = relativePath => frozenNonImageDirectories
   .some(directory => relativePath.startsWith(directory));
 
-const changedPathsAgainstFirstParent = (root, commit) => {
-  const commitLine = gitOutput(root, ['rev-list', '--parents', '--max-count=1', commit]);
-  if (!commitLine) return undefined;
-  const [, firstParent] = commitLine.split(/\s+/);
-  const args = firstParent
-    ? ['diff', '--name-status', '-z', '-M', '-C', firstParent, commit]
-    : ['diff-tree', '--root', '--no-commit-id', '-r', '--name-status', '-z', '-M', '-C', commit];
-  const output = gitNameStatusOutput(root, args);
-  if (output === undefined) return undefined;
-  return parseGitNameStatusZ(output);
+export const createProductSourceShaResolver = (runGit = defaultGitRunner) => {
+  const gitOutput = (root, args) => {
+    const result = runGit(args, { cwd: root, encoding: 'utf8' });
+    return result.status === 0 ? result.stdout.trim() : undefined;
+  };
+
+  const gitNameStatusOutput = (root, args) => {
+    const result = runGit(args, {
+      cwd: root,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    if (result.status !== 0 || result.error || result.signal || !Buffer.isBuffer(result.stdout)) {
+      return undefined;
+    }
+    return result.stdout;
+  };
+
+  const changedPathsAgainstFirstParent = (root, commit) => {
+    const commitLine = gitOutput(root, ['rev-list', '--parents', '--max-count=1', commit]);
+    if (!commitLine) return undefined;
+    const [, firstParent] = commitLine.split(/\s+/);
+    const args = firstParent
+      ? ['diff', '--name-status', '-z', '-M', '-C', firstParent, commit]
+      : ['diff-tree', '--root', '--no-commit-id', '-r', '--name-status', '-z', '-M', '-C', commit];
+    const output = gitNameStatusOutput(root, args);
+    if (output === undefined) return undefined;
+    return parseGitNameStatusZ(output);
+  };
+
+  return (root = repositoryRoot) => {
+    const commits = gitOutput(root, ['rev-list', '--first-parent', 'HEAD'])
+      ?.split(/\r?\n/).filter(Boolean);
+    if (!commits?.length) return undefined;
+    for (const commit of commits) {
+      const changedPaths = changedPathsAgainstFirstParent(root, commit);
+      if (changedPaths === undefined) return commit;
+      if (changedPaths.some(relativePath => isImageBuildInput(relativePath)
+        || !isFrozenNonImagePath(relativePath))) {
+        return commit;
+      }
+    }
+    return commits.at(-1);
+  };
 };
 
-export const resolveProductSourceSha = (root = repositoryRoot) => {
-  const commits = gitOutput(root, ['rev-list', '--first-parent', 'HEAD'])?.split(/\r?\n/).filter(Boolean);
-  if (!commits?.length) return undefined;
-  for (const commit of commits) {
-    const changedPaths = changedPathsAgainstFirstParent(root, commit);
-    if (changedPaths === undefined) return commit;
-    if (changedPaths.some(relativePath => isImageBuildInput(relativePath)
-      || !isFrozenNonImagePath(relativePath))) {
-      return commit;
-    }
-  }
-  return commits.at(-1);
-};
+export const resolveProductSourceSha = createProductSourceShaResolver();
 
 const readJson = (root, relativePath) =>
   JSON.parse(readFileSync(path.join(root, relativePath), 'utf8'));

@@ -1,8 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import {
-  chmodSync,
   copyFileSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   renameSync,
@@ -21,6 +19,21 @@ const { resolveProductSourceSha } = supplyChain;
 
 type ParseGitNameStatusZ = (output: Buffer) => string[] | undefined;
 type GitFailureMode = 'nonzero' | 'enoent' | 'signal' | 'overflow' | 'malformed';
+type GitRunnerOptions = {
+  cwd: string;
+  encoding?: BufferEncoding;
+  maxBuffer?: number;
+};
+type GitRunnerResult = {
+  error?: Error;
+  status: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string | Buffer | null;
+  stderr: string | Buffer | null;
+};
+type GitRunner = (args: string[], options: GitRunnerOptions) => GitRunnerResult;
+type ProductSourceShaResolver = (root?: string) => string | undefined;
+type CreateProductSourceShaResolver = (runGit?: GitRunner) => ProductSourceShaResolver;
 
 const temporaryRoots: string[] = [];
 
@@ -43,6 +56,15 @@ const parseGitNameStatusZ = (output: Buffer) => {
   }).parseGitNameStatusZ;
   expect(parser, 'check-supply-chain.mjs must export parseGitNameStatusZ').toBeTypeOf('function');
   return parser?.(output);
+};
+
+const createProductSourceShaResolver = (runGit: GitRunner) => {
+  const factory = (supplyChain as typeof supplyChain & {
+    createProductSourceShaResolver?: CreateProductSourceShaResolver;
+  }).createProductSourceShaResolver;
+  expect(factory, 'check-supply-chain.mjs must export createProductSourceShaResolver')
+    .toBeTypeOf('function');
+  return (factory as CreateProductSourceShaResolver)(runGit);
 };
 
 const write = (root: string, relativePath: string, content: string) => {
@@ -68,85 +90,49 @@ const createRepository = () => {
   return { root, baseline };
 };
 
-const createFailingGitPath = (root: string, mode: GitFailureMode) => {
-  const gitExecutableNames = ['git', 'git.exe', 'git.cmd', 'git.bat'];
-  const realGit = process.env.PATH?.split(path.delimiter)
-    .flatMap(directory => gitExecutableNames.map(name => path.join(directory, name)))
-    .find(candidate => {
-      if (!existsSync(candidate)) return false;
-      const result = spawnSync(candidate, ['--version'], {
-        shell: /\.(?:cmd|bat)$/i.test(candidate),
-        stdio: 'ignore',
-      });
-      return result.status === 0;
-    });
-  expect(realGit, 'the test environment must expose a real Git executable').toBeTruthy();
+const createFailingGitRunner = (mode: GitFailureMode) => {
+  let delegatedCalls = 0;
+  let nameStatusCalls = 0;
+  let nameStatusMaxBuffer: number | undefined;
+  const runGit: GitRunner = (args, options) => {
+    const isNameStatus = ['diff', 'diff-tree'].includes(args[0])
+      && args.includes('--name-status');
+    if (!isNameStatus) {
+      delegatedCalls += 1;
+      return spawnSync('git', args, options) as unknown as GitRunnerResult;
+    }
 
-  const binDirectory = path.join(root, `.fake-git-${mode}`);
-  const fakeGitProgramPath = path.join(binDirectory, 'fake-git.cjs');
-  const fakeGitPath = path.join(binDirectory, process.platform === 'win32' ? 'git.cmd' : 'git');
-  mkdirSync(binDirectory, { recursive: true });
-  writeFileSync(fakeGitProgramPath, [
-    "const { spawnSync } = require('node:child_process');",
-    "const { unlinkSync } = require('node:fs');",
-    `const mode = ${JSON.stringify(mode)};`,
-    `const realGit = ${JSON.stringify(realGit)};`,
-    `const fakeGitPath = ${JSON.stringify(fakeGitPath)};`,
-    'const main = () => {',
-    '  const args = process.argv.slice(2);',
-    "  const isNameStatus = ['diff', 'diff-tree'].includes(args[0]) && args.includes('--name-status');",
-    '  if (isNameStatus) {',
-    "    if (mode === 'nonzero') { process.exitCode = 42; return; }",
-    "    if (mode === 'signal') {",
-    "      process.kill(process.pid, 'SIGTERM');",
-    '      setInterval(() => {}, 1000);',
-    '      return;',
-    '    }',
-    "    if (mode === 'overflow') {",
-    '      process.stdout.write(Buffer.alloc(17 * 1024 * 1024, 0x61));',
-    '      return;',
-    '    }',
-    "    if (mode === 'malformed') {",
-    "      process.stdout.write(Buffer.from('M\\0docs/frozen.md'));",
-    '      return;',
-    '    }',
-    '  }',
-    "  const result = spawnSync(realGit, args, {",
-    "    shell: /\\.(?:cmd|bat)$/i.test(realGit),",
-    "    stdio: 'inherit',",
-    "  });",
-    "  if (mode === 'enoent' && args[0] === 'rev-list' && args.includes('--parents')) {",
-    "    if (process.platform === 'win32') process.exitCode = 86;",
-    '    else unlinkSync(fakeGitPath);',
-    '  }',
-    '  if (result.error) throw result.error;',
-    "  if (result.signal) process.kill(process.pid, result.signal);",
-    '  if (process.exitCode !== 86) process.exitCode = result.status ?? 1;',
-    '};',
-    'main();',
-    '',
-  ].join('\n'));
-  if (process.platform === 'win32') {
-    writeFileSync(fakeGitPath, [
-      '@echo off',
-      `"${process.execPath}" "${fakeGitProgramPath}" %*`,
-      'set "FAKE_GIT_STATUS=%ERRORLEVEL%"',
-      'if "%FAKE_GIT_STATUS%"=="86" (',
-      '  del /f /q "%~f0"',
-      '  exit /b 0',
-      ')',
-      'exit /b %FAKE_GIT_STATUS%',
-      '',
-    ].join('\r\n'));
-  } else {
-    writeFileSync(fakeGitPath, [
-      `#!${process.execPath}`,
-      `require(${JSON.stringify(fakeGitProgramPath)});`,
-      '',
-    ].join('\n'));
-    chmodSync(fakeGitPath, 0o755);
-  }
-  return binDirectory;
+    nameStatusCalls += 1;
+    nameStatusMaxBuffer = options.maxBuffer;
+    const result: GitRunnerResult = {
+      status: 0,
+      signal: null,
+      stdout: Buffer.alloc(0),
+      stderr: Buffer.alloc(0),
+    };
+    if (mode === 'nonzero') return { ...result, status: 42 };
+    if (mode === 'enoent') {
+      return {
+        ...result,
+        error: Object.assign(new Error('spawn git ENOENT'), { code: 'ENOENT' }),
+        status: null,
+      };
+    }
+    if (mode === 'signal') return { ...result, signal: 'SIGTERM', status: null };
+    if (mode === 'overflow') {
+      return {
+        ...result,
+        error: Object.assign(new Error('stdout maxBuffer length exceeded'), { code: 'ENOBUFS' }),
+        status: null,
+        stdout: Buffer.alloc(17 * 1024 * 1024, 0x61),
+      };
+    }
+    return { ...result, stdout: Buffer.from('M\0docs/frozen.md') };
+  };
+  return {
+    runGit,
+    calls: () => ({ delegatedCalls, nameStatusCalls, nameStatusMaxBuffer }),
+  };
 };
 
 afterEach(() => {
@@ -258,14 +244,14 @@ describe('P03 product-source evidence boundaries', () => {
     const analyzedCommit = commit(root, `docs: add ${mode} failure boundary`);
     expect(resolveProductSourceSha(root)).toBe(baseline);
 
-    const originalPath = process.env.PATH;
-    process.env.PATH = createFailingGitPath(root, mode);
-    try {
-      expect(resolveProductSourceSha(root)).toBe(analyzedCommit);
-    } finally {
-      if (originalPath === undefined) delete process.env.PATH;
-      else process.env.PATH = originalPath;
-    }
+    const controlledGit = createFailingGitRunner(mode);
+    const resolveWithFailure = createProductSourceShaResolver(controlledGit.runGit);
+    expect(resolveWithFailure(root)).toBe(analyzedCommit);
+    expect(controlledGit.calls()).toEqual({
+      delegatedCalls: 2,
+      nameStatusCalls: 1,
+      nameStatusMaxBuffer: 16 * 1024 * 1024,
+    });
   });
 
   test.each(['true', 'false'])(
