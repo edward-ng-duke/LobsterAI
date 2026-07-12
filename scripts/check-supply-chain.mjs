@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TextDecoder } from 'node:util';
 
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
@@ -72,6 +73,60 @@ const gitOutput = (root, args) => {
   return result.status === 0 ? result.stdout.trim() : undefined;
 };
 
+const gitNameStatusOutput = (root, args) => {
+  const result = spawnSync('git', args, {
+    cwd: root,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  if (result.status !== 0 || result.error || result.signal || !Buffer.isBuffer(result.stdout)) {
+    return undefined;
+  }
+  return result.stdout;
+};
+
+const nameStatusPathDecoder = new TextDecoder('utf-8', {
+  fatal: true,
+  ignoreBOM: true,
+});
+
+export const parseGitNameStatusZ = (output) => {
+  if (!Buffer.isBuffer(output)) return undefined;
+  if (output.length === 0) return [];
+  if (output.at(-1) !== 0) return undefined;
+
+  const fields = [];
+  let fieldStart = 0;
+  for (let index = 0; index < output.length; index += 1) {
+    if (output[index] !== 0) continue;
+    fields.push(output.subarray(fieldStart, index));
+    fieldStart = index + 1;
+  }
+
+  const paths = [];
+  for (let index = 0; index < fields.length;) {
+    const statusField = fields[index];
+    if (statusField.length === 0 || statusField.some(byte => byte > 0x7f)) return undefined;
+    const status = statusField.toString('ascii');
+    const similarityStatus = /^([RC])(\d{1,3})$/.exec(status);
+    const pathCount = /^[ADMTUXB]$/.test(status)
+      ? 1
+      : similarityStatus && Number(similarityStatus[2]) <= 100 ? 2 : undefined;
+    if (!pathCount || index + pathCount >= fields.length) return undefined;
+
+    for (let pathIndex = 1; pathIndex <= pathCount; pathIndex += 1) {
+      const pathField = fields[index + pathIndex];
+      if (pathField.length === 0) return undefined;
+      try {
+        paths.push(nameStatusPathDecoder.decode(pathField));
+      } catch {
+        return undefined;
+      }
+    }
+    index += pathCount + 1;
+  }
+  return paths;
+};
+
 const isImageBuildInput = relativePath => imageBuildInputFiles.has(relativePath)
   || imageBuildInputDirectories.some(directory => relativePath.startsWith(directory));
 
@@ -83,15 +138,11 @@ const changedPathsAgainstFirstParent = (root, commit) => {
   if (!commitLine) return undefined;
   const [, firstParent] = commitLine.split(/\s+/);
   const args = firstParent
-    ? ['diff', '--name-status', '--find-renames', firstParent, commit]
-    : ['diff-tree', '--root', '--no-commit-id', '--name-status', '-r', '--find-renames', commit];
-  const output = gitOutput(root, args);
+    ? ['diff', '--name-status', '-z', '-M', '-C', firstParent, commit]
+    : ['diff-tree', '--root', '--no-commit-id', '-r', '--name-status', '-z', '-M', '-C', commit];
+  const output = gitNameStatusOutput(root, args);
   if (output === undefined) return undefined;
-  return output.split(/\r?\n/).filter(Boolean).flatMap((line) => {
-    const [status, ...paths] = line.split('\t');
-    if (!status || paths.length === 0) return [];
-    return /^[RC]/.test(status) ? paths.slice(0, 2) : paths.slice(0, 1);
-  });
+  return parseGitNameStatusZ(output);
 };
 
 export const resolveProductSourceSha = (root = repositoryRoot) => {
