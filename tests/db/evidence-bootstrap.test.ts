@@ -33,8 +33,12 @@ type EvidenceReportName =
   | 'validation.json';
 type EvidenceReport = Record<string, unknown>;
 type EvidenceMutation = (reports: Record<EvidenceReportName, EvidenceReport>) => void;
+type ImplementationMutation = (root: string) => void;
 
-const createFixture = (mutateReports?: EvidenceMutation): string => {
+const createFixture = (
+  mutateReports?: EvidenceMutation,
+  mutateImplementation?: ImplementationMutation,
+): string => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-bootstrap-'));
   temporaryRoots.push(root);
   git(root, 'init', '-b', 'main');
@@ -60,6 +64,7 @@ const createFixture = (mutateReports?: EvidenceMutation): string => {
     mkdirSync(path.dirname(target), { recursive: true });
     cpSync(path.join(repositoryRoot, relativePath), target);
   }
+  mutateImplementation?.(root);
   git(root, 'add', '.');
   git(root, 'commit', '-m', 'feat: trusted implementation');
   const sourceSha = git(root, 'rev-parse', 'HEAD');
@@ -269,6 +274,18 @@ const bindPostgresPlatform = (
   }
 };
 
+const changeManifestDigest = (root: string, platform: 'linux/amd64' | 'linux/arm64', digest: string) => {
+  const target = path.join(root, 'tests/integration/db/postgres-image.json');
+  const manifest = JSON.parse(readFileSync(target, 'utf8')) as typeof postgresManifest & {
+    platforms: Array<{ platform: 'linux/amd64' | 'linux/arm64'; digest: string; immutableReference: string }>;
+  };
+  const entry = manifest.platforms.find((candidate) => candidate.platform === platform);
+  if (!entry) throw new Error(`missing PostgreSQL manifest entry for ${platform}`);
+  entry.digest = digest;
+  entry.immutableReference = `${manifest.image}@${digest}`;
+  writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+};
+
 const semanticMutations: NamedMutation[] = [
   ['provider and cleanup container IDs differ', (reports) => {
     nestedRecord(reports['integration.json'], 'cleanup').containerId = 'b'.repeat(64);
@@ -427,6 +444,58 @@ describe('P02 external evidence bootstrap boundary', () => {
     }), true);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  test.each([
+    ['duplicate manifest key', (root: string) => {
+      const target = path.join(root, 'tests/integration/db/postgres-image.json');
+      const source = readFileSync(target, 'utf8');
+      writeFileSync(target, source.replace('"schemaVersion": 2', '"schemaVersion": 2, "schemaVersion": 2'));
+    }],
+    ['unknown manifest field', (root: string) => {
+      const target = path.join(root, 'tests/integration/db/postgres-image.json');
+      const manifest = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>;
+      manifest.untrustedSummary = true;
+      writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+    }],
+    ['missing manifest platform', (root: string) => {
+      const target = path.join(root, 'tests/integration/db/postgres-image.json');
+      const manifest = JSON.parse(readFileSync(target, 'utf8')) as typeof postgresManifest;
+      manifest.platforms.pop();
+      writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+    }],
+  ] as const)('rejects trusted-source policy mutation: %s', (_label, mutation) => {
+    const result = run(createFixture(undefined, mutation), true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain('PostgreSQL image policy');
+  });
+
+  test.each([
+    'scripts/db/postgres-image-policy.mjs',
+    'scripts/json-without-duplicate-keys.mjs',
+    'tests/integration/db/postgres-image.json',
+  ])('rejects a worktree replacement of protected policy input %s', (relativePath) => {
+    const root = createFixture();
+    const target = path.join(root, relativePath);
+    writeFileSync(target, `${readFileSync(target, 'utf8')}\n`);
+
+    const result = run(root, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(`trusted file mismatch ${relativePath}`);
+  });
+
+  test('rejects a coordinated approved digest and report replacement after the source commit', () => {
+    const unapprovedDigest = `sha256:${'b'.repeat(64)}`;
+    const root = createFixture((reports) => {
+      bindPostgresPlatform(reports, 'linux/amd64', unapprovedDigest);
+    });
+    changeManifestDigest(root, 'linux/amd64', unapprovedDigest);
+
+    const result = run(root, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain(
+      'trusted file mismatch tests/integration/db/postgres-image.json',
+    );
   });
 
   test.each(exactShapeMutations)('rejects exact-shape mutation: %s', (_label, mutation) => {

@@ -115,6 +115,17 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
       stdout: '',
       stderr: 'P02 evidence bootstrap: trusted file mismatch scripts/db/validate-evidence.mjs\n',
     })).toBe(false);
+    for (const relativePath of [
+      'scripts/db/postgres-image-policy.mjs',
+      'scripts/json-without-duplicate-keys.mjs',
+      'tests/integration/db/postgres-image.json',
+    ]) {
+      expect(classifyTrustedEvidenceValidation({
+        status: 86,
+        stdout: '',
+        stderr: `P02 evidence bootstrap: trusted file mismatch ${relativePath}\n`,
+      })).toBe(false);
+    }
     expect(classifyTrustedEvidenceValidation({
       status: 1,
       stdout: '',
