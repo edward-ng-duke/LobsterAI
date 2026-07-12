@@ -17,7 +17,7 @@ import addFormats from 'ajv-formats';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestRelativePath = 'docs/supply-chain/skills-and-plugins.manifest.json';
 const schemaRelativePath = 'libs/shared/contracts/assets/supply-chain-inventory.schema.json';
-const evidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
+export const p03EvidenceRelativeDirectory = '.reports/supply-chain/20260712_PR3部署供应链证据';
 const digestPattern = /^sha256:[a-f0-9]{64}$/;
 const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
@@ -617,7 +617,7 @@ const validatePluginInstallations = (root, evidence, errors) => {
 };
 
 const validateDiskEvidence = (root, manifest, evidence, errors, now) => {
-  const evidenceDirectory = path.join(root, evidenceRelativeDirectory);
+  const evidenceDirectory = path.join(root, p03EvidenceRelativeDirectory);
   const spdx = readEvidenceDocument(evidenceDirectory, evidence.sbom, `${evidence.image}: SBOM`, errors);
   const grype = readEvidenceDocument(
     evidenceDirectory,
@@ -820,7 +820,7 @@ const run = () => {
   } catch (error) {
     errors.push(`unable to load inventory/schema: ${error.message}`);
   }
-  const evidencePath = path.join(repositoryRoot, evidenceRelativeDirectory, 'docker-build-check.json');
+  const evidencePath = path.join(repositoryRoot, p03EvidenceRelativeDirectory, 'docker-build-check.json');
   try {
     report = JSON.parse(readFileSync(evidencePath, 'utf8'));
   } catch (error) {
