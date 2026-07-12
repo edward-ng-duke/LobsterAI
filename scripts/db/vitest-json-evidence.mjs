@@ -32,10 +32,13 @@ export const loadVitestJsonEvidence = (reportPath) => {
   if (passed + failed + skipped + todo !== total) {
     throw new Error('Vitest JSON report test counts do not add up to total');
   }
+  const testResults = { passed, failed, skipped, todo, total };
   if (total <= 0 || failed !== 0 || skipped !== 0 || todo !== 0 || failedSuites !== 0 || pendingSuites !== 0) {
-    throw new Error(
+    const error = new Error(
       `Vitest JSON report is not all-pass: passed=${passed}, failed=${failed}, skipped=${skipped}, todo=${todo}, total=${total}`,
     );
+    error.testResults = testResults;
+    throw error;
   }
-  return { passed, failed, skipped, todo, total };
+  return testResults;
 };

@@ -28,7 +28,7 @@ const { Client } = pg;
 const report = {
   ...createRunMetadata('P02_DATABASE_INTEGRATION'),
   status: 'RUNNING',
-  skipped: 0,
+  skipped: null,
   checks: {},
 };
 
@@ -214,6 +214,7 @@ try {
   process.stderr.write(tests.stderr);
   if (tests.status !== 0) throw new Error(`database integration tests failed with exit ${tests.status}`);
   const testResults = loadVitestJsonEvidence(vitestReportPath);
+  report.skipped = testResults.skipped;
   console.log(JSON.stringify({ status: 'PASS', testResults }));
 
   report.status = 'PASS';
@@ -242,6 +243,14 @@ try {
   const isBlocked = Boolean(error?.blocked) || /Could not find a working container runtime strategy/.test(String(error));
   report.status = isBlocked ? 'BLOCKED' : 'FAILED';
   report.error = error instanceof Error ? error.message : String(error);
+  if (error?.testResults) {
+    report.skipped = error.testResults.skipped;
+    report.checks = {
+      checksPassed: error.testResults.passed,
+      checksTotal: error.testResults.total,
+      testResults: error.testResults,
+    };
+  }
   exitCode = isBlocked ? 2 : 1;
 } finally {
   report.cleanup = await stopPostgresContainer(container);
