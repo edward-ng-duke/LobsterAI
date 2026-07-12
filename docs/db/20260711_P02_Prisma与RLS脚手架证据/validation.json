@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
   "kind": "P02_PRISMA_STAGE_GATE",
-  "runId": "7543b596-692a-4b5a-9b5b-27521b006e88",
-  "generatedAt": "2026-07-11T20:18:43.685Z",
-  "sourceSha": "352d0caaa1c0ea992f6a48ee8c698d56df25309c",
-  "nodeVersion": "v24.15.0",
-  "platform": "darwin/arm64",
+  "runId": "e658eaf7-99c0-4a08-80d4-685e3454f5e6",
+  "generatedAt": "2026-07-12T16:17:39.907Z",
+  "sourceSha": "fb004f226e07ee234610b7d44d9606eff784f401",
+  "nodeVersion": "v24.18.0",
+  "platform": "linux/x64",
   "status": "PASS",
   "commands": [
     {
       "command": [
-        "/Users/whitejack/.nvm/versions/node/v24.15.0/bin/node",
+        "/home/edward/.nvm/versions/node/v24.18.0/bin/node",
         "scripts/db/validate-static.mjs"
       ],
       "exitCode": 0,
-      "outputSha256": "a5a8d4fb97eca9af91746d8bdb80bcad24096c64da2b33891b0302d5b2a6eb75"
+      "outputSha256": "0c5a93db4b0f33cc9cd42699916e1f01d3e71c88ac3e4cf343b839b45d3a291b"
     },
     {
       "command": [
-        "/Users/whitejack/.nvm/versions/node/v24.15.0/bin/node",
+        "/home/edward/.nvm/versions/node/v24.18.0/bin/node",
         "scripts/db/preflight.mjs",
         "--contracts"
       ],
       "exitCode": 0,
-      "outputSha256": "7331f47e0a027dab271d2586d3ff8b1d2e34851ee3ce4307297a29e7f60cc565"
+      "outputSha256": "e98f079ceb549a094f9a90f6beae5317f0658fc43e48bf1ac614559d2b214f78"
     },
     {
       "command": [
@@ -44,7 +44,7 @@
         "prisma:generate"
       ],
       "exitCode": 0,
-      "outputSha256": "35c1adf012a0df4b88aa40c9b40461d7322284d0b76d797034a53deaa1bd8b2e"
+      "outputSha256": "2601095c58ae4c98cd218dc57500e2aef0d5bf4668c0b76280148c50a1546896"
     },
     {
       "command": [
@@ -54,7 +54,7 @@
         "prisma:generate"
       ],
       "exitCode": 0,
-      "outputSha256": "1b5e927150eb584e25835904867e291bdfa590004098ecfff7b7b1f82c50a517"
+      "outputSha256": "df705fbd4898be455a47edb6bfb2f9730dd685eed20dc7219a242b781e3098cd"
     },
     {
       "command": [
@@ -64,7 +64,7 @@
         "test:db:core"
       ],
       "exitCode": 0,
-      "outputSha256": "b6806db28bfcd448c2f6f2aca87f168e1f0565a19cbd58cd816d106240955ded"
+      "outputSha256": "25e7986cd67eed10141898152a29da799e1d52400380f3b0b4c80078721c624f"
     },
     {
       "command": [
@@ -74,7 +74,7 @@
         "test:db:preflight"
       ],
       "exitCode": 0,
-      "outputSha256": "85a4bfa38aa61f2d66f57171e9ed8d71c7eacc8b4a19fdf786103470aa0a0e48"
+      "outputSha256": "75b5a4ccd11ce5cffe50efe4df56ba5b661cd35ca32968f4329ca44fd8aca5d3"
     },
     {
       "command": [
@@ -84,8 +84,8 @@
         "test:db:integration"
       ],
       "exitCode": 0,
-      "outputSha256": "35d4d87028da2f7b8e1a95fd4e50908edea1de8b8895fb91423a4062e2e88666"
+      "outputSha256": "f6cc99cdb6d49980266732d74ee7453c84aa7d27b759f1f0de80988bdcd1ee28"
     }
   ],
-  "generatedClientHash": "c74a8965e3eef868a4da2641b86165d0ef2bd38f1bdd8ebbc93b4e74afe74441"
+  "generatedClientHash": "e325a1b5965dd3df50b9ecd4990b246e84d3626931b08999787c4bb1448e5e18"
 }
