@@ -37,25 +37,44 @@ const provider = () => ({
   ssl: 'off',
 });
 
+const commonReport = () => ({
+  schemaVersion: 1,
+  runId: 'report-run',
+  generatedAt: '2026-07-12T00:00:00.000Z',
+  sourceSha,
+  nodeVersion: 'v24.18.0',
+  platform: 'linux/arm64',
+  status: 'PASS',
+});
+
 const writeArtifact = (): string => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-db-platform-artifact-'));
   temporaryRoots.push(root);
   mkdirSync(root, { recursive: true });
   writeFileSync(path.join(root, 'preflight.json'), `${JSON.stringify({
-    schemaVersion: 1,
+    ...commonReport(),
     kind: 'P02_DATABASE_PREFLIGHT',
-    sourceSha,
     runId: 'preflight-run',
-    status: 'PASS',
-    checks: { provider: provider() },
+    checks: {
+      contracts: {
+        acceptedSha: 'a'.repeat(40),
+        testerReportSha: 'b'.repeat(40),
+        contractVersion: '1.0.0',
+        sourceHash: 'c'.repeat(64),
+      },
+      provider: {
+        ...provider(),
+        citextAvailableVersion: '1.6',
+        generatedUuid: '10000000-0000-4000-8000-000000000001',
+        migrationRole: { rolsuper: true, rolbypassrls: true },
+      },
+    },
     cleanup: { attempted: true, containerId: 'container-id', removed: true },
   })}\n`);
   writeFileSync(path.join(root, 'integration.json'), `${JSON.stringify({
-    schemaVersion: 1,
+    ...commonReport(),
     kind: 'P02_DATABASE_INTEGRATION',
-    sourceSha,
     runId: 'integration-run',
-    status: 'PASS',
     skipped: 0,
     checks: {
       provider: provider(),
@@ -93,6 +112,24 @@ const writeArtifact = (): string => {
         todo: 0,
         total: 24,
       },
+      rls: [{
+        relrowsecurity: true,
+        relforcerowsecurity: true,
+        table_owner: 'p02_admin',
+        policyname: 'agents_tenant_isolation',
+        qual: 'tenant policy',
+        with_check: 'tenant policy',
+      }],
+      roles: [
+        { rolname: 'p02_admin', rolsuper: true, rolbypassrls: true },
+        { rolname: 'p02_app', rolsuper: false, rolbypassrls: false },
+      ],
+      seed: [{
+        tenant_id: '10000000-0000-4000-8000-000000000001',
+        logical_id: 'main',
+        id: 'a0000000-0000-4000-8000-000000000001',
+      }],
+      testOutputSha256: '3'.repeat(64),
     },
     cleanup: { attempted: true, containerId: 'container-id', removed: true },
   })}\n`);

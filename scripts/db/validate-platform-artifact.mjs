@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseJsonRejectingDuplicateKeys } from '../json-without-duplicate-keys.mjs';
@@ -18,13 +18,38 @@ const argument = (name) => {
   return index >= 0 ? process.argv[index + 1] : undefined;
 };
 
+const MAX_REPORT_BYTES = 1024 * 1024;
+const exactFields = (value, fields, label) => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    fail(`${label} must be an object`);
+  }
+  const actual = Object.keys(value).sort();
+  const expected = [...fields].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    fail(`${label} fields differ: expected ${expected.join(',')}, received ${actual.join(',')}`);
+  }
+  return value;
+};
+
 const fail = (message) => {
   throw new Error(message);
 };
 
 const readReport = (root, name) => {
   try {
-    return parseJsonRejectingDuplicateKeys(readFileSync(path.join(root, name), 'utf8'));
+    const target = path.join(root, name);
+    const stat = lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink()) fail(`${name} must be a regular non-symlink file`);
+    if (stat.size <= 0 || stat.size > MAX_REPORT_BYTES) {
+      fail(`${name} size must be between 1 and ${MAX_REPORT_BYTES} bytes`);
+    }
+    const canonicalRoot = realpathSync(root);
+    const canonicalTarget = realpathSync(target);
+    const relative = path.relative(canonicalRoot, canonicalTarget);
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+      fail(`${name} escapes the canonical artifact root`);
+    }
+    return parseJsonRejectingDuplicateKeys(readFileSync(canonicalTarget, 'utf8'));
   } catch (error) {
     return fail(`cannot read ${name}: ${error.message}`);
   }
@@ -32,6 +57,117 @@ const readReport = (root, name) => {
 
 const requireEqual = (actual, expected, label) => {
   if (actual !== expected) fail(`${label} differs: expected ${expected}, received ${actual}`);
+};
+
+const validateProvider = (provider, name, kind) => {
+  const commonFields = [
+    'dockerPlatform',
+    'runnerOs',
+    'runnerArch',
+    'image',
+    'immutableReference',
+    'digest',
+    'inspectedOs',
+    'inspectedArch',
+    'repoDigests',
+    'containerId',
+    'serverVersion',
+    'serverMajor',
+    'lcCollate',
+    'lcCtype',
+    'timezone',
+    'ssl',
+  ];
+  exactFields(
+    provider,
+    kind === 'P02_DATABASE_PREFLIGHT'
+      ? [...commonFields, 'citextAvailableVersion', 'generatedUuid', 'migrationRole']
+      : commonFields,
+    `${name} checks.provider`,
+  );
+  if (kind === 'P02_DATABASE_PREFLIGHT') {
+    exactFields(provider.migrationRole, ['rolsuper', 'rolbypassrls'], `${name} migrationRole`);
+  }
+};
+
+const validateStrictReportSchema = (report, name, kind) => {
+  const rootFields = [
+    'schemaVersion',
+    'kind',
+    'runId',
+    'generatedAt',
+    'sourceSha',
+    'nodeVersion',
+    'platform',
+    'status',
+    'checks',
+    'cleanup',
+  ];
+  if (kind === 'P02_DATABASE_INTEGRATION') rootFields.push('skipped');
+  exactFields(report, rootFields, name);
+  exactFields(report.cleanup, ['attempted', 'containerId', 'removed'], `${name} cleanup`);
+  requireEqual(report.cleanup.attempted, true, `${name} cleanup.attempted`);
+  requireEqual(report.cleanup.removed, true, `${name} cleanup.removed`);
+  if (typeof report.generatedAt !== 'string' || !Number.isFinite(Date.parse(report.generatedAt))) {
+    fail(`${name} generatedAt is invalid`);
+  }
+  if (typeof report.nodeVersion !== 'string' || typeof report.platform !== 'string') {
+    fail(`${name} nodeVersion/platform is invalid`);
+  }
+
+  if (kind === 'P02_DATABASE_PREFLIGHT') {
+    exactFields(report.checks, ['contracts', 'provider'], `${name} checks`);
+    exactFields(
+      report.checks.contracts,
+      ['acceptedSha', 'testerReportSha', 'contractVersion', 'sourceHash'],
+      `${name} checks.contracts`,
+    );
+  } else {
+    exactFields(report.checks, [
+      'provider',
+      'migrations',
+      'rls',
+      'roles',
+      'seed',
+      'checksPassed',
+      'checksTotal',
+      'testResults',
+      'testOutputSha256',
+    ], `${name} checks`);
+    exactFields(report.checks.migrations, [
+      'first', 'repeat', 'existingSchema', 'rollback', 'concurrent',
+    ], `${name} checks.migrations`);
+    exactFields(report.checks.migrations.existingSchema, [
+      'independentDatabase', 'prepared', 'preserved', 'completedMigrations',
+      'beforeTables', 'afterTables', 'beforeCatalogSha256', 'afterCatalogSha256',
+    ], `${name} existingSchema`);
+    exactFields(report.checks.migrations.rollback, [
+      'failed', 'partialTableAbsent', 'rolledBackRows', 'repaired',
+    ], `${name} rollback`);
+    exactFields(report.checks.migrations.concurrent, [
+      'safe', 'exitCodes', 'completedRows',
+    ], `${name} concurrent`);
+    exactFields(report.checks.testResults, [
+      'passed', 'failed', 'skipped', 'todo', 'total',
+    ], `${name} testResults`);
+    if (!Array.isArray(report.checks.rls) || !Array.isArray(report.checks.roles) ||
+        !Array.isArray(report.checks.seed)) {
+      fail(`${name} RLS, roles, and seed evidence must be arrays`);
+    }
+    report.checks.rls.forEach((entry, index) => exactFields(entry, [
+      'relrowsecurity', 'relforcerowsecurity', 'table_owner', 'policyname', 'qual', 'with_check',
+    ], `${name} rls[${index}]`));
+    report.checks.roles.forEach((entry, index) => exactFields(entry, [
+      'rolname', 'rolsuper', 'rolbypassrls',
+    ], `${name} roles[${index}]`));
+    report.checks.seed.forEach((entry, index) => exactFields(entry, [
+      'tenant_id', 'logical_id', 'id',
+    ], `${name} seed[${index}]`));
+    if (!/^[a-f0-9]{64}$/.test(report.checks.testOutputSha256 ?? '')) {
+      fail(`${name} testOutputSha256 is invalid`);
+    }
+  }
+  validateProvider(report.checks.provider, name, kind);
 };
 
 let exitCode = 0;
@@ -64,6 +200,7 @@ try {
     ['preflight.json', preflight, 'P02_DATABASE_PREFLIGHT'],
     ['integration.json', integration, 'P02_DATABASE_INTEGRATION'],
   ]) {
+    validateStrictReportSchema(report, name, kind);
     requireEqual(report.schemaVersion, 1, `${name} schemaVersion`);
     requireEqual(report.kind, kind, `${name} kind`);
     requireEqual(report.sourceSha, sourceSha, `${name} sourceSha`);
