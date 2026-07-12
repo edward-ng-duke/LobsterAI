@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
@@ -32,6 +33,53 @@ const runRequiredState = (values: Record<string, string>) => spawnSync(
 );
 
 describe('P02 pre-freeze and post-freeze CI state', () => {
+  test('derives the official phase from event input and trusted source state', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const { resolveEvidencePhase } = await import(resolverPath);
+
+    expect(resolveEvidencePhase({
+      eventName: 'pull_request', evidenceReady: '', trustedEvidenceValid: false,
+    })).toBe('pre-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'push', evidenceReady: '', trustedEvidenceValid: true,
+    })).toBe('post-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'workflow_dispatch', evidenceReady: 'false', trustedEvidenceValid: false,
+    })).toBe('pre-freeze');
+    expect(resolveEvidencePhase({
+      eventName: 'workflow_dispatch', evidenceReady: 'true', trustedEvidenceValid: true,
+    })).toBe('post-freeze');
+  });
+
+  test.each([
+    ['stale evidence presented as post-freeze', 'workflow_dispatch', 'true', false],
+    ['valid evidence held in pre-freeze', 'workflow_dispatch', 'false', true],
+    ['a dispatch input on push', 'push', 'false', false],
+    ['an invalid dispatch input', 'workflow_dispatch', 'invalid', false],
+  ])('rejects %s', async (_label, eventName, evidenceReady, trustedEvidenceValid) => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const { resolveEvidencePhase } = await import(resolverPath);
+
+    expect(() => resolveEvidencePhase({
+      eventName, evidenceReady, trustedEvidenceValid,
+    })).toThrow();
+  });
+
+  test('binds CLI source state to the trusted launcher without an override', () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    expect(existsSync(resolverPath)).toBe(true);
+    if (!existsSync(resolverPath)) return;
+    const source = readFileSync(resolverPath, 'utf8');
+
+    expect(source).toContain('evidence-trust-launcher.mjs');
+    expect(source).toContain('scripts/saas-stage-gates.json');
+    expect(source).not.toMatch(/continue-on-error|\|\|\s*true|TRUSTED_EVIDENCE_STATUS/);
+  });
+
   test('treats stale trusted evidence as the expected pre-freeze state', () => {
     const result = runEvidenceTests('pre-freeze');
 

@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { parse } from 'yaml';
 
 interface WorkflowStep {
+  id?: string;
   env?: Record<string, unknown>;
   run?: string;
   uses?: string;
@@ -82,7 +83,13 @@ describe('PostgreSQL native arm64 CI stages', () => {
     expect(jobCommands).toContain('git diff --exit-code');
   });
 
-  test('runs official pre-freeze tests without consuming trusted evidence', () => {
+  test('runs official tests in the source-derived phase in both workflows', () => {
+    const scaffoldPhase = workflow.jobs?.scaffold?.steps?.find(
+      (step) => step.id === 'p02-evidence-phase',
+    );
+    const mainPhase = mainWorkflow.jobs?.test?.steps?.find(
+      (step) => step.id === 'p02-evidence-phase',
+    );
     const scaffoldTest = workflow.jobs?.scaffold?.steps?.find(
       (step) => step.run?.trim() === 'npm test',
     );
@@ -90,8 +97,27 @@ describe('PostgreSQL native arm64 CI stages', () => {
       (step) => step.run?.trim() === 'npm test',
     );
 
-    expect(scaffoldTest?.env?.P02_EVIDENCE_PHASE).toBe('pre-freeze');
-    expect(mainTest?.env?.P02_EVIDENCE_PHASE).toBe('pre-freeze');
+    for (const phaseStep of [scaffoldPhase, mainPhase]) {
+      expect(phaseStep?.run).toBe('node scripts/db/resolve-evidence-phase.mjs');
+      expect(phaseStep?.env?.P02_EVIDENCE_READY).toBe('${{ inputs.p02_evidence_ready }}');
+      expect(phaseStep?.env?.GITHUB_EVENT_NAME).toBe('${{ github.event_name }}');
+    }
+    expect(scaffoldTest?.env?.P02_EVIDENCE_PHASE).toBe(
+      '${{ steps.p02-evidence-phase.outputs.phase }}',
+    );
+    expect(mainTest?.env?.P02_EVIDENCE_PHASE).toBe(
+      '${{ steps.p02-evidence-phase.outputs.phase }}',
+    );
+  });
+
+  test('does not mask phase or required-gate failures', () => {
+    const sources = [
+      readFileSync(path.join(repositoryRoot, '.github/workflows/saas-scaffold.yml'), 'utf8'),
+      readFileSync(path.join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8'),
+    ].join('\n');
+
+    expect(sources).not.toContain('continue-on-error');
+    expect(sources).not.toMatch(/\|\|\s*true/);
   });
 
   test('exposes an explicit evidence-ready dispatch and auditable required state', () => {
