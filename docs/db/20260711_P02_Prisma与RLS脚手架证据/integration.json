@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_INTEGRATION",
-  "runId": "a6fe0084-78f0-4733-991b-b154d56063dc",
-  "generatedAt": "2026-07-12T20:28:27.152Z",
-  "sourceSha": "59ce65c0c50c3875ea17c34cf200ca048700c70c",
+  "runId": "d1c034ab-e44a-42bd-8f51-b46672c22350",
+  "generatedAt": "2026-07-12T21:41:53.905Z",
+  "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
   "nodeVersion": "v24.18.0",
   "platform": "linux/x64",
   "status": "PASS",
@@ -21,7 +21,7 @@
       "repoDigests": [
         "postgres@sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf"
       ],
-      "containerId": "3f950122a3e2d3e56d0ce98561bc101a1ebe251fc8234a798ffc1af1f85c166d",
+      "containerId": "154e7089246641013dfa22eb6ca1f8ed91b8b9056598b189f4908fa1d69ee37d",
       "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)",
       "serverMajor": 17,
       "lcCollate": "en_US.utf8",
@@ -130,11 +130,11 @@
       "todo": 0,
       "total": 27
     },
-    "testOutputSha256": "c34d385df95b1422b90d4b173badaf1a43143764a6ccf1672cc26348a34d63c5"
+    "testOutputSha256": "5d3e62d32e85431bc7feac3774e3acf3afe992dfb992b33720f53c6081038f71"
   },
   "cleanup": {
     "attempted": true,
-    "containerId": "3f950122a3e2d3e56d0ce98561bc101a1ebe251fc8234a798ffc1af1f85c166d",
+    "containerId": "154e7089246641013dfa22eb6ca1f8ed91b8b9056598b189f4908fa1d69ee37d",
     "removed": true
   }
 }

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "P02_DATABASE_PREFLIGHT",
-  "runId": "9af8cd82-6a1c-4714-973b-bb086bd8c300",
-  "generatedAt": "2026-07-12T20:28:23.990Z",
-  "sourceSha": "59ce65c0c50c3875ea17c34cf200ca048700c70c",
+  "runId": "90fc9314-40ab-4b72-94bf-ef1f515ee5d9",
+  "generatedAt": "2026-07-12T21:41:50.174Z",
+  "sourceSha": "af81f1af1f6744d6b9bc893791b139d7154697f4",
   "nodeVersion": "v24.18.0",
   "platform": "linux/x64",
   "status": "PASS",
@@ -26,7 +26,7 @@
       "repoDigests": [
         "postgres@sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf"
       ],
-      "containerId": "74222ce3645ebdffb74e04f98dcb9260040f216a165b8ec26e776b43b13ef2f3",
+      "containerId": "d882a2cd69ed77c8c0f6c910033f45845941201908d91eb54d61f4ddf74dd717",
       "serverVersion": "17.10 (Debian 17.10-1.pgdg12+1)",
       "serverMajor": 17,
       "lcCollate": "en_US.utf8",
@@ -34,7 +34,7 @@
       "timezone": "Etc/UTC",
       "ssl": "off",
       "citextAvailableVersion": "1.6",
-      "generatedUuid": "6ce13d67-f7ed-478d-b7ab-ff85cfca48ad",
+      "generatedUuid": "15b7afdc-c849-47c3-af05-dc0b1f4fcb44",
       "migrationRole": {
         "rolsuper": true,
         "rolbypassrls": true
@@ -43,7 +43,7 @@
   },
   "cleanup": {
     "attempted": true,
-    "containerId": "74222ce3645ebdffb74e04f98dcb9260040f216a165b8ec26e776b43b13ef2f3",
+    "containerId": "d882a2cd69ed77c8c0f6c910033f45845941201908d91eb54d61f4ddf74dd717",
     "removed": true
   }
 }
