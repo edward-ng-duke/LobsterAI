@@ -1,4 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
@@ -101,6 +109,9 @@ describe('PostgreSQL native arm64 CI stages', () => {
       expect(phaseStep?.run).toBe('node scripts/db/resolve-evidence-phase.mjs');
       expect(phaseStep?.env?.P02_EVIDENCE_READY).toBe('${{ inputs.p02_evidence_ready }}');
       expect(phaseStep?.env?.GITHUB_EVENT_NAME).toBe('${{ github.event_name }}');
+      expect(phaseStep?.env?.P02_SOURCE_SHA).toBe(
+        '${{ github.event.pull_request.head.sha || github.sha }}',
+      );
     }
     expect(scaffoldTest?.env?.P02_EVIDENCE_PHASE).toBe(
       '${{ steps.p02-evidence-phase.outputs.phase }}',
@@ -108,6 +119,88 @@ describe('PostgreSQL native arm64 CI stages', () => {
     expect(mainTest?.env?.P02_EVIDENCE_PHASE).toBe(
       '${{ steps.p02-evidence-phase.outputs.phase }}',
     );
+  });
+
+  test('checks out the exact PR head with full history before resolving evidence phase', () => {
+    for (const targetWorkflow of [workflow, mainWorkflow]) {
+      const checkout = targetWorkflow.jobs?.[targetWorkflow === workflow ? 'scaffold' : 'test']
+        ?.steps?.find((step) => step.uses === 'actions/checkout@v4');
+
+      expect(checkout?.with?.['fetch-depth']).toBe(0);
+      expect(checkout?.with?.ref).toBe('${{ github.event.pull_request.head.sha || github.sha }}');
+    }
+  });
+
+  test('keeps a valid PR head distinct from a synthetic merge first-parent topology', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-pr-head-'));
+    const headWorktree = path.join(root, 'head');
+    const baseWorktree = path.join(root, 'base');
+    const mergeWorktree = path.join(root, 'merge');
+    const runGit = (args: string[], cwd = repositoryRoot) => spawnSync('git', args, {
+      cwd,
+      encoding: 'utf8',
+    });
+    try {
+      expect(runGit(['worktree', 'add', '--detach', headWorktree, '6c7bf0b9']).status).toBe(0);
+      const manifest = JSON.parse(readFileSync(path.join(
+        headWorktree,
+        'docs/db/20260711_P02_Prisma与RLS脚手架证据/evidence-manifest.json',
+      ), 'utf8')) as { codeEvidenceSha: string };
+      const common = runGit(['rev-parse', `${manifest.codeEvidenceSha}^`]).stdout.trim();
+      expect(runGit(['worktree', 'add', '--detach', baseWorktree, common]).status).toBe(0);
+      mkdirSync(path.join(baseWorktree, 'src'), { recursive: true });
+      writeFileSync(path.join(baseWorktree, 'src/base-advance.ts'), 'export const baseAdvance = true;\n');
+      expect(runGit(['add', 'src/base-advance.ts'], baseWorktree).status).toBe(0);
+      const baseCommit = spawnSync('git', [
+        '-c', 'core.hooksPath=/dev/null',
+        '-c', 'user.name=P02 PR Test',
+        '-c', 'user.email=p02-pr@example.invalid',
+        'commit', '-m', 'test: advance synthetic base',
+      ], { cwd: baseWorktree, encoding: 'utf8' });
+      expect(baseCommit.status, baseCommit.stderr).toBe(0);
+      const baseSha = runGit(['rev-parse', 'HEAD'], baseWorktree).stdout.trim();
+      const headSha = runGit(['rev-parse', 'HEAD'], headWorktree).stdout.trim();
+      const headTree = runGit(['rev-parse', 'HEAD^{tree}'], headWorktree).stdout.trim();
+      const merge = spawnSync('git', [
+        '-c', 'user.name=P02 PR Test',
+        '-c', 'user.email=p02-pr@example.invalid',
+        'commit-tree', headTree, '-p', baseSha, '-p', headSha,
+      ], {
+        cwd: repositoryRoot,
+        encoding: 'utf8',
+        input: 'synthetic PR merge\n',
+      });
+      expect(merge.status, merge.stderr).toBe(0);
+      const mergeSha = merge.stdout.trim();
+      expect(runGit(['worktree', 'add', '--detach', mergeWorktree, mergeSha]).status).toBe(0);
+
+      const gates = JSON.parse(
+        readFileSync(path.join(headWorktree, 'scripts/saas-stage-gates.json'), 'utf8'),
+      ) as { gates: Record<string, { trustedFiles: Record<string, string> }> };
+      const digest = gates.gates['prisma:validate']
+        .trustedFiles['scripts/db/evidence-bootstrap.mjs'];
+      const launch = (cwd: string) => spawnSync(process.execPath, [
+        'scripts/db/evidence-trust-launcher.mjs',
+        '--expected-bootstrap-sha256', digest,
+      ], { cwd, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } });
+      const headResult = launch(headWorktree);
+      const mergeResult = launch(mergeWorktree);
+      expect(headResult.status, `${headResult.stdout}\n${headResult.stderr}`).toBe(0);
+      expect(mergeResult.status).toBe(1);
+      expect(mergeResult.stderr).toContain('evidence SHA is not on the first-parent history of HEAD');
+
+      const { classifyTrustedEvidenceValidation } = await import(
+        path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs')
+      );
+      expect(classifyTrustedEvidenceValidation(headResult)).toBe(true);
+      expect(() => classifyTrustedEvidenceValidation(mergeResult)).toThrow();
+    } finally {
+      for (const worktreePath of [mergeWorktree, baseWorktree, headWorktree]) {
+        runGit(['worktree', 'remove', '--force', worktreePath]);
+      }
+      runGit(['worktree', 'prune']);
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test('does not mask phase or required-gate failures', () => {
