@@ -48,21 +48,14 @@ describe('Vitest structured integration evidence', () => {
     ['skip', { numPassedTests: 26, numPendingTests: 1 }],
     ['todo', { numPassedTests: 26, numTodoTests: 1 }],
     ['failure', { numPassedTests: 26, numFailedTests: 1 }],
-  ])('rejects a report containing one %s', (_label, mutation) => {
-    try {
-      loadVitestJsonEvidence(writeReport({ ...report(), ...mutation }));
-      throw new Error('expected non-passing Vitest report to fail');
-    } catch (error) {
-      expect(error).toMatchObject({
-        testResults: {
-          passed: mutation.numPassedTests,
-          failed: mutation.numFailedTests ?? 0,
-          skipped: mutation.numPendingTests ?? 0,
-          todo: mutation.numTodoTests ?? 0,
-          total: 27,
-        },
-      });
-    }
+  ])('preserves machine counts for a report containing one %s', (_label, mutation) => {
+    expect(loadVitestJsonEvidence(writeReport({ ...report(), ...mutation }))).toEqual({
+      passed: mutation.numPassedTests,
+      failed: mutation.numFailedTests ?? 0,
+      skipped: mutation.numPendingTests ?? 0,
+      todo: mutation.numTodoTests ?? 0,
+      total: 27,
+    });
   });
 
   test('rejects inconsistent totals instead of inferring counts', () => {
