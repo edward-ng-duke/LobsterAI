@@ -310,12 +310,33 @@ describe('B00-3C independent Web fixture parser boundaries', () => {
 describe('B00-3C independent Web fixture execution isolation', () => {
   test('supports concurrent builds and a second build without changing authoritative checkout outputs', async () => {
     const beforeOutputs = snapshotAuthoritativeOutputs();
-    const beforeFixtureRoots = readdirSync(tmpdir()).filter((entry) => entry.startsWith(fixturePrefix)).sort();
-    const first = createWebWorkspaceBuildFixture();
-    const second = createWebWorkspaceBuildFixture();
+    const sharedTemporaryDirectory = tmpdir();
+    const isolatedTemporaryDirectory = mkdtempSync(
+      path.join(sharedTemporaryDirectory, 'lobsterai-b00-3c-execution-'),
+    );
+    temporaryRoots.push(isolatedTemporaryDirectory);
+    const first = withTemporaryDirectory(
+      isolatedTemporaryDirectory,
+      createWebWorkspaceBuildFixture,
+    );
+    const second = withTemporaryDirectory(
+      isolatedTemporaryDirectory,
+      createWebWorkspaceBuildFixture,
+    );
+    let parallelOwnerRoot: string | undefined;
 
     try {
-      const [firstBuild, secondBuild] = await Promise.all([runWebBuild(first), runWebBuild(second)]);
+      expect(path.dirname(first.root)).toBe(isolatedTemporaryDirectory);
+      expect(path.dirname(second.root)).toBe(isolatedTemporaryDirectory);
+      const builds = Promise.all([runWebBuild(first), runWebBuild(second)]);
+
+      parallelOwnerRoot = mkdtempSync(path.join(sharedTemporaryDirectory, fixturePrefix));
+      temporaryRoots.push(parallelOwnerRoot);
+      expect(existsSync(parallelOwnerRoot)).toBe(true);
+      rmSync(parallelOwnerRoot, { recursive: true, force: true });
+      expect(existsSync(parallelOwnerRoot)).toBe(false);
+
+      const [firstBuild, secondBuild] = await builds;
       expect(firstBuild.status, firstBuild.output).toBe(0);
       expect(secondBuild.status, secondBuild.output).toBe(0);
       expect(existsSync(first.resolveWebDist('index.html'))).toBe(true);
@@ -332,11 +353,13 @@ describe('B00-3C independent Web fixture execution isolation', () => {
       first.cleanup();
       second.cleanup();
       second.cleanup();
+      if (parallelOwnerRoot) rmSync(parallelOwnerRoot, { recursive: true, force: true });
     }
 
     expect(snapshotAuthoritativeOutputs()).toEqual(beforeOutputs);
-    expect(readdirSync(tmpdir()).filter((entry) => entry.startsWith(fixturePrefix)).sort()).toEqual(
-      beforeFixtureRoots,
-    );
+    expect(existsSync(first.root)).toBe(false);
+    expect(existsSync(second.root)).toBe(false);
+    expect(listFixtureRoots(isolatedTemporaryDirectory)).toEqual([]);
+    expect(parallelOwnerRoot && existsSync(parallelOwnerRoot)).toBe(false);
   }, 60_000);
 });
