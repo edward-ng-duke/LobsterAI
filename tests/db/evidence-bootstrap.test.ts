@@ -34,11 +34,13 @@ const createFixture = (mutateReports?: EvidenceMutation): string => {
   git(root, 'config', 'user.name', 'P02 Bootstrap Test');
   git(root, 'config', 'user.email', 'p02-bootstrap@example.invalid');
   for (const relativePath of [
+    'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
     'scripts/db/common.mjs',
     'scripts/db/evidence-bootstrap.mjs',
     'scripts/db/evidence-bundle.schema.json',
     'scripts/db/evidence-provenance.mjs',
     'scripts/db/evidence-trust-launcher.mjs',
+    'scripts/db/existing-schema-evidence.mjs',
     'scripts/db/preflight.mjs',
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',
@@ -414,5 +416,20 @@ describe('P02 external evidence bootstrap boundary', () => {
     git(root, 'commit', '-m', 'fix(db): coordinated evidence bypass');
     const result = run(root, true);
     expect(result.status).not.toBe(0);
+  });
+
+  test('replacing the existing-schema helper cannot validate rewritten catalog evidence', () => {
+    const rewriteCatalog = semanticMutations.find(
+      ([label]) => label === 'catalog payload and hash are rewritten together',
+    )?.[1];
+    expect(rewriteCatalog).toBeDefined();
+    const root = createFixture(rewriteCatalog);
+    writeFileSync(
+      path.join(root, 'scripts/db/existing-schema-evidence.mjs'),
+      'export const validateExistingSchemaEvidence = (evidence) => evidence;\n',
+    );
+
+    const result = run(root, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
   });
 });
