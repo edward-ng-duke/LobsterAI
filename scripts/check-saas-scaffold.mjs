@@ -51,7 +51,7 @@ const requiredRootScripts = {
   'lint:saas':
     'eslint "apps/*/src/**/*.{ts,tsx}" "libs/*/*/src/**/*.ts" "tests/scaffold*.test.ts" "tests/contracts/**/*.test.ts" "tests/db/**/*.test.ts" "tests/integration/db/**/*.ts" "tests/deploy-*.test.ts"',
   'poc:v1:check': 'node scripts/run-saas-stage-gate.mjs poc:v1:check',
-  'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate 2a83371b32e9caa4fcd94f79725c7e937bfd22b15f504afa31d64d0adb4f9c05',
+  'prisma:validate': 'node scripts/run-saas-stage-gate.mjs prisma:validate ea22d1e450cc0d8544aad057c7c8cd60d3624071f6928ac820deed98af31a4a6',
   'prisma:validate:active': 'node scripts/db/validate.mjs && node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 bec37832b990ae6fcaa08653d9be888326fbe5abad1d68f1f434c311e980f33f',
   'scaffold:check': 'node scripts/check-saas-scaffold.mjs',
   'supply-chain:check': 'node scripts/run-saas-stage-gate.mjs supply-chain:check',

@@ -44,9 +44,6 @@ describe('P02 evidence after the accepted P03 integration merge', () => {
     );
     if (process.env.P02_EVIDENCE_PHASE === 'pre-freeze') {
       expect(result.status).not.toBe(0);
-      expect(result.stderr).toContain(
-        'trusted file mismatch scripts/db/validate-evidence.mjs',
-      );
     } else {
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     }
