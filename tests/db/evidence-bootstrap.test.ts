@@ -19,7 +19,15 @@ const git = (root: string, ...args: string[]): string => {
   return result.stdout.trim();
 };
 
-const createFixture = (): string => {
+type EvidenceReportName =
+  | 'contracts-preflight.json'
+  | 'preflight.json'
+  | 'integration.json'
+  | 'validation.json';
+type EvidenceReport = Record<string, unknown>;
+type EvidenceMutation = (reports: Record<EvidenceReportName, EvidenceReport>) => void;
+
+const createFixture = (mutateReports?: EvidenceMutation): string => {
   const root = mkdtempSync(path.join(tmpdir(), 'lobsterai-p02-bootstrap-'));
   temporaryRoots.push(root);
   git(root, 'init', '-b', 'main');
@@ -52,11 +60,16 @@ const createFixture = (): string => {
     'integration.json': 'scripts/db/run-integration.mjs',
     'validation.json': 'scripts/db/validate.mjs',
   } as const;
-  for (const reportName of Object.keys(runners)) {
+  const reportBundle = {} as Record<EvidenceReportName, EvidenceReport>;
+  for (const reportName of Object.keys(runners) as EvidenceReportName[]) {
     const report = JSON.parse(
       readFileSync(path.join(repositoryRoot, evidencePath, reportName), 'utf8'),
-    ) as Record<string, unknown>;
+    ) as EvidenceReport;
     report.sourceSha = sourceSha;
+    reportBundle[reportName] = report;
+  }
+  mutateReports?.(reportBundle);
+  for (const [reportName, report] of Object.entries(reportBundle)) {
     writeFileSync(
       path.join(evidenceDirectory, reportName),
       `${JSON.stringify(report, null, 2)}\n`,
@@ -106,6 +119,217 @@ const run = (root: string, bootstrapped: boolean) =>
     },
   );
 
+const nestedRecord = (value: unknown, ...pathSegments: string[]): EvidenceReport => {
+  let current = value;
+  for (const segment of pathSegments) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      throw new Error(`expected object before ${segment}`);
+    }
+    current = (current as EvidenceReport)[segment];
+  }
+  if (!current || typeof current !== 'object' || Array.isArray(current)) {
+    throw new Error(`expected object at ${pathSegments.join('.')}`);
+  }
+  return current as EvidenceReport;
+};
+
+const arrayAt = (value: unknown, ...pathSegments: string[]): unknown[] => {
+  let current = value;
+  for (const segment of pathSegments) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      throw new Error(`expected object before ${segment}`);
+    }
+    current = (current as EvidenceReport)[segment];
+  }
+  if (!Array.isArray(current)) throw new Error(`expected array at ${pathSegments.join('.')}`);
+  return current;
+};
+
+type NamedMutation = readonly [string, EvidenceMutation];
+
+const exactShapeMutations: NamedMutation[] = [
+  ['contracts cleanup is missing', (reports) => {
+    delete reports['contracts-preflight.json'].cleanup;
+  }],
+  ['contracts cleanup contains a container ID', (reports) => {
+    nestedRecord(reports['contracts-preflight.json'], 'cleanup').containerId = 'a'.repeat(64);
+  }],
+  ['contracts cleanup attempted a container stop', (reports) => {
+    nestedRecord(reports['contracts-preflight.json'], 'cleanup').attempted = true;
+  }],
+  ['database cleanup is missing attempted', (reports) => {
+    delete nestedRecord(reports['preflight.json'], 'cleanup').attempted;
+  }],
+  ['database cleanup is missing its container ID', (reports) => {
+    delete nestedRecord(reports['integration.json'], 'cleanup').containerId;
+  }],
+  ['database cleanup did not remove its container', (reports) => {
+    nestedRecord(reports['integration.json'], 'cleanup').removed = false;
+  }],
+  ['provider is missing runner OS', (reports) => {
+    delete nestedRecord(reports['preflight.json'], 'checks', 'provider').runnerOs;
+  }],
+  ['provider contains an unknown nested field', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').runtimeAlias = 'linux/x64';
+  }],
+  ['runner arch uses a noncanonical alias', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').runnerArch = 'x86_64';
+  }],
+  ['server major is a string', (reports) => {
+    nestedRecord(reports['preflight.json'], 'checks', 'provider').serverMajor = '17';
+  }],
+  ['server major differs from the approved major', (reports) => {
+    nestedRecord(reports['preflight.json'], 'checks', 'provider').serverMajor = 16;
+  }],
+  ['server patch differs from the approved patch', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').serverVersion = '17.9';
+  }],
+  ['provider locale differs', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').lcCollate = 'C';
+  }],
+  ['provider timezone differs', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').timezone = 'UTC';
+  }],
+  ['provider SSL mode differs', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').ssl = 'on';
+  }],
+  ['migration lifecycle regresses to an array', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks').migrations = [];
+  }],
+  ['migration lifecycle is missing first deploy', (reports) => {
+    delete nestedRecord(reports['integration.json'], 'checks', 'migrations').first;
+  }],
+  ['migration lifecycle has an unknown summary', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'migrations').summary = 'pass';
+  }],
+  ['migration history contains an unfinished row', (reports) => {
+    nestedRecord(arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'migrationHistory',
+    )[1]).finished = false;
+  }],
+  ['migration history contains a rolled-back row', (reports) => {
+    nestedRecord(arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'migrationHistory',
+    )[1]).rolledBack = true;
+  }],
+  ['checksPassed is a string', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks').checksPassed = '27';
+  }],
+  ['checksTotal is fractional', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks').checksTotal = 27.5;
+  }],
+  ['failed tests are nonzero', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'testResults').failed = 1;
+  }],
+  ['root skipped count conflicts with the all-pass contract', (reports) => {
+    reports['integration.json'].skipped = 1;
+  }],
+  ['integration checks contain an unknown summary', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks').summary = 'pass';
+  }],
+];
+
+const semanticMutations: NamedMutation[] = [
+  ['provider and cleanup container IDs differ', (reports) => {
+    nestedRecord(reports['integration.json'], 'cleanup').containerId = 'b'.repeat(64);
+  }],
+  ['runner and Docker architectures differ', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').runnerArch = 'arm64';
+  }],
+  ['inspect and Docker architectures differ', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').inspectedArch = 'arm64';
+  }],
+  ['RepoDigest differs from the approved digest', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'provider').repoDigests = [
+      `postgres@sha256:${'b'.repeat(64)}`,
+    ];
+  }],
+  ['immutable reference differs from the approved digest', (reports) => {
+    nestedRecord(reports['preflight.json'], 'checks', 'provider').immutableReference =
+      `postgres:17.10-bookworm@sha256:${'b'.repeat(64)}`;
+  }],
+  ['catalog payload and hash are rewritten together', (reports) => {
+    const beforeCatalog = nestedRecord(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'beforeCatalog',
+    );
+    beforeCatalog.payload = { tables: ['_prisma_migrations', 'attacker_table'] };
+    beforeCatalog.sha256 = createHash('sha256')
+      .update(JSON.stringify(beforeCatalog.payload))
+      .digest('hex');
+  }],
+  ['migration history is reordered', (reports) => {
+    arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'migrationHistory',
+    ).reverse();
+  }],
+  ['migration history uses a fake approved checksum', (reports) => {
+    nestedRecord(arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'migrationHistory',
+    )[1]).checksum = 'b'.repeat(64);
+  }],
+  ['migration history contains an extra finished row', (reports) => {
+    const history = arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'existingSchema',
+      'migrationHistory',
+    );
+    history.push({ ...nestedRecord(history[1]) });
+  }],
+  ['concurrent migration evidence contains an extra exit code', (reports) => {
+    arrayAt(
+      reports['integration.json'],
+      'checks',
+      'migrations',
+      'concurrent',
+      'exitCodes',
+    ).push(0);
+  }],
+  ['checksPassed is zero', (reports) => {
+    const checks = nestedRecord(reports['integration.json'], 'checks');
+    checks.checksPassed = 0;
+    checks.checksTotal = 0;
+    const testResults = nestedRecord(checks, 'testResults');
+    testResults.passed = 0;
+    testResults.total = 0;
+  }],
+  ['checksPassed is negative', (reports) => {
+    const checks = nestedRecord(reports['integration.json'], 'checks');
+    checks.checksPassed = -1;
+    checks.checksTotal = -1;
+    const testResults = nestedRecord(checks, 'testResults');
+    testResults.passed = -1;
+    testResults.total = -1;
+  }],
+  ['testResults passed differs from checksPassed', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'testResults').passed = 26;
+  }],
+  ['testResults total differs from checksTotal', (reports) => {
+    nestedRecord(reports['integration.json'], 'checks', 'testResults').total = 26;
+  }],
+];
+
 afterEach(() => {
   temporaryRoots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
@@ -153,6 +377,20 @@ describe('P02 external evidence bootstrap boundary', () => {
     const bare = run(root, false);
     expect(bare.status).not.toBe(0);
     expect(bare.stderr).toContain('trusted bootstrap');
+  });
+
+  test.each(exactShapeMutations)('rejects exact-shape mutation: %s', (_label, mutation) => {
+    const result = run(createFixture(mutation), true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain('"status":"FAILED"');
+    expect(result.stderr).not.toContain('bootstrap');
+  });
+
+  test.each(semanticMutations)('rejects semantic mutation: %s', (_label, mutation) => {
+    const result = run(createFixture(mutation), true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).not.toBe(0);
+    expect(result.stderr).toContain('"status":"FAILED"');
+    expect(result.stderr).not.toContain('bootstrap');
   });
 
   test('replacing the bootstrap cannot turn the unchanged validator into PASS', () => {
