@@ -119,7 +119,10 @@ const isFrozenNonImagePath = relativePath => frozenNonImageDirectories
 export const createProductSourceShaResolver = (runGit = defaultGitRunner) => {
   const gitOutput = (root, args) => {
     const result = runGit(args, { cwd: root, encoding: 'utf8' });
-    return result.status === 0 ? result.stdout.trim() : undefined;
+    if (result.status !== 0 || result.error || result.signal || typeof result.stdout !== 'string') {
+      return undefined;
+    }
+    return result.stdout.trim();
   };
 
   const gitNameStatusOutput = (root, args) => {
