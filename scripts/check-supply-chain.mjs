@@ -23,6 +23,21 @@ const sourceShaPattern = /^[a-f0-9]{40}$/;
 const unpinnedPattern = /(?:^|@)(?:latest|next|canary)$|^[~^*]|^[<>]=?|\s\|\||git\+(?![^#]+#[a-f0-9]{40}$)/i;
 const publicRegistryPattern = /(?:registry\.npmjs\.org|github\.com|gitlab\.com)/i;
 export const requiredProductionImages = ['api', 'openclaw-runtime', 'runtime-orchestrator', 'web', 'worker'];
+export const p03HardenedPluginInspectionScript = [
+  "const fs = require('node:fs');",
+  "const root = '/opt/openclaw/third-party-extensions';",
+  'const ids = JSON.parse(process.argv[1]);',
+  'const rootReal = fs.realpathSync(root);',
+  'const installed = ids.filter(id => {',
+  '  try {',
+  '    const candidate = `${root}/${id}/package.json`;',
+  '    const stat = fs.lstatSync(candidate);',
+  '    const real = fs.realpathSync(candidate);',
+  "    return stat.isFile() && !stat.isSymbolicLink() && real.startsWith(`${rootReal}/`);",
+  '  } catch { return false; }',
+  '});',
+  'process.stdout.write(JSON.stringify(installed));',
+].join(' ');
 const imageBuildInputFiles = new Set([
   '.dockerignore',
   'package.json',
@@ -569,26 +584,11 @@ const validatePluginInstallations = (root, evidence, errors) => {
     return;
   }
   const expectedTag = `lobsterai-p03-${evidence.imageName}:${evidence.sourceSha.slice(0, 12)}`;
-  const inspectionScript = [
-    "const fs = require('node:fs');",
-    "const root = '/opt/openclaw/third-party-extensions';",
-    'const ids = JSON.parse(process.argv[1]);',
-    'const rootReal = fs.realpathSync(root);',
-    'const installed = ids.filter(id => {',
-    '  try {',
-    '    const candidate = `${root}/${id}/package.json`;',
-    '    const stat = fs.lstatSync(candidate);',
-    '    const real = fs.realpathSync(candidate);',
-    "    return stat.isFile() && !stat.isSymbolicLink() && real.startsWith(`${rootReal}/`);",
-    '  } catch { return false; }',
-    '});',
-    'process.stdout.write(JSON.stringify(installed));',
-  ].join(' ');
   const inspection = spawnSync('docker', [
     'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
     '--security-opt=no-new-privileges', '--user=10001:10001',
     '--entrypoint=/usr/local/bin/node', expectedTag,
-    '-e', inspectionScript, JSON.stringify(declared.map(plugin => plugin.id)),
+    '-e', p03HardenedPluginInspectionScript, JSON.stringify(declared.map(plugin => plugin.id)),
   ], { cwd: root, encoding: 'utf8' });
   let installedIds;
   try {

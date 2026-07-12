@@ -325,7 +325,7 @@ describe('P03 on-disk supply-chain evidence verification', () => {
   });
 
   test.each(['relative traversal', 'absolute path', 'canonical symlink'])(
-    'keeps mutateEvidenceDocument inside its fixture for $case',
+    'keeps mutateEvidenceDocument inside its fixture for %s',
     (mutationCase) => {
       const root = createFixtureRoot();
       const fixture = fixtureForRoot(root);

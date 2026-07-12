@@ -3,9 +3,11 @@ import { createHash } from 'node:crypto';
 import {
   chmodSync,
   cpSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -16,6 +18,7 @@ import path from 'node:path';
 import {
   buildManifest,
   p03EvidenceRelativeDirectory,
+  p03HardenedPluginInspectionScript,
   requiredProductionImages,
 } from '../../scripts/check-supply-chain.mjs';
 
@@ -210,9 +213,7 @@ if (isInspect) {
 }
 
 if (args[8] !== state.openClawTag
-  || !args[10].includes("const root = '/opt/openclaw/third-party-extensions';")
-  || !args[10].includes('fs.realpathSync')
-  || !args[10].includes('fs.lstatSync')) process.exit(64);
+  || args[10] !== state.pluginInspectionScript) process.exit(64);
 let requestedIds;
 try {
   requestedIds = JSON.parse(args[11]);
@@ -290,6 +291,19 @@ export const createSupplyChainEvidenceFixture = (
     const report = { ...reportTemplate, sourceSha, images };
     const reportPath = path.join(evidenceDirectory, 'docker-build-check.json');
     writeJson(reportPath, report);
+    const canonicalEvidenceDocuments = new Map<string, {
+      relativePath: string;
+      absolutePath: string;
+    }>();
+    for (const image of images) {
+      for (const kind of ['sbom', 'vulnerabilityScan'] as const) {
+        const relativePath = image[kind].path;
+        canonicalEvidenceDocuments.set(`${image.imageName}:${kind}`, {
+          relativePath,
+          absolutePath: path.join(evidenceDirectory, relativePath),
+        });
+      }
+    }
 
     const binDirectory = path.join(root, 'bin');
     mkdirSync(binDirectory, { recursive: true });
@@ -302,6 +316,7 @@ export const createSupplyChainEvidenceFixture = (
         digest: image.digest,
       })),
       openClawTag: `lobsterai-p03-openclaw-runtime:${sourceSha.slice(0, 12)}`,
+      pluginInspectionScript: p03HardenedPluginInspectionScript,
       declaredPluginIds: plugins.map(plugin => plugin.id),
       installedPluginIds: openClaw?.pluginInstallations
         .filter((plugin: JsonObject) => plugin.status === 'installed')
@@ -324,7 +339,22 @@ export const createSupplyChainEvidenceFixture = (
         (candidate: JsonObject) => candidate.imageName === imageName,
       );
       if (!image) throw new Error(`unknown fixture image: ${imageName}`);
-      const documentPath = path.join(evidenceDirectory, image[kind].path);
+      const canonical = canonicalEvidenceDocuments.get(`${imageName}:${kind}`);
+      if (!canonical || image[kind]?.path !== canonical.relativePath) {
+        throw new Error(`fixture evidence path changed for ${imageName}:${kind}`);
+      }
+      const relativeToEvidence = path.relative(evidenceDirectory, canonical.absolutePath);
+      if (!relativeToEvidence
+        || relativeToEvidence.startsWith(`..${path.sep}`)
+        || path.isAbsolute(relativeToEvidence)) {
+        throw new Error(`fixture evidence path escapes its directory for ${imageName}:${kind}`);
+      }
+      const stat = lstatSync(canonical.absolutePath);
+      if (!stat.isFile() || stat.isSymbolicLink()
+        || path.dirname(realpathSync(canonical.absolutePath)) !== realpathSync(evidenceDirectory)) {
+        throw new Error(`fixture evidence document is not a contained regular file for ${imageName}:${kind}`);
+      }
+      const documentPath = canonical.absolutePath;
       const document = readJson(documentPath);
       mutate(document);
       writeJson(documentPath, document);
