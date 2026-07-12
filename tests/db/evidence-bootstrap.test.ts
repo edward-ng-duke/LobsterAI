@@ -111,10 +111,45 @@ afterEach(() => {
 });
 
 describe('P02 external evidence bootstrap boundary', () => {
-  test('the official bootstrap entry passes while a bare validator is not qualified evidence', () => {
+  test('the official bootstrap accepts the canonical current four-report bundle', () => {
     const root = createFixture();
+    const readReport = <T,>(name: string): T => JSON.parse(
+      readFileSync(path.join(root, evidencePath, name), 'utf8'),
+    ) as T;
+    const contracts = readReport<{ cleanup: unknown }>('contracts-preflight.json');
+    const preflight = readReport<{ checks: { provider: unknown }; cleanup: unknown }>(
+      'preflight.json',
+    );
+    const integration = readReport<{
+      checks: { migrations: unknown; checksPassed: number; checksTotal: number; testResults: unknown };
+    }>('integration.json');
+
+    expect(contracts.cleanup).toEqual({ attempted: false, removed: false });
+    expect(preflight.checks.provider).toMatchObject({
+      runnerOs: 'linux',
+      runnerArch: 'x64',
+      inspectedOs: 'linux',
+      inspectedArch: 'amd64',
+      serverMajor: 17,
+    });
+    expect(preflight.cleanup).toMatchObject({ attempted: true, removed: true });
+    expect(integration.checks.migrations).toMatchObject({
+      first: true,
+      repeat: true,
+      existingSchema: { completedMigrations: 2 },
+    });
+    expect(integration.checks).toMatchObject({
+      checksPassed: 27,
+      checksTotal: 27,
+      testResults: { passed: 27, failed: 0, skipped: 0, todo: 0, total: 27 },
+    });
+
     const official = run(root, true);
     expect(official.status, `${official.stdout}\n${official.stderr}`).toBe(0);
+  });
+
+  test('a bare validator is not qualified evidence', () => {
+    const root = createFixture();
     const bare = run(root, false);
     expect(bare.status).not.toBe(0);
     expect(bare.stderr).toContain('trusted bootstrap');
