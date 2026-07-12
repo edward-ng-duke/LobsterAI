@@ -93,7 +93,7 @@
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:validate:active": "node scripts/db/validate.mjs && node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256 3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23",
-    "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate e998e6bfe5b42594fa72040e8d2fef984ae5a01815e0069a8a27736e1bcab0d6",
+    "prisma:validate": "node scripts/run-saas-stage-gate.mjs prisma:validate b851390fc303343ecf920d8c91c39c048728b1fdb8107cd2f508450b5c5facae",
     "test:db:preflight": "node scripts/db/preflight.mjs",
     "test:db:core": "vitest run tests/db/p02-red.test.ts tests/db/seed.test.ts tests/db/tenant-scope.test.ts",
     "test:db:unit": "vitest run tests/db",

@@ -40,6 +40,7 @@ const createRepositoryCopy = (): string => {
   temporaryRoots.push(target);
   for (const relativePath of [
     '.dockerignore',
+    '.github/workflows/ci.yml',
     '.github/workflows/saas-scaffold.yml',
     'apps',
     'charts',

@@ -38,6 +38,7 @@
       },
       "fixtures": [
         ".github/workflows/saas-scaffold.yml",
+        ".github/workflows/ci.yml",
         "package.json",
         "prisma/schema.prisma",
         "prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql",
@@ -49,6 +50,8 @@
         "scripts/db/postgres-image-policy.mjs",
         "scripts/db/postgres-container-cleanup.mjs",
         "scripts/db/postgres-migration-lifecycle.mjs",
+        "scripts/db/vitest-json-evidence.mjs",
+        "scripts/db/check-evidence-ci-state.mjs",
         "scripts/db/validate-platform-artifact.mjs",
         "scripts/db/validate.mjs",
         "scripts/db/validate-evidence.mjs",
@@ -69,6 +72,10 @@
         "tests/db/postgres-platform-artifact.test.ts",
         "tests/db/postgres-platform-workflow.test.ts",
         "tests/db/postgres-container-cleanup.test.ts",
+        "tests/db/vitest-json-evidence.test.ts",
+        "tests/db/postgres-evidence-ci-state.test.ts",
+        "tests/db/p03-merge-evidence.test.ts",
+        "tests/db/reviewer-round2-red.test.ts",
         "vitest.db.config.ts"
       ]
     },
