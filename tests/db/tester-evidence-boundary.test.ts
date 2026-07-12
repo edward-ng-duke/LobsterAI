@@ -44,9 +44,11 @@ const createEvidenceFixture = (): string => {
   git(root, 'config', 'user.email', 'p02-tester@example.invalid');
 
   for (const relativePath of [
+    'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
     'scripts/db/common.mjs',
     'scripts/db/evidence-bundle.schema.json',
     'scripts/db/evidence-provenance.mjs',
+    'scripts/db/existing-schema-evidence.mjs',
     'scripts/db/preflight.mjs',
     'scripts/db/run-integration.mjs',
     'scripts/db/validate-evidence.mjs',

@@ -27,6 +27,8 @@ if (target.endsWith(path.join('scripts', 'db', 'validate-evidence.mjs'))) {
     'scripts/db/validate-evidence.mjs',
     'scripts/db/evidence-provenance.mjs',
     'scripts/db/evidence-bundle.schema.json',
+    'scripts/db/existing-schema-evidence.mjs',
+    'prisma/migrations/20260711000000_init_prisma_rls_scaffold/migration.sql',
   ];
   for (const relativePath of [
     'package.json',

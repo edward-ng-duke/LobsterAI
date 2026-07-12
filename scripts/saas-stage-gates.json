@@ -33,7 +33,7 @@
       "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "trustedFiles": {
-        "scripts/db/evidence-bootstrap.mjs": "3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23",
+        "scripts/db/evidence-bootstrap.mjs": "7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3",
         "scripts/db/evidence-trust-launcher.mjs": "3c1346227841f91f872991f7e69d45c679c6d645afb48bf922c1a5bde1f63509"
       },
       "fixtures": [
@@ -78,6 +78,10 @@
         "tests/db/vitest-json-evidence.test.ts",
         "tests/db/postgres-evidence-ci-state.test.ts",
         "tests/db/integration-failure-artifact.test.mjs",
+        "tests/db/evidence-bootstrap.test.ts",
+        "tests/db/validator-mutations.test.ts",
+        "tests/db/tester-evidence-boundary.test.ts",
+        "tests/db/postgres-stage-boundary.test.ts",
         "tests/db/p03-merge-evidence.test.ts",
         "tests/db/reviewer-round2-red.test.ts",
         "vitest.db.config.ts"

@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 
 import { repositoryRoot as defaultRepositoryRoot } from './common.mjs';
 import { validateEvidenceOnlyDescendant } from './evidence-provenance.mjs';
+import { validateExistingSchemaEvidence } from './existing-schema-evidence.mjs';
 
 const argument = (name) => {
   const index = process.argv.indexOf(name);
@@ -96,6 +97,96 @@ const validate = (value, definition, location) => {
   }
 };
 validate(bundle, schema, '$');
+
+const validateDatabaseProvider = (report, label) => {
+  const provider = report?.checks?.provider;
+  const cleanup = report?.cleanup;
+  if (provider?.containerId !== cleanup?.containerId) {
+    errors.push(`${label}: provider and cleanup container IDs differ`);
+  }
+
+  const approvedArchitecture = {
+    'linux/amd64': { runnerArch: 'x64', inspectedArch: 'amd64' },
+    'linux/arm64': { runnerArch: 'arm64', inspectedArch: 'arm64' },
+  }[provider?.dockerPlatform];
+  if (
+    !approvedArchitecture ||
+    provider?.runnerOs !== 'linux' ||
+    provider?.runnerArch !== approvedArchitecture.runnerArch ||
+    provider?.inspectedOs !== 'linux' ||
+    provider?.inspectedArch !== approvedArchitecture.inspectedArch ||
+    report?.platform !== `${provider?.runnerOs}/${provider?.runnerArch}`
+  ) {
+    errors.push(`${label}: runner, Docker, and inspected architectures differ`);
+  }
+
+  const immutableReference = `${provider?.image}@${provider?.digest}`;
+  if (provider?.immutableReference !== immutableReference) {
+    errors.push(`${label}: immutable reference does not match image digest`);
+  }
+  const expectedRepoDigests = [`postgres@${provider?.digest}`];
+  if (JSON.stringify(provider?.repoDigests) !== JSON.stringify(expectedRepoDigests)) {
+    errors.push(`${label}: RepoDigest does not match approved image digest`);
+  }
+};
+
+validateDatabaseProvider(bundle.preflight, 'preflight.json');
+validateDatabaseProvider(bundle.integration, 'integration.json');
+
+const preflightProvider = bundle.preflight?.checks?.provider;
+const integrationProvider = bundle.integration?.checks?.provider;
+for (const field of ['dockerPlatform', 'image', 'immutableReference', 'digest']) {
+  if (preflightProvider?.[field] !== integrationProvider?.[field]) {
+    errors.push(`database provider ${field} differs between preflight and integration`);
+  }
+}
+
+const migrations = bundle.integration?.checks?.migrations;
+try {
+  validateExistingSchemaEvidence(migrations?.existingSchema);
+} catch (error) {
+  errors.push(error instanceof Error ? error.message : String(error));
+}
+if (migrations?.first !== true || migrations?.repeat !== true) {
+  errors.push('integration.json: migration deploy/repeat lifecycle is incomplete');
+}
+if (
+  migrations?.rollback?.failed !== true ||
+  migrations?.rollback?.partialTableAbsent !== true ||
+  migrations?.rollback?.rolledBackRows !== 1 ||
+  migrations?.rollback?.repaired !== true
+) {
+  errors.push('integration.json: migration rollback lifecycle differs');
+}
+if (
+  migrations?.concurrent?.safe !== true ||
+  JSON.stringify(migrations?.concurrent?.exitCodes) !== JSON.stringify([0, 0]) ||
+  migrations?.concurrent?.completedRows !== 1
+) {
+  errors.push('integration.json: concurrent migration lifecycle differs');
+}
+
+const integrationChecks = bundle.integration?.checks;
+const testResults = integrationChecks?.testResults;
+if (
+  !Number.isInteger(integrationChecks?.checksPassed) ||
+  integrationChecks.checksPassed <= 0 ||
+  integrationChecks.checksPassed !== integrationChecks?.checksTotal
+) {
+  errors.push('integration.json: checksPassed/checksTotal must be equal positive integers');
+}
+if (
+  !Number.isInteger(testResults?.passed) ||
+  !Number.isInteger(testResults?.total) ||
+  testResults?.passed !== integrationChecks?.checksPassed ||
+  testResults?.total !== integrationChecks?.checksTotal ||
+  testResults?.failed !== 0 ||
+  testResults?.skipped !== 0 ||
+  testResults?.todo !== 0 ||
+  bundle.integration?.skipped !== testResults?.skipped
+) {
+  errors.push('integration.json: testResults do not match the all-pass check counts');
+}
 
 const sha256File = (target) => createHash('sha256').update(readFileSync(target)).digest('hex');
 const manifest = bundle.manifest;

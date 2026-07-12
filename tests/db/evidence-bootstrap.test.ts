@@ -8,7 +8,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 const evidencePath = 'docs/db/20260711_P02_Prisma与RLS脚手架证据';
-const trustedBootstrapSha256 = '3a539b57aeae01f2ad0b6fd4b6d5adab1c1cb2362cb0ca03adf7723965032c23';
+const trustedBootstrapSha256 = '7bb3c06cb737f73af301d4a99b245c9dfe37d21cf56207f70f3042bd4ee5d6f3';
 const temporaryRoots: string[] = [];
 const sha256File = (target: string) =>
   createHash('sha256').update(readFileSync(target)).digest('hex');
@@ -248,6 +248,9 @@ const semanticMutations: NamedMutation[] = [
   }],
   ['inspect and Docker architectures differ', (reports) => {
     nestedRecord(reports['integration.json'], 'checks', 'provider').inspectedArch = 'arm64';
+  }],
+  ['root and runner platforms differ', (reports) => {
+    reports['integration.json'].platform = 'linux/arm64';
   }],
   ['RepoDigest differs from the approved digest', (reports) => {
     nestedRecord(reports['integration.json'], 'checks', 'provider').repoDigests = [
