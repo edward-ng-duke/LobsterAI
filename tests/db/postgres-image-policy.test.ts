@@ -9,6 +9,8 @@ import {
   normalizeDockerPlatform,
   PostgresImagePolicyErrorCode,
   selectApprovedPostgresImage,
+  validateApprovedPostgresImageInspection,
+  validatePostgresServerSettings,
 } from '../../scripts/db/postgres-image-policy.mjs';
 
 const amd64Digest = 'sha256:9cc09bb9a1b9da469658a6fab7bbced9ece6ca99174e1b93c1c4cc1a12f741cf';
@@ -164,5 +166,57 @@ describe('PostgreSQL image manifest v2 policy', () => {
         code: PostgresImagePolicyErrorCode.UnsupportedPlatform,
       });
     }
+  });
+
+  test('accepts an exact inspected OS architecture and RepoDigest', () => {
+    const selected = manifest().platforms[0];
+
+    expect(validateApprovedPostgresImageInspection(selected, {
+      Os: 'linux',
+      Architecture: 'amd64',
+      RepoDigests: [`postgres@${amd64Digest}`],
+    })).toEqual({
+      inspectedOs: 'linux',
+      inspectedArch: 'amd64',
+      repoDigests: [`postgres@${amd64Digest}`],
+    });
+  });
+
+  test.each([
+    ['OS', { Os: 'windows', Architecture: 'amd64', RepoDigests: [`postgres@${amd64Digest}`] }],
+    ['architecture', { Os: 'linux', Architecture: 'arm64', RepoDigests: [`postgres@${amd64Digest}`] }],
+    ['RepoDigest', { Os: 'linux', Architecture: 'amd64', RepoDigests: [`postgres@${arm64Digest}`] }],
+  ])('rejects an inspected %s mismatch as FAILED', (_label, inspected) => {
+    expectFailedPolicy(() => validateApprovedPostgresImageInspection(
+      manifest().platforms[0],
+      inspected,
+    ));
+  });
+
+  test('accepts exact PostgreSQL 17.10 locale timezone and SSL settings', () => {
+    expect(validatePostgresServerSettings(manifest(), {
+      serverVersion: '17.10 (Debian 17.10-1.pgdg12+1)',
+      lcCollate: 'en_US.utf8',
+      lcCtype: 'en_US.utf8',
+      timezone: 'Etc/UTC',
+      ssl: 'off',
+    })).toEqual({
+      serverVersion: '17.10 (Debian 17.10-1.pgdg12+1)',
+      serverMajor: 17,
+      lcCollate: 'en_US.utf8',
+      lcCtype: 'en_US.utf8',
+      timezone: 'Etc/UTC',
+      ssl: 'off',
+    });
+  });
+
+  test.each([
+    ['patch', { serverVersion: '17.11 (Debian)', lcCollate: 'en_US.utf8', lcCtype: 'en_US.utf8', timezone: 'Etc/UTC', ssl: 'off' }],
+    ['collation', { serverVersion: '17.10 (Debian)', lcCollate: 'C', lcCtype: 'en_US.utf8', timezone: 'Etc/UTC', ssl: 'off' }],
+    ['ctype', { serverVersion: '17.10 (Debian)', lcCollate: 'en_US.utf8', lcCtype: 'C', timezone: 'Etc/UTC', ssl: 'off' }],
+    ['timezone', { serverVersion: '17.10 (Debian)', lcCollate: 'en_US.utf8', lcCtype: 'en_US.utf8', timezone: 'UTC', ssl: 'off' }],
+    ['SSL', { serverVersion: '17.10 (Debian)', lcCollate: 'en_US.utf8', lcCtype: 'en_US.utf8', timezone: 'Etc/UTC', ssl: 'on' }],
+  ])('rejects PostgreSQL %s drift as FAILED', (_label, settings) => {
+    expectFailedPolicy(() => validatePostgresServerSettings(manifest(), settings));
   });
 });
