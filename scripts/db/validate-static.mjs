@@ -110,12 +110,16 @@ for (const required of [
 ]) {
   if (!evidenceBootstrap.includes(required)) errors.push(`evidence bootstrap lacks ${required}`);
 }
-for (const required of [
+const activePrismaGate = packageJson.scripts?.['prisma:validate:active'] ?? '';
+if (!activePrismaGate.startsWith(
+  'npm run build --workspace @lobsterai/shared-contracts && node scripts/db/validate.mjs && ',
+)) {
+  errors.push('active Prisma gate must build shared contracts before database validation');
+}
+if (!activePrismaGate.includes(
   'node scripts/db/evidence-trust-launcher.mjs --expected-bootstrap-sha256',
-]) {
-  if (!packageJson.scripts?.['prisma:validate:active']?.includes(required)) {
-    errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
-  }
+)) {
+  errors.push('active Prisma gate must enter evidence validation through the trusted bootstrap');
 }
 for (const required of [
   'external bootstrap digest is required',

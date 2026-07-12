@@ -30,7 +30,7 @@
     "prisma:validate": {
       "status": "PASS",
       "activationTask": "P02-PR2数据库脚手架",
-      "reason": "P02 validates the accepted contract baseline, deterministic Prisma generation and validation output, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, strict Vitest suite accounting with bounded failure identity, portable trusted-file identity corners, stale-safe trusted pre/post-freeze phase transitions, and a real PostgreSQL 17 Testcontainers run.",
+      "reason": "P02 self-builds the gitignored shared-contract runtime before validating the accepted contract baseline, deterministic Prisma generation and validation output, recorded migration, extension/UUID preflight, RLS catalogs and behavior, non-privileged roles, tenant context leakage, strict Vitest suite accounting with bounded failure identity, portable trusted-file identity corners, stale-safe trusted pre/post-freeze phase transitions, and a real PostgreSQL 17 Testcontainers run.",
       "command": ["npm", "run", "--silent", "prisma:validate:active"],
       "trustedFiles": {
         "scripts/db/evidence-bootstrap.mjs": "802f538cc354a96c9b02eac33afe4bb5bc1d3b621a075f7f260da5322ce184e8",
