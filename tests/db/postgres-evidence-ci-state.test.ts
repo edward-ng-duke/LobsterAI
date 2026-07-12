@@ -88,6 +88,16 @@ describe('P02 pre-freeze and post-freeze CI state', () => {
     expect(source).not.toMatch(/continue-on-error|\|\|\s*true|TRUSTED_EVIDENCE_STATUS/);
   });
 
+  test('requires the checked-out HEAD to equal the workflow source SHA', async () => {
+    const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
+    const { requireCheckedOutSource } = await import(resolverPath);
+    const sourceSha = 'a'.repeat(40);
+
+    expect(requireCheckedOutSource(sourceSha, sourceSha)).toBe(sourceSha);
+    expect(() => requireCheckedOutSource(sourceSha, 'b'.repeat(40))).toThrow();
+    expect(() => requireCheckedOutSource('', sourceSha)).toThrow();
+  });
+
   test('classifies only auditable source drift as pre-freeze evidence', async () => {
     const resolverPath = path.join(repositoryRoot, 'scripts/db/resolve-evidence-phase.mjs');
     const { classifyTrustedEvidenceValidation } = await import(resolverPath);
